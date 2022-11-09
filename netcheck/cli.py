@@ -1,3 +1,4 @@
+import json
 import logging
 
 import click
@@ -7,6 +8,7 @@ from netcheck.dns import get_A_records_by_dns_lookup
 
 logger = logging.getLogger("netcheck")
 
+#logging.basicConfig(level=logging.DEBUG)
 
 @click.group()
 def cli():
@@ -18,7 +20,22 @@ def cli():
 def run(config):
     """Carry out all network assertions in given config file.
     """
-    click.echo(f"TODO - load from {config}")
+    logger.info(f"Loading assertions from {config.name}")
+    data = json.load(config)
+
+    # TODO: Validate the config format
+
+    click.echo(f"Loaded {len(data['assertions'])} assertions")
+
+    # Run each test
+    for test in data['assertions']:
+        click.echo(f"Running test '{test['name']}'")
+        for rule in test['rules']:
+            check_individual_assertion(
+                rule['type'],
+                rule,
+                should_fail=rule['expected'] != 'pass'
+            )
 
 
 @click.command()
@@ -29,16 +46,26 @@ def run(config):
 @click.option('--should-fail/--should-pass', is_flag=True, default=False)
 def check(test_type, server=None, host=None, url=None, should_fail=False):
     """Carry out a single network check"""
+
+    test_config = {
+        "server": server,
+        "host": host,
+        "url": url
+    }
+
+    check_individual_assertion(test_type, test_config, should_fail)
+
+
+def check_individual_assertion(test_type, test_config, should_fail):
     match test_type:
         case 'dns':
-            logging.debug(f"DNS check with nameserver {server} and {host}")
-            failed, test_detail = dns_lookup_check(host, server)
+            logging.debug(f"DNS check with nameserver {test_config['server']} and {test_config['host']}")
+            failed, test_detail = dns_lookup_check(test_config['host'], test_config['server'])
         case 'http':
-            failed, test_detail = get_request_check(url)
+            failed, test_detail = get_request_check(test_config['url'])
         case _:
             logger.warning("Unhandled test type")
             raise NotImplemented("Unknown test type")
-
     notify_for_unexpected_test_result(failed, should_fail, test_detail)
 
 
