@@ -14,6 +14,14 @@ def cli():
 
 
 @click.command()
+@click.option('--config', help='Config file with netcheck assertions', type=click.File('r'))
+def run(config):
+    """Carry out all network assertions in given config file.
+    """
+    click.echo(f"TODO - load from {config}")
+
+
+@click.command()
 @click.option('--server', default=None, help='DNS server to use for dns tests. E.g. 1.1.1.1')
 @click.option('--host', default='github.com', help='Host to search for (DNS test)')
 @click.option('--url', default='https://github.com/status', help='URL to request (http test)')
@@ -83,6 +91,7 @@ def dns_lookup_check(host, server):
 
 
 cli.add_command(check)
+cli.add_command(run)
 
 if __name__ == '__main__':
     cli()

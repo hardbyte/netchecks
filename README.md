@@ -20,3 +20,20 @@ Passed but was expected to fail.
 Output is quiet by default, json available with `--json`
 
 python -m netcheck.cli --help
+
+## Configuration via file
+
+A json file can be provided with a list of assertions to be checked:
+
+```json
+{
+  "assertions": [
+    {"name":  "deny-cloudflare-dns", "rules": [{"type": "dns", "server":  "1.1.1.1", "host": "github.com", "expected": "pass"}] }
+  ]
+}
+```
+
+And the command can be called:
+
+$ poetry run netcheck run --config config.json 
+
