@@ -15,7 +15,7 @@ pydantic = "^1.10.2"
 
 
 [tool.poetry.scripts]
-netcheck = "netcheck.cli:cli"
+netcheck = "netcheck.cli:app"
 
 
 [build-system]
