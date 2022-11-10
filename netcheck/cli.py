@@ -2,7 +2,7 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
-from rich import print
+from rich import print, print_json
 from rich.console import Console
 import typer
 import requests
@@ -11,7 +11,7 @@ from netcheck.dns import get_A_records_by_dns_lookup
 
 app = typer.Typer()
 logger = logging.getLogger("netcheck")
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 
 err_console = Console(stderr=True)
 
@@ -43,7 +43,7 @@ def run(
             )
 
     # TODO summary output
-    
+
     # pass count
     # fail count
     # warn count ?
@@ -105,22 +105,24 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
 def notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=False):
     if failed:
         if not should_fail:
-            print("[bold red]:boom: Failed but was expected to pass[/]")
-            err_console.print_json(data=test_detail)
+            err_console.print("[bold red]:boom: Failed but was expected to pass[/]")
+            print_json(data=test_detail)
         else:
             logging.debug("Failed (as expected)")
             if verbose:
-                print("[yellow]:cross_mark: Failed. As expected.[/]")
-
+                err_console.print("[yellow]:cross_mark: Failed. As expected.[/]")
+                print_json(data=test_detail)
     else:
         if not should_fail:
             logging.debug("Passed (as expected)")
             if verbose:
-                print("[green]✔ Passed (as expected)[/]")
-
+                err_console.print("[green]✔ Passed (as expected)[/]")
+                print_json(data=test_detail)
         else:
             err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
-            err_console.print_json(data=test_detail)
+            print_json(data=test_detail)
+
+
 
 
 def get_request_check(url):
@@ -148,16 +150,18 @@ def dns_lookup_check(host, server, timeout=10):
         'host': host,
         'timeout': timeout
     }
+    result = {}
     try:
         ip_addresses = get_A_records_by_dns_lookup(host, nameserver=server, timeout=timeout)
-        detail['A'] = ip_addresses
+        result['A'] = ip_addresses
     except Exception as e:
         logger.info(f"Caught exception:\n\n{e}")
         failed = True
-        detail['result'] = {""}
-        detail['result']['exception-type'] = e.__class__.__name__
-        detail['result']['exception'] = str(e)
 
+        result['exception-type'] = e.__class__.__name__
+        result['exception'] = str(e)
+
+    detail['result'] = result
     return failed, detail
 
 

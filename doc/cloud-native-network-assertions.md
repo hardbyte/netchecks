@@ -54,7 +54,7 @@ spec:
         message: DNS requests to cloudflare's 1.1.1.1 shouldn't succeed.
 ```
 
-A corresponding PolicyReport might look like:
+A corresponding `PolicyReport` might look like:
 
 
 ```yaml
@@ -71,17 +71,31 @@ metadata:
     name: default
     uid: 76d4081d-c86f-4e8f-a5ec-d9b1516bff06
 results:
-- message: Validation rule 'validate-docker-sock-mount' succeeded.
-  policy: disallow-docker-sock-mount
+- message: Validation rule 'cloudflare-dns-lookup-must-fail' succeeded.
+  policy: cloudflare-dns-lookup
   resources:
   - apiVersion: v1
     kind: Pod
-    name: nginx2
+    name: netcheck-cloudflare
     namespace: default
     uid: b0a4e899-6b12-4c47-8343-422f6aad4f56
-  rule: validate-docker-sock-mount
+  rule: cloudflare-dns-lookup-must-fail
   scored: true
   status: Pass
+  data:
+    {
+      "type": "dns",
+      "nameserver": "1.1.1.1",
+      "host": "hardbyte.nz",
+      "timeout": 10,
+      "result": {
+        "A": [
+          "209.58.165.79"
+        ]
+      }
+    }
+
+
 ```
 
 ### Another example
