@@ -50,3 +50,14 @@ And the command can be called:
 ```
 $ poetry run netcheck run --config config.json 
 ```
+
+
+## Development
+
+Build and publish with poetry. First update the version.
+
+```
+poetry version patch
+poetry build
+poetry publish
+```
