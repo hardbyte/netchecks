@@ -95,7 +95,7 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
         case 'http':
             if verbose:
                 print(f"http check with url '{test_config['url']}'")
-            failed, test_detail = get_request_check(test_config['url'])
+            failed, test_detail = http_request_check(test_config['url'], test_config.get('method', 'get'))
         case _:
             logger.warning("Unhandled test type")
             raise NotImplemented("Unknown test type")
@@ -123,21 +123,23 @@ def notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=
             print_json(data=test_detail)
 
 
-
-
-def get_request_check(url):
+def http_request_check(url, method: NetcheckHttpMethod = 'get'):
     failed = False
     details = {
         'type': 'http',
-        'method': "GET",
+        'method': method,
         'url': url,
-
+        'result': {}
     }
     try:
-        response = requests.get(url, timeout=30)
-        details['status-code'] = response.status_code
+        response = getattr(requests, method)(url, timeout=30)
+        details['result']['status-code'] = response.status_code
+        response.raise_for_status()
     except Exception as e:
         failed = True
+        logger.info(f"Caught exception:\n\n{e}")
+        details['result']['exception-type'] = e.__class__.__name__
+        details['result']['exception'] = str(e)
 
     return failed, details
 
