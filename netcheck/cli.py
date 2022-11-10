@@ -1,35 +1,35 @@
 import json
 import logging
+from enum import Enum
+from pathlib import Path
 
-import click
+import typer
 import requests
 
 from netcheck.dns import get_A_records_by_dns_lookup
 
+app = typer.Typer()
 logger = logging.getLogger("netcheck")
-
 #logging.basicConfig(level=logging.DEBUG)
 
-@click.group()
-def cli():
-    pass
 
-
-@click.command()
-@click.option('--config', help='Config file with netcheck assertions', type=click.File('r'))
-def run(config):
+@app.command()
+def run(
+        config: Path = typer.Option(..., exists=True, file_okay=True, help='Config file with netcheck assertions')
+        ):
     """Carry out all network assertions in given config file.
     """
-    logger.info(f"Loading assertions from {config.name}")
-    data = json.load(config)
+    logger.info(f"Loading assertions from {config}")
+    with config.open() as f:
+        data = json.load(f)
 
     # TODO: Validate the config format
 
-    click.echo(f"Loaded {len(data['assertions'])} assertions")
+    print(f"Loaded {len(data['assertions'])} assertions")
 
     # Run each test
     for test in data['assertions']:
-        click.echo(f"Running test '{test['name']}'")
+        print(f"Running test '{test['name']}'")
         for rule in test['rules']:
             check_individual_assertion(
                 rule['type'],
@@ -38,19 +38,38 @@ def run(config):
             )
 
 
-@click.command()
-@click.option('--server', default=None, help='DNS server to use for dns tests. E.g. 1.1.1.1')
-@click.option('--host', default='github.com', help='Host to search for (DNS test)')
-@click.option('--url', default='https://github.com/status', help='URL to request (http test)')
-@click.option('--type', 'test_type', required=True, prompt='Test type (dns, http)', help='Type of test.')
-@click.option('--should-fail/--should-pass', is_flag=True, default=False)
-def check(test_type, server=None, host=None, url=None, should_fail=False):
+
+
+
+class NetcheckHttpMethod(str, Enum):
+    get = 'get'
+    post = 'post'
+    patch = 'patch'
+    put = 'put'
+    delete = 'delete'
+
+
+class NetcheckTestType(str, Enum):
+    dns = "dns"
+    http = 'http'
+
+
+@app.command()
+def check(
+        test_type: NetcheckTestType = typer.Argument(..., help='Test type'),
+        server: str = typer.Option(None, help="DNS server to use for dns tests.", rich_help_panel="dns test"),
+        host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
+        url: str = typer.Option('https://github.com/status', help="URL to request", rich_help_panel="http test"),
+        method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get, help="HTTP method", rich_help_panel='http test'),
+        should_fail: bool = typer.Option(False, "--should-fail/--should-pass")
+):
     """Carry out a single network check"""
 
     test_config = {
         "server": server,
         "host": host,
-        "url": url
+        "url": url,
+        'method': method
     }
 
     check_individual_assertion(test_type, test_config, should_fail)
@@ -72,8 +91,8 @@ def check_individual_assertion(test_type, test_config, should_fail):
 def notify_for_unexpected_test_result(failed, should_fail, test_detail):
     if failed:
         if not should_fail:
-            click.echo("Failed but was expected to pass")
-            click.echo(test_detail)
+            logger.warning("Failed but was expected to pass")
+            print(test_detail)
         else:
             logging.debug("Failed. As expected.")
 
@@ -81,8 +100,8 @@ def notify_for_unexpected_test_result(failed, should_fail, test_detail):
         if not should_fail:
             logging.debug("Passed. As expected.")
         else:
-            click.echo("Passed but was expected to fail.")
-            click.echo(test_detail)
+            logger.warning("Passed but was expected to fail.")
+            print(test_detail)
 
 
 def get_request_check(url):
@@ -117,8 +136,5 @@ def dns_lookup_check(host, server):
     return failed, detail
 
 
-cli.add_command(check)
-cli.add_command(run)
-
 if __name__ == '__main__':
-    cli()
+    app()
