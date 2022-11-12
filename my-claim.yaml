@@ -1,0 +1,20 @@
+apiVersion: hardbyte.nz/v1
+kind: NetworkAssertion
+metadata:
+  name: my-network-assertion
+  namespace: default
+  annotations:
+    description: Cluster shouldn't be able to lookup dns on cloudflare in default namespace.
+spec:
+  schedule: "@hourly"
+  failureActions:
+    - slackNotificationConfig
+    - SNS topic (TODO)
+  rules:
+    - name: cloudflare-dns-lookup-must-fail
+      type: dns
+      server: 1.1.1.12
+      host: hardbyte.nz
+      validate:
+        exitCode: 1
+        message: DNS requests to cloudflare's 1.1.1.1 shouldn't succeed.

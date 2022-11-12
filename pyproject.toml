@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "netcheck-operator"
+version = "0.1.0"
+description = ""
+authors = ["Brian Thorne <brian@thorne.link>"]
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
+kopf = "^1.36.0"
+kubernetes = "^25.3.0"
+rich = "^12.6.0"
+structlog = "^22.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
