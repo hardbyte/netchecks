@@ -26,7 +26,7 @@ $ poetry run netcheck check dns
 Pass the `-v` flag to see what is going on:
 
 ```
-$ poetry run netcheck check dns -v
+$ poetry run netcheck dns -v
 DNS check with nameserver None looking up host 'github.com'
 ✔ Passed (as expected)
 {
@@ -46,7 +46,7 @@ Each check can be configured, e.g. you can specify the `server` and `host` for a
 tell `netcheck` whether a particular configuration is expected to pass or fail:
 
 ```
-$ poetry run netcheck check dns --server 1.1.1.1 --host hardbyte.nz --should-pass -v
+$ poetry run netcheck dns --server 1.1.1.1 --host hardbyte.nz --should-pass -v
 DNS check with nameserver 1.1.1.1 looking up host 'hardbyte.nz'
 ✔ Passed (as expected)
 {
@@ -65,7 +65,7 @@ DNS check with nameserver 1.1.1.1 looking up host 'hardbyte.nz'
 
 A few other individual examples:
 ```
-$ netcheck check dns --server=1.1.1.1 --host=made.updomain --should-fail -v
+$ netcheck dns --server=1.1.1.1 --host=made.updomain --should-fail -v
 DNS check with nameserver 1.1.1.1 looking up host 'made.updomain'
 ❌ Failed. As expected.
 {
@@ -79,8 +79,8 @@ DNS check with nameserver 1.1.1.1 looking up host 'made.updomain'
   }
 }
 
-$ netcheck check http --method=get --url=https://s3.ap-southeast-2.amazonaws.com --should-pass
-$ poetry run netcheck check http --method=post --url=https://s3.ap-southeast-2.amazonaws.com --should-fail -v
+$ netcheck http --method=get --url=https://s3.ap-southeast-2.amazonaws.com --should-pass
+$ poetry run netcheck http --method=post --url=https://s3.ap-southeast-2.amazonaws.com --should-fail -v
 http check with url 'https://s3.ap-southeast-2.amazonaws.com'
 ❌ Failed. As expected.
 {

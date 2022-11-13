@@ -65,25 +65,47 @@ class NetcheckTestType(str, Enum):
 
 
 @app.command()
-def check(
-        test_type: NetcheckTestType = typer.Argument(..., help='Test type'),
-        server: str = typer.Option(None, help="DNS server to use for dns tests.", rich_help_panel="dns test"),
-        host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
+def http(
         url: str = typer.Option('https://github.com/status', help="URL to request", rich_help_panel="http test"),
         method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get, help="HTTP method", rich_help_panel='http test'),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
-        verbose: bool = typer.Option(False, '-v')
+        verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
-    """Carry out a single network check"""
+    """Carry out a http network check"""
 
     test_config = {
-        "server": server,
-        "host": host,
         "url": url,
         'method': method
     }
 
-    check_individual_assertion(test_type, test_config, should_fail, verbose=verbose)
+    check_individual_assertion(
+        NetcheckTestType.http,
+        test_config,
+        should_fail,
+        verbose=verbose
+    )
+
+
+@app.command()
+def dns(
+        server: str = typer.Option(None, help="DNS server to use for dns tests.", rich_help_panel="dns test"),
+        host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
+        should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+        verbose: bool = typer.Option(False, '-v', '--verbose')
+):
+    """Carry out a dns check"""
+
+    test_config = {
+        "server": server,
+        "host": host,
+    }
+
+    check_individual_assertion(
+        NetcheckTestType.dns,
+        test_config,
+        should_fail,
+        verbose=verbose
+    )
 
 
 def check_individual_assertion(test_type, test_config, should_fail, verbose=False):
