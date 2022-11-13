@@ -1,16 +1,20 @@
-from kubernetes.client import V1Job
+import json
+from time import sleep
+
+from kubernetes.client import V1ConfigMap, V1EnvVar, V1Job, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
+    V1VolumeMount
 from structlog import wrap_logger
 from rich import print
 import kopf
 from kubernetes import client, config
 
 
-
 @kopf.on.create('networkassertions')
 async def creation(body, spec, name, namespace, logger, **kwargs):
     logger = wrap_logger(logger)
-    logger.info(f"networkassertion creation handler called", name=name, namespace=namespace)
-
+    logger.info(f"NetworkAssertion on-create handler called", name=name, namespace=namespace)
+    core_api = client.CoreV1Api()
+    batch_v1 = client.BatchV1Api()
     logger.debug(f"Requested NetworkAssertion body", body=body)
     logger.info(f"Requested NetworkAssertion spec", spec=spec)
 
@@ -19,27 +23,35 @@ async def creation(body, spec, name, namespace, logger, **kwargs):
     if not rules:
         raise kopf.PermanentError(f"Rules must be set.")
 
+    # TODO check if CM already exists
+    config_map = V1ConfigMap(
+        metadata=V1ObjectMeta(labels={'hardbyte.nz/netcheck-config': 'true'}),
+        data={"rules": json.dumps(rules)}
+    )
+    kopf.adopt(config_map)
+    logger.info("Creating config map", cm=config_map)
+    cm_response = core_api.create_namespaced_config_map(
+        namespace=namespace,
+        body=config_map
+    )
+    logger.info("Created config map", cm=cm_response)
+
     logger.info("Creating a Job")
-    batch_v1 = client.BatchV1Api()
+
     # Create a job object with client-python API. The job we
     # created is same as the `pi-job.yaml` in the /examples folder.
     job_name = f"{name}"
-    job = create_job_object(job_name)
+    job = create_job_object(job_name, cm_response)
     logger.debug("Job spec created", job=job)
 
     logger.info("Linking job with NetworkAssertion")
     kopf.adopt(job)
 
     api_response = create_job(batch_v1, job)
-    logger.info("Pushed job object to k8s api", response=api_response)
-    logger.info("Job created", status=api_response.status)
+    logger.info("Pushed job object to k8s api")
+    logger.debug("Job created", uid=api_response.metadata.uid)
 
-    # logger.info("Sleeping before checking status")
-    # sleep(3)
-    # logger.info("Checking job status")
-    # get_job_status(batch_v1, job_name)
-
-    # Note the response gets attached to the NetworkAssertion `status.creation`
+    # Note the returned data gets attached to the NetworkAssertion `status.creation`
     return {
         "job-name": api_response.metadata.name,
         "job-uid": api_response.metadata.uid
@@ -65,8 +77,42 @@ def delete(spec, name, namespace, logger, **kwargs):
     logger = wrap_logger(logger)
     logger.info(f"networkassertion resume handler called", name=name, namespace=namespace)
 
-    # Start daemon thread
+    # May need to explicitly restart daemon?
 
+
+
+@kopf.daemon('pod',
+             #annotations={'some-annotation': 'some-value'},
+             labels={'app': 'netcheck'},
+             #when=lambda name, **_: 'some' in name
+             )
+def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, logger, **kwargs):
+    logger = wrap_logger(logger)
+    logger.info("Monitoring pod", name=name, namespace=namespace)
+    core_v1 = client.api.core_v1_api.CoreV1Api()
+
+    while not stopped:
+        logger.debug("Getting pod status", name=name, namespace=namespace)
+        pod: V1Pod = core_v1.read_namespaced_pod(name=name, namespace=namespace)
+
+        match pod.status.phase:
+            case 'Pending':
+                # While Pod is still pending just wait
+                logger.info("Waiting for pod to start")
+                sleep(5)
+                continue
+            case 'Succeeded':
+                logger.info("Succeeded")
+                logger.info("Getting pod output")
+                pod_log = core_v1.read_namespaced_pod_log(name=name, namespace=namespace)
+                logger.info("Pod Log", log=pod_log, name=name, namespace=namespace)
+                # Process the results, create or update PolicyReport
+
+                break
+            case _:
+                logger.info("Pod details retrieved", phase=pod.status.phase, status=pod.status)
+                sleep(1.0)
+    logger.info("Pod monitoring complete", name=name, namespace=namespace)
 
 
 def get_job_status(api_instance, job_name):
@@ -90,17 +136,35 @@ def create_job(api_instance, job: V1Job):
     return api_response
 
 
-def create_job_object(job_name: str):
+def create_job_object(job_name: str, cm: V1ConfigMap):
     # Container template first
     container = client.V1Container(
-        name="pi",
-        image="perl",
-        command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"])
+        name="netcheck",
+        image="python:3.11",
+        command=["cat", "/netcheck/rules"],
+        volume_mounts=[
+            V1VolumeMount(name='netcheck-rules', mount_path='/netcheck')
+        ],
+        env=[
+            #V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
+        ]
+    )
 
     # Create and configure a pod spec section
     template = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(labels={"app": "pi"}),
-        spec=client.V1PodSpec(restart_policy="Never", containers=[container])
+        metadata=client.V1ObjectMeta(
+            labels={"app": "netcheck"},
+            annotations={}
+        ),
+        spec=client.V1PodSpec(
+            restart_policy="Never",
+            containers=[container],
+            volumes=[
+                V1Volume(name='netcheck-rules',
+                         config_map=V1ConfigMapVolumeSource(name=cm.metadata.name)
+                         )
+            ]
+        )
     )
 
     # Create the specification of the job
