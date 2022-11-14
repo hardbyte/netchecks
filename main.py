@@ -1,17 +1,17 @@
 import json
 from time import sleep
 
-from kubernetes.client import V1ConfigMap, V1EnvVar, V1Job, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
+from kubernetes.client import V1ConfigMap, V1Job, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
     V1VolumeMount
-from structlog import wrap_logger
+from structlog import get_logger
 from rich import print
 import kopf
-from kubernetes import client, config
+from kubernetes import client
 
 
 @kopf.on.create('networkassertions')
-async def creation(body, spec, name, namespace, logger, **kwargs):
-    logger = wrap_logger(logger)
+async def creation(body, spec, name, namespace, **kwargs):
+    logger = get_logger()
     logger.info(f"NetworkAssertion on-create handler called", name=name, namespace=namespace)
     core_api = client.CoreV1Api()
     batch_v1 = client.BatchV1Api()
@@ -50,6 +50,9 @@ async def creation(body, spec, name, namespace, logger, **kwargs):
     api_response = create_job(batch_v1, job)
     logger.info("Pushed job object to k8s api")
     logger.debug("Job created", uid=api_response.metadata.uid)
+    # Attach an event (visible with `kubectl describe`)
+    kopf.info(body, reason="JobCreated",
+              message=f"Job '{api_response.metadata.name}' created to carry out check.")
 
     # Note the returned data gets attached to the NetworkAssertion `status.creation`
     return {
@@ -59,22 +62,22 @@ async def creation(body, spec, name, namespace, logger, **kwargs):
 
 
 @kopf.on.update('networkassertions')
-def edit(spec, old, new, name, namespace, logger, **kwargs):
-    logger = wrap_logger(logger)
+def edit(spec, old, new, name, namespace, **kwargs):
+    logger = get_logger()
     logger.info(f"networkassertion mutation handler called", name=name, namespace=namespace)
     logger.info("Spec", spec=spec)
     logger.info("Compare", old=old, new=new)
 
 
 @kopf.on.delete('networkassertions')
-def delete(name, namespace, logger, **kwargs):
-    logger = wrap_logger(logger)
+def delete(name, namespace, **kwargs):
+    logger = get_logger()
     logger.info(f"networkassertion delete handler called", name=name, namespace=namespace)
 
 
 @kopf.on.resume('networkassertions')
-def delete(spec, name, namespace, logger, **kwargs):
-    logger = wrap_logger(logger)
+def delete(spec, name, namespace, **kwargs):
+    logger = get_logger()
     logger.info(f"networkassertion resume handler called", name=name, namespace=namespace)
 
     # May need to explicitly restart daemon?
@@ -86,8 +89,8 @@ def delete(spec, name, namespace, logger, **kwargs):
              labels={'app': 'netcheck'},
              #when=lambda name, **_: 'some' in name
              )
-def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, logger, **kwargs):
-    logger = wrap_logger(logger)
+def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwargs):
+    logger = get_logger()
     logger.info("Monitoring pod", name=name, namespace=namespace)
     core_v1 = client.api.core_v1_api.CoreV1Api()
 
