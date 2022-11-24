@@ -20,7 +20,7 @@ pip install netcheck
 By default `netcheck` won't output anything if the check passes. 
 
 ```
-$ poetry run netcheck check dns
+$ poetry run netcheck dns
 ```
 
 Pass the `-v` flag to see what is going on:

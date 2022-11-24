@@ -6,6 +6,7 @@ from rich import print, print_json
 from rich.console import Console
 import typer
 import requests
+from typing import Optional
 
 from netcheck.dns import get_A_records_by_dns_lookup
 
@@ -16,39 +17,47 @@ logger = logging.getLogger("netcheck")
 err_console = Console(stderr=True)
 
 
+class NetcheckOutputType(str, Enum):
+    json = 'json'
+
+
 @app.command()
 def run(
         config: Path = typer.Option(..., exists=True, file_okay=True, help='Config file with netcheck assertions'),
+        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
         verbose: bool = typer.Option(False, '-v')
         ):
     """Carry out all network assertions in given config file.
     """
-    logger.info(f"Loading assertions from {config}")
+    err_console.print(f"Loading assertions from {config}")
     with config.open() as f:
         data = json.load(f)
 
     # TODO: Validate the config format
 
-    print(f"Loaded {len(data['assertions'])} assertions")
+    err_console.print(f"Loaded {len(data['assertions'])} assertions")
 
+    results = []
     # Run each test
     for test in data['assertions']:
-        print(f"Running test '{test['name']}'")
+        err_console.print(f"Running test '{test['name']}'")
         for rule in test['rules']:
-            check_individual_assertion(
+            result = check_individual_assertion(
                 rule['type'],
                 rule,
                 should_fail=rule['expected'] != 'pass',
-                verbose=verbose
+                verbose=verbose,
             )
+            results.append(result)
 
     # TODO summary output
-
+    err_console.print(f"Output type {output}")
     # pass count
     # fail count
     # warn count ?
     # error count
     # skip count
+    print_json(data=results)
 
 
 class NetcheckHttpMethod(str, Enum):
@@ -69,6 +78,7 @@ def http(
         url: str = typer.Option('https://github.com/status', help="URL to request", rich_help_panel="http test"),
         method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get, help="HTTP method", rich_help_panel='http test'),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
         verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
     """Carry out a http network check"""
@@ -78,12 +88,18 @@ def http(
         'method': method
     }
 
-    check_individual_assertion(
+    if verbose:
+        err_console.print(f"netcheck http")
+        err_console.print(f"Options")
+        err_console.print_json(data=test_config)
+
+    result = check_individual_assertion(
         NetcheckTestType.http,
         test_config,
         should_fail,
         verbose=verbose
     )
+    print_json(data=result)
 
 
 @app.command()
@@ -91,6 +107,7 @@ def dns(
         server: str = typer.Option(None, help="DNS server to use for dns tests.", rich_help_panel="dns test"),
         host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
         verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
     """Carry out a dns check"""
@@ -99,50 +116,55 @@ def dns(
         "server": server,
         "host": host,
     }
+    if verbose:
+        err_console.print(f"netcheck dns")
+        err_console.print(f"Options")
+        err_console.print_json(data=test_config)
 
-    check_individual_assertion(
+    result = check_individual_assertion(
         NetcheckTestType.dns,
         test_config,
         should_fail,
         verbose=verbose
     )
 
+    # Currently always output JSON to stdout
+    print_json(data=result)
+
 
 def check_individual_assertion(test_type, test_config, should_fail, verbose=False):
     match test_type:
         case 'dns':
             if verbose:
-                print(f"DNS check with nameserver {test_config['server']} looking up host '{test_config['host']}'")
+                err_console.print(f"DNS check with nameserver {test_config['server']} looking up host '{test_config['host']}'")
             failed, test_detail = dns_lookup_check(test_config['host'], test_config['server'])
         case 'http':
             if verbose:
-                print(f"http check with url '{test_config['url']}'")
+                err_console.print(f"http check with url '{test_config['url']}'")
             failed, test_detail = http_request_check(test_config['url'], test_config.get('method', 'get'))
         case _:
             logger.warning("Unhandled test type")
             raise NotImplemented("Unknown test type")
     notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=verbose)
 
+    return test_detail
+
 
 def notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=False):
     if failed:
         if not should_fail:
             err_console.print("[bold red]:boom: Failed but was expected to pass[/]")
-            print_json(data=test_detail)
         else:
             logging.debug("Failed (as expected)")
             if verbose:
                 err_console.print("[yellow]:cross_mark: Failed. As expected.[/]")
-                print_json(data=test_detail)
     else:
         if not should_fail:
             logging.debug("Passed (as expected)")
             if verbose:
                 err_console.print("[green]✔ Passed (as expected)[/]")
-                print_json(data=test_detail)
         else:
             err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
-            print_json(data=test_detail)
 
 
 def http_request_check(url, method: NetcheckHttpMethod = 'get'):

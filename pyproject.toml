@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "netcheck"
-version = "0.1.2"
+version = "0.1.3"
 description = ""
 authors = ["Brian Thorne <brian@thorne.link>"]
 readme = "README.md"
@@ -17,6 +17,9 @@ pydantic = "^1.10.2"
 [tool.poetry.scripts]
 netcheck = "netcheck.cli:app"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
 
 [build-system]
 requires = ["poetry-core"]
