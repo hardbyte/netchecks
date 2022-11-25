@@ -1,0 +1,6 @@
+{
+  "assertions": [
+    {"name":  "cloudflare-dns", "rules": [{"type": "blarg", "server":  "1.1.1.1", "host": "github.com", "expected": "pass"}] },
+    {"name":  "github-status", "rules": [{"type": "http", "url": "https://github.com/status", "expected": "pass"}] }
+  ]
+}

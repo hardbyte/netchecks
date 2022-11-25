@@ -1,0 +1,9 @@
+{
+  "assertions": [
+    {"name":  "cloudflare-dns-no-host", "rules": [{"type": "dns", "server":  "1.1.1.1", "host": "foo.hardbyte.nz", "expected": "pass"}] },
+    {"name":  "http-expected-404", "rules": [{"type": "http", "url": "https://pie.dev/status/404", "expected": "pass"}]},
+    {"name":  "http-expected-401", "rules": [{"type": "http", "url": "https://pie.dev/status/401", "expected": "pass"}]},
+    {"name":  "http-expected-500", "rules": [{"type": "http", "url": "https://pie.dev/status/500", "expected": "pass"}]},
+    {"name":  "http-expected-timeout", "rules": [{"type": "http", "url": "https://pie.dev/delay/10", "expected": "pass"}]}
+  ]
+}

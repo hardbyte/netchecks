@@ -167,16 +167,17 @@ def notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=
             err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
 
 
-def http_request_check(url, method: NetcheckHttpMethod = 'get'):
+def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5):
     failed = False
     details = {
         'type': 'http',
+        'timeout': timeout,
         'method': method,
         'url': url,
         'result': {}
     }
     try:
-        response = getattr(requests, method)(url, timeout=30)
+        response = getattr(requests, method)(url, timeout=details['timeout'])
         details['result']['status-code'] = response.status_code
         response.raise_for_status()
     except Exception as e:

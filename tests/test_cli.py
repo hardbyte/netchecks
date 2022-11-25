@@ -10,6 +10,11 @@ runner = CliRunner(mix_stderr=False)
 # To write the stderr and stdout to separate files use:
 # poetry run netcheck http -v 2> errlog > stdout
 
+def test_invalid_command():
+    result = runner.invoke(app, ["unknown"])
+    assert result.exit_code != 0
+
+
 def test_default_dns_check():
     result = runner.invoke(app, ["dns"])
     assert result.exit_code == 0
@@ -48,6 +53,29 @@ def test_verbose_default_http_check():
 
 def test_run_simple_config(simple_config_filename):
     result = runner.invoke(app, ["run", "--config", simple_config_filename])
+    assert result.exit_code == 0
+    data = result.stdout
+    json.loads(data)
+
+
+def test_run_invalid_config_unknown_check(invalid_config_filename):
+    result = runner.invoke(app, ["run", "--config", invalid_config_filename])
+    assert result.exit_code != 0
+    data = result.stdout
+
+    # Potentially still want valid JSON output here?
+    #json.loads(data)
+
+
+def test_run_valid_config_expected_fail_check(valid_config_expected_fail_filename):
+    result = runner.invoke(app, ["run", "--config", valid_config_expected_fail_filename])
+    assert result.exit_code == 0
+    data = result.stdout
+    json.loads(data)
+
+
+def test_run_valid_config_unexpected_failures(valid_config_unexpected_fail_filename):
+    result = runner.invoke(app, ["run", "--config", valid_config_unexpected_fail_filename])
     assert result.exit_code == 0
     data = result.stdout
     json.loads(data)
