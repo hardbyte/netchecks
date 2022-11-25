@@ -1,3 +1,6 @@
+
+[![Coverage Status](https://coveralls.io/repos/github/hardbyte/netcheck/badge.svg?branch=main)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
+
 # Network Health Check
 
 Configurable command line application that can be used to test network conditions are as expected.
