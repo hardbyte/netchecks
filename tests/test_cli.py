@@ -17,6 +17,7 @@ def test_default_dns_check():
     data = result.stdout
     json.loads(data)
 
+
 def test_verbose_default_dns_check():
     result = runner.invoke(app, ["dns", "-v"])
     assert result.exit_code == 0
@@ -25,6 +26,7 @@ def test_verbose_default_dns_check():
     assert "github.com" in result.stderr
     data = result.stdout
     json.loads(data)
+
 
 def test_default_http_check():
     result = runner.invoke(app, ["http"])
@@ -42,3 +44,11 @@ def test_verbose_default_http_check():
     assert "github.com/status" in result.stderr
     data = result.stdout
     json.loads(data)
+
+
+def test_run_simple_config(simple_config_filename):
+    result = runner.invoke(app, ["run", "--config", simple_config_filename])
+    assert result.exit_code == 0
+    data = result.stdout
+    json.loads(data)
+
