@@ -12,14 +12,14 @@ defaults:
     shell: bash
 
 jobs:
-  unittests:
+  unittest:
     name: Unit tests / ${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest , windows-latest, macOS-latest]
-        python: [ "3.9", "3.10", "3.11", "pypy-3.9",]
-      fail-fast: false  # only temporarily, until we have everything passing again...
+        os: [ ubuntu-latest, windows-latest, macOS-latest]
+        python: [ "3.10", "3.11"]
+      fail-fast: true
     env:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python }}
@@ -48,7 +48,7 @@ jobs:
       - name: Run Tests
         run: |
           source $VENV
-          poetry run pytest
+          poetry run pytest --cov netcheck --cov-report=lcov --cov-report=term
         timeout-minutes: 10
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
@@ -57,6 +57,17 @@ jobs:
           flag-name: Unittests-${{ matrix.os }}-${{ matrix.python-version }}
           parallel: true
           path-to-lcov: ./coverage.lcov
+
+  coveralls:
+    needs: unittest
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        parallel-finished: true
+
 
   package:
     name: Packaging
