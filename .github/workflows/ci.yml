@@ -1,0 +1,114 @@
+name: Continuous Integration Workflow
+
+on:
+  release:
+    types: [ published ]
+  pull_request:
+  push:
+    branches: [ main ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unittests:
+    name: Unit tests / ${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest , windows-latest, macOS-latest]
+        python: [ "3.9", "3.10", "3.11", "pypy-3.9",]
+      fail-fast: false  # only temporarily, until we have everything passing again...
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python }}
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --no-root
+      - name: Run Tests
+        run: |
+          source $VENV
+          poetry run pytest
+        timeout-minutes: 10
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          flag-name: Unittests-${{ matrix.os }}-${{ matrix.python-version }}
+          parallel: true
+          path-to-lcov: ./coverage.lcov
+
+  package:
+    name: Packaging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      # install dependencies if cache does not exist
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: |
+          poetry install --no-interaction --no-root
+      - name: Artifact creation
+        run: |
+          source $VENV
+          poetry build
+      - name: Save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: ./dist
+
+  upload_pypi:
+    name: Release to PyPi
+    needs: [package]
+    runs-on: ubuntu-latest
+
+    # upload to PyPI only on release
+    if: github.event.release && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
