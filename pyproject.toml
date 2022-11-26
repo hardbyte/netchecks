@@ -12,6 +12,7 @@ dnspython = "^2.2"
 requests = "^2.28"
 typer = {extras = ["all"], version = "^0.7"}
 pydantic = "^1.10"
+rich = "^12.6.0"
 
 
 [tool.poetry.scripts]

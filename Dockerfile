@@ -19,8 +19,8 @@ WORKDIR /app
 
 # Install dependencies
 COPY poetry.lock pyproject.toml ./
-RUN poetry install
+RUN poetry install --no-root
 
 COPY . /app
-
-CMD ["netcheck", "http", "-v"]
+RUN poetry install
+CMD ["poetry", "run", "netcheck", "http", "-v"]
