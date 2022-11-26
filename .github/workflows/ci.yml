@@ -127,6 +127,10 @@ jobs:
   docker:
     name: Build Docker Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # needed for signing the images with GitHub OIDC Token
     env:
       IMAGE_NAME: netcheck
       IMAGE_REGISTRY: ghcr.io
@@ -155,3 +159,10 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+      - name: Sign the images with GitHub OIDC Token
+        run: cosign sign ${TAGS}
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          COSIGN_EXPERIMENTAL: true
