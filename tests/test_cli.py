@@ -51,6 +51,15 @@ def test_verbose_default_http_check():
     json.loads(data)
 
 
+def test_http_check_with_timout():
+    result = runner.invoke(app, ["http", "--timeout", "2.1", "--url", "https://pie.dev/status/200"])
+    assert result.exit_code == 0
+
+    data = result.stdout
+    payload = json.loads(data)
+    assert payload['timeout'] == 2.1
+
+
 def test_run_simple_config(simple_config_filename):
     result = runner.invoke(app, ["run", "--config", simple_config_filename])
     assert result.exit_code == 0

@@ -77,6 +77,7 @@ class NetcheckTestType(str, Enum):
 def http(
         url: str = typer.Option('https://github.com/status', help="URL to request", rich_help_panel="http test"),
         method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get, help="HTTP method", rich_help_panel='http test'),
+        timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
         output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
         verbose: bool = typer.Option(False, '-v', '--verbose')
@@ -85,7 +86,8 @@ def http(
 
     test_config = {
         "url": url,
-        'method': method
+        'method': method,
+        'timeout': timeout
     }
 
     if verbose:
@@ -107,6 +109,7 @@ def dns(
         server: str = typer.Option(None, help="DNS server to use for dns tests.", rich_help_panel="dns test"),
         host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+        timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
         output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
         verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
@@ -115,6 +118,7 @@ def dns(
     test_config = {
         "server": server,
         "host": host,
+        "timeout": timeout,
     }
     if verbose:
         err_console.print(f"netcheck dns")
@@ -137,11 +141,19 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
         case 'dns':
             if verbose:
                 err_console.print(f"DNS check with nameserver {test_config['server']} looking up host '{test_config['host']}'")
-            failed, test_detail = dns_lookup_check(test_config['host'], test_config['server'])
+            failed, test_detail = dns_lookup_check(
+                test_config['host'],
+                test_config['server'],
+                timeout=test_config.get('timeout'),
+            )
         case 'http':
             if verbose:
                 err_console.print(f"http check with url '{test_config['url']}'")
-            failed, test_detail = http_request_check(test_config['url'], test_config.get('method', 'get'))
+            failed, test_detail = http_request_check(
+                test_config['url'],
+                test_config.get('method', 'get'),
+                timeout=test_config.get('timeout'),
+            )
         case _:
             logger.warning("Unhandled test type")
             raise NotImplemented("Unknown test type")
