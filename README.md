@@ -1,6 +1,7 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/hardbyte/netcheck/badge.svg?branch=main)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
 
+
 # Network Health Check
 
 Configurable command line application that can be used to test network conditions are as expected.
@@ -13,10 +14,17 @@ Very early work in progress version!
 
 ### Installation
 
+Install the Python package:
+
 ```
 pip install netcheck
 ```
 
+Or use with Docker:
+
+```shell
+docker pull ghcr.io/hardbyte/netcheck:latest
+```
 
 ### Individual Assertions
 
