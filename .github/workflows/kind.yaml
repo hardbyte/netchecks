@@ -62,7 +62,7 @@ jobs:
       - name: Cilium Connectivity Test
         run: |
           # Run the connectivity test 
-          cilium connectivity test  --all-flows
+          cilium connectivity test --test dns-only,to-cidr-1111
 
       - name: Cleanup
         if: ${{ always() }}
