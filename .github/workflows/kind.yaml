@@ -55,12 +55,19 @@ jobs:
       # Check we can create a NetcheckAssertion
       - name: Create a NetcheckAssertion
         run: |
-          kubectl apply -f test/default-k8s/dns.yaml
+          kubectl apply -f examples/default-k8s/dns.yaml
 
       # Check we can get NetcheckAssertions
       - name: Get NetcheckAssertions
         run: |
           kubectl get networkassertions
+
+      # Check a Job/Pod was created
+      - name: Get NetcheckAssertions
+        run: |
+          sleep 5
+          kubectl get Job
+          kubectl get pod
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium
