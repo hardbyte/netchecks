@@ -5,7 +5,7 @@ on:
 
 
 env:
-  KIND_VERSION: v0.14.0
+  KIND_VERSION: v0.17.0
   KIND_CONFIG: .github/kind-config.yaml
   TIMEOUT: 2m
   LOG_TIME: 30m
@@ -35,10 +35,9 @@ jobs:
           curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${{ env.cilium_cli_version }}/cilium-linux-amd64.tar.gz{,.sha256sum}
           sha256sum --check cilium-linux-amd64.tar.gz.sha256sum
           sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
-          
 
       - name: Create kind cluster
-        uses: helm/kind-action@9e8295d178de23cbfbd8fa16cf844eec1d773a07
+        uses: helm/kind-action@v1.4.0
         with:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG }}
