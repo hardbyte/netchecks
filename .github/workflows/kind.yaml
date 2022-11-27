@@ -10,13 +10,14 @@ env:
   TIMEOUT: 2m
   LOG_TIME: 30m
   cilium_version: v1.12.2
-  cilium_cli_version: v1.12.8
+  cilium_cli_version: v0.12.9
   kubectl_version: v1.23.6
 
 jobs:
-  installation-and-connectivity:
+  k8s:
+    name: E2E Test
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
@@ -31,7 +32,7 @@ jobs:
 
       - name: Install cilium CLI binary
         run: |
-          curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${{ env.cilium_cli_version }}/cilium-linux-amd64.tar.gz{,.sha256sum}
+          curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${{ env.cilium_cli_version }}/cilium-linux-amd64.tar.gz
           sha256sum --check cilium-linux-amd64.tar.gz.sha256sum
           sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
           
