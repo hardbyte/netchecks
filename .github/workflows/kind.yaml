@@ -45,10 +45,15 @@ jobs:
       # Check we can install the Netcheck CRDs
       - name: Install Netcheck CRD
         run: |
-          kubectl apply networkassertion-crd.yaml
+          kubectl apply -f networkassertion-crd.yaml
+
+      # Check we can get NetcheckAssertions
+      - name: Get NetcheckAssertions
+        run: |
+          kubectl get networkassertions
 
       # Check we can create a NetcheckAssertion
-      - name: Get NetcheckAssertions
+      - name: Create a NetcheckAssertion
         run: |
           kubectl apply -f test/default-k8s/dns.yaml
 
