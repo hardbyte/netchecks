@@ -11,7 +11,7 @@ python = "^3.10"
 kopf = "^1.36.0"
 kubernetes = "^25.3.0"
 rich = "^12.6.0"
-structlog = "^22.1.0"
+structlog = "^22.3.0"
 
 
 [build-system]
