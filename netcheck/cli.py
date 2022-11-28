@@ -153,6 +153,7 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
                 test_config['url'],
                 test_config.get('method', 'get'),
                 timeout=test_config.get('timeout'),
+                verify=test_config.get('verify-tls-cert', True)
             )
         case _:
             logger.warning("Unhandled test type")
@@ -179,17 +180,26 @@ def notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=
             err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
 
 
-def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5):
+def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verify: bool = True):
     failed = False
+    # This structure gets stored along with the test results
     details = {
         'type': 'http',
         'timeout': timeout,
+        'verify-tls-cert': verify,
         'method': method,
         'url': url,
         'result': {}
     }
+
+    # Prepare the arguments for requests
+    requests_kwargs = {
+        'timeout': details['timeout'],
+        'verify': details['verify-tls-cert'],
+    }
+
     try:
-        response = getattr(requests, method)(url, timeout=details['timeout'])
+        response = getattr(requests, method)(url, **requests_kwargs)
         details['result']['status-code'] = response.status_code
         response.raise_for_status()
     except Exception as e:
