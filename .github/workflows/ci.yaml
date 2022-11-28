@@ -92,6 +92,11 @@ jobs:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG }}
 
+      - name: Get Cluster Info
+        run: |
+          kubectl cluster-info
+          export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
+
       - name: Install Netcheck CRD
         run: |
           kubectl apply -f manifests/crds/networkassertion-crd.yaml

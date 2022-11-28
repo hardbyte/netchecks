@@ -39,14 +39,17 @@ rules:
     verbs: [list, watch, patch]
 
   # Application: other resources we produce and manipulate
-  # Here, we create CronJobs, Jobs, Pods, configmaps but we do not patch/update/delete them.
+  # Here, we create and patch CronJobs, Jobs, Pods, configmaps but we don't delete them.
   - apiGroups: [batch, extensions]
     resources: [jobs, cronjobs]
     verbs: [create]
   - apiGroups: [""]
-    resources: ["pods", "pods/log"]
+    resources: ["pods", ]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
     verbs: ["get", "list", "watch"]
-  # We do directly create config maps
+  # We directly create config maps. At some point we may need to patch them.
   - apiGroups: [""]
     resources: [configmaps]
     verbs: ["create"]

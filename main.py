@@ -10,10 +10,10 @@ from kubernetes import client
 
 
 @kopf.on.create('networkassertions')
-async def creation(body, spec, name, namespace, **kwargs):
+def creation(body, spec, name, namespace, **kwargs):
     logger = get_logger()
     logger.info(f"NetworkAssertion on-create handler called", name=name, namespace=namespace)
-    core_api = client.CoreV1Api()
+
     batch_v1 = client.BatchV1Api()
     logger.debug(f"Requested NetworkAssertion body", body=body)
     logger.info(f"Requested NetworkAssertion spec", spec=spec)
@@ -24,7 +24,60 @@ async def creation(body, spec, name, namespace, **kwargs):
     if not rules:
         raise kopf.PermanentError(f"Rules must be set.")
 
-    # TODO check if CM already exists
+    cm_response = create_network_assertions_config_map(rules, namespace, logger)
+
+
+    # Create a job spec
+    job_spec = create_job_spec(cm_response)
+    logger.debug("Job spec created", job_spec=job_spec)
+    job = create_job_object(name, job_spec)
+    logger.debug("Job instance created", job=job)
+
+    schedule = spec.get('schedule')
+    if schedule is not None:
+        logger.info("Schedule defined. Creating CronJob", schedule=schedule)
+        # Create a CronJob
+
+        cron_job_spec = client.V1CronJobSpec(
+            job_template=job,
+            schedule=schedule
+        )
+
+        cron_job = client.V1CronJob(
+            api_version="batch/v1",
+            kind="CronJob",
+            metadata=client.V1ObjectMeta(name=name),
+            spec=cron_job_spec
+        )
+        logger.info("Creating CronJob in k8s")
+        logger.debug("Linking CronJob with NetworkAssertion")
+        kopf.adopt(cron_job)
+        api_response = batch_v1.create_namespaced_cron_job(body=cron_job, namespace=namespace)
+        # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
+        kopf.info(body, reason="CronJobCreated",
+                  message=f"CronJob '{api_response.metadata.name}' created to carry out check.")
+
+    else:
+        logger.info("Creating a Job")
+        logger.debug("Linking job with NetworkAssertion")
+        kopf.adopt(job)
+        api_response = batch_v1.create_namespaced_job(body=job, namespace=namespace)
+        logger.info("Pushed job object to k8s api")
+        # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
+        kopf.info(body, reason="JobCreated",
+                  message=f"Job '{api_response.metadata.name}' created to carry out check.")
+
+    # Note the returned data gets attached to the NetworkAssertion `status.creation`
+    return {
+        "job-name": api_response.metadata.name,
+        "job-uid": api_response.metadata.uid
+    }
+
+
+def create_network_assertions_config_map(rules, namespace, logger):
+    core_api = client.CoreV1Api()
+
+    # This will inherit the name of the network assertion
     config_map = V1ConfigMap(
         metadata=V1ObjectMeta(labels={'hardbyte.nz/netcheck-config': 'true'}),
         data={
@@ -39,44 +92,51 @@ async def creation(body, spec, name, namespace, **kwargs):
         }
     )
     kopf.adopt(config_map)
-    logger.info("Creating config map", cm=config_map)
+    logger.info("Creating config map")
+    logger.debug("Config map spec", cm=config_map)
     cm_response = core_api.create_namespaced_config_map(
         namespace=namespace,
         body=config_map
     )
-    logger.info("Created config map", cm=cm_response)
-
-    logger.info("Creating a Job")
-
-    # Create a job object with client-python API. The job we
-    # created is same as the `pi-job.yaml` in the /examples folder.
-    job_name = f"{name}"
-    job = create_job_object(job_name, cm_response)
-    logger.debug("Job spec created", job=job)
-
-    logger.info("Linking job with NetworkAssertion")
-    kopf.adopt(job)
-
-    api_response = create_job(batch_v1, job)
-    logger.info("Pushed job object to k8s api")
-    logger.debug("Job created", uid=api_response.metadata.uid)
-    # Attach an event (visible with `kubectl describe`)
-    kopf.info(body, reason="JobCreated",
-              message=f"Job '{api_response.metadata.name}' created to carry out check.")
-
-    # Note the returned data gets attached to the NetworkAssertion `status.creation`
-    return {
-        "job-name": api_response.metadata.name,
-        "job-uid": api_response.metadata.uid
-    }
+    logger.info("Created config map")
+    logger.debug("K8s response to creating config map", cm=cm_response)
+    return cm_response
 
 
 @kopf.on.update('networkassertions')
-def edit(spec, old, new, name, namespace, **kwargs):
+def edit(spec, old, name, namespace, body, **kwargs):
+    """
+    This is called when someone modifies their NetworkAssertion.
+
+    In the first implementation we just try to delete the Job/CronJob
+    and then recreate.
+
+    # https://kopf.readthedocs.io/en/stable/walkthrough/diffs/
+    """
     logger = get_logger()
-    logger.info(f"networkassertion mutation handler called", name=name, namespace=namespace)
+    logger.info(f"Mutation handler called", name=name, namespace=namespace)
     logger.info("Spec", spec=spec)
-    logger.info("Compare", old=old, new=new)
+    logger.info("Old", old=old)
+    logger.info("Diff", diff=kwargs.get('diff'))
+
+    logger.info("Trying to find associated Job/CronJob")
+    batch_v1 = client.BatchV1Api()
+
+    if 'schedule' in old['spec']:
+        logger.info("Deleting CronJob")
+        try:
+            batch_v1.delete_namespaced_cron_job(name=name, namespace=namespace)
+        except client.exceptions.ApiException as e:
+            logger.info("Couldn't find existing CronJob. Ignoring")
+    else:
+        logger.info("Deleting Job")
+        try:
+            batch_v1.delete_namespaced_job(name=name, namespace=namespace)
+        except client.exceptions.ApiException as e:
+            logger.info("Couldn't find existing Job. Ignoring")
+
+    logger.info("Recreating resources")
+    creation(body=body, spec=spec, name=name, namespace=namespace)
 
 
 @kopf.on.delete('networkassertions')
@@ -88,10 +148,9 @@ def delete(name, namespace, **kwargs):
 @kopf.on.resume('networkassertions')
 def on_resume(spec, name, namespace, **kwargs):
     logger = get_logger()
-    logger.info(f"networkassertion resume handler called", name=name, namespace=namespace)
+    logger.info(f"networkassertions resume handler called", name=name, namespace=namespace)
 
     # May need to explicitly restart daemon?
-
 
 
 @kopf.daemon('pod',
@@ -117,6 +176,7 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
             case 'Succeeded':
                 logger.info("Succeeded")
                 logger.info("Getting pod output")
+                # Doesn't seem to be a nice way to separate stdout and stderr
                 pod_log = core_v1.read_namespaced_pod_log(name=name, namespace=namespace)
                 logger.info("Pod Log", log=pod_log, name=name, namespace=namespace)
                 # Process the results, create or update PolicyReport
@@ -141,30 +201,34 @@ def get_job_status(api_instance, job_name):
     return job_completed, api_response.status
 
 
-def create_job(api_instance, job: V1Job):
-    api_response = api_instance.create_namespaced_job(
-        body=job,
-        namespace="default")
-
-    return api_response
 
 
-def create_job_object(job_name: str, cm: V1ConfigMap):
+def create_job_object(job_name: str, job_spec):
+
+    # Instantiate the job object
+    job = client.V1Job(
+        api_version="batch/v1",
+        kind="Job",
+        metadata=client.V1ObjectMeta(name=job_name),
+        spec=job_spec)
+
+    return job
+
+
+def create_job_spec(cm: V1ConfigMap):
     # Container template first
     container = client.V1Container(
         name="netcheck",
         image="ghcr.io/hardbyte/netcheck:main",
-        image_pull_policy="Always", # Until we pin versions
-        #command=["cat", "/netcheck/rules.json"],
+        image_pull_policy="Always",  # Until we pin versions
         command=["poetry", "run", "netcheck", "run", "--config", "/netcheck/rules.json"],
         volume_mounts=[
             V1VolumeMount(name='netcheck-rules', mount_path='/netcheck')
         ],
         env=[
-            #V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
+            # V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
         ]
     )
-
     # Create and configure a pod spec section
     template = client.V1PodTemplateSpec(
         metadata=client.V1ObjectMeta(
@@ -182,21 +246,12 @@ def create_job_object(job_name: str, cm: V1ConfigMap):
             ]
         )
     )
-
     # Create the specification of the job
     spec = client.V1JobSpec(
         template=template,
         backoff_limit=4
     )
-    # Instantiate the job object
-    job = client.V1Job(
-        api_version="batch/v1",
-        kind="Job",
-        metadata=client.V1ObjectMeta(name=job_name),
-        spec=spec)
-
-    return job
-
+    return spec
 
 # def main():
 #     config.load_kube_config()

@@ -6,7 +6,9 @@ metadata:
   annotations:
     description: Cluster should be able to lookup using public dns servers from default namespace.
 spec:
-  schedule: "@hourly"
+  # https://crontab.guru
+  schedule: "*/3 * * * *"
+  #schedule: "@hourly"
   rules:
     - name: cloudflare-dns-lookup
       type: dns
