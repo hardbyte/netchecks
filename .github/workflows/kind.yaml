@@ -50,13 +50,16 @@ jobs:
         run: |
           kubectl apply -f manifests/operator
 
-      # Check we can get NetcheckAssertions
-      - name: Get NetcheckAssertions
+      - name: Explain NetworkAssertion CRD
         run: |
-          kubectl get networkassertions
+          kubectl explain networkassertion
 
-      # Check we can create a NetcheckAssertion
-      - name: Create a NetcheckAssertion
+      # Check we can get NetcheckAssertions
+      - name: Describe Operator
+        run: |
+          kubectl describe deployment/netcheck-operator
+
+      - name: Create a Network Assertion
         run: |
           kubectl apply -f examples/default-k8s/dns.yaml
 
@@ -66,11 +69,16 @@ jobs:
           kubectl get networkassertions
 
       # Check a Job/Pod was created
-      - name: Get NetcheckAssertions
+      - name: See if the operator created a Job/Pod
         run: |
-          sleep 5
+          sleep 30
           kubectl get Job
           kubectl get pod
+
+      # Check a Job/Pod was created
+      - name: See if the operator created a Job/Pod
+        run: |
+          kubectl logs deployment/netcheck-operator
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium
