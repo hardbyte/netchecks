@@ -108,7 +108,7 @@ jobs:
 
       - name: Install Netcheck Operator
         run: |
-          kubectr create namespace netcheck
+          kubectl create namespace netcheck
           kubectl apply -f manifests/operator -n netcheck
           kubectl wait -n netcheck --for=condition=Ready --all pod --timeout=5m
 
