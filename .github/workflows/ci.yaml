@@ -108,8 +108,9 @@ jobs:
 
       - name: Install Netcheck Operator
         run: |
-          kubectl apply -f manifests/operator
-          kubectl wait -n kube-system --for=condition=Ready --all pod --timeout=5m
+          kubectr create namespace netcheck
+          kubectl apply -f manifests/operator -n netcheck
+          kubectl wait -n netcheck --for=condition=Ready --all pod --timeout=5m
 
       - name: Explain NetworkAssertion CRD
         run: |
