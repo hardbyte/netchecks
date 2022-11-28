@@ -48,7 +48,7 @@ jobs:
 
       - name: Install Netcheck Operator
         run: |
-          kubectl apply -f manifests/operator/deployment.yaml
+          kubectl apply -f manifests/operator
 
       # Check we can get NetcheckAssertions
       - name: Get NetcheckAssertions

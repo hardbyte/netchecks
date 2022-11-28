@@ -86,7 +86,7 @@ def delete(name, namespace, **kwargs):
 
 
 @kopf.on.resume('networkassertions')
-def delete(spec, name, namespace, **kwargs):
+def on_resume(spec, name, namespace, **kwargs):
     logger = get_logger()
     logger.info(f"networkassertion resume handler called", name=name, namespace=namespace)
 

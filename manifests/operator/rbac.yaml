@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: netcheck-operator-account
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: netcheck-role-cluster
+rules:
+  # Kopf Framework: knowing which other operators are running (i.e. peering).
+  - apiGroups: [kopf.dev]
+    resources: [clusterkopfpeerings]
+    verbs: [list, watch, patch, get]
+
+  # Kopf Framework: runtime observation of namespaces & CRDs (addition/deletion).
+  - apiGroups: [apiextensions.k8s.io]
+    resources: [customresourcedefinitions]
+    verbs: [list, watch]
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [list, watch]
+
+  # Kopf Framework: admission webhook configuration management.
+  - apiGroups: [admissionregistration.k8s.io/v1, admissionregistration.k8s.io/v1beta1]
+    resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
+    verbs: [create, patch]
+
+  # Application: read-only access for watching NetworkAssertions cluster-wide.
+  - apiGroups: [hardbyte.nz]
+    resources: [networkassertions]
+    verbs: [list, watch]
+
+  # Application: other resources we produce and manipulate
+  # Here, we create CronJobs, Jobs, Pods, but we do not patch/update/delete them.
+  - apiGroups: [batch, extensions]
+    resources: [jobs, cronjobs]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: netcheck-rolebinding-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: netcheck-role-cluster
+subjects:
+  - kind: ServiceAccount
+    name: netcheck-operator-account
+    namespace: default
