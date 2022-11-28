@@ -13,5 +13,5 @@ kubectl config use-context kind-kind
 ### Start the operator
 
 ```shell
-kind run main.py --verbose
+kopf run main.py --verbose
 ```
