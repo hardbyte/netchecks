@@ -141,6 +141,7 @@ jobs:
 
       # Check a Job/Pod was created
       - name: Operator logs
+        if: ${{ always() }}
         run: |
           kubectl logs deployment/netcheck-operator
 
