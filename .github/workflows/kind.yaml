@@ -42,10 +42,13 @@ jobs:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG }}
 
-      # Check we can install the Netcheck CRDs
       - name: Install Netcheck CRD
         run: |
-          kubectl apply -f networkassertion-crd.yaml
+          kubectl apply -f manifests/crds/networkassertion-crd.yaml
+
+      - name: Install Netcheck Operator
+        run: |
+          kubectl apply -f manifests/operator/deployment.yaml
 
       # Check we can get NetcheckAssertions
       - name: Get NetcheckAssertions

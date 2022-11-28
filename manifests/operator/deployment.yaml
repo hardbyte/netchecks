@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netcheck-operator
+spec:
+  # Please note that there is only one replica. Keep it so.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      application: netcheck-operator
+  template:
+    metadata:
+      labels:
+        application: netcheck-operator
+    spec:
+      #serviceAccountName: netcheck-operator-account
+      containers:
+      - name: netcheck
+        image: ghcr.io/hardbyte/netcheck-operator:main
