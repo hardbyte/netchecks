@@ -109,7 +109,7 @@ jobs:
       - name: Install Netcheck Operator
         run: |
           kubectl create namespace netcheck
-          kubectl apply -f manifests/operator -n netcheck
+          kubectl apply -n netcheck -f manifests/operator
           kubectl wait -n netcheck --for=condition=Ready --all pod --timeout=5m
 
       - name: Explain NetworkAssertion CRD
@@ -134,7 +134,9 @@ jobs:
       - name: See if the operator created a Job/Pod
         run: |
           sleep 30
-          echo "Listing jobs"
+          echo "Listing CronJobs"
+          kubectl get CronJob
+          echo "Listing Jobs"
           kubectl get Job
           echo "Listing pods"
           kubectl get pod
@@ -143,7 +145,7 @@ jobs:
       - name: Operator logs
         if: ${{ always() }}
         run: |
-          kubectl logs deployment/netcheck-operator
+          kubectl logs -n netcheck deployment/netcheck-operator
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium

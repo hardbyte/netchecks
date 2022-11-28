@@ -44,7 +44,7 @@ rules:
     resources: [jobs, cronjobs]
     verbs: [create]
   - apiGroups: [""]
-    resources: ["pods", ]
+    resources: ["pods"]
     verbs: ["get", "list", "watch", "patch"]
   - apiGroups: [""]
     resources: ["pods/log"]
@@ -66,4 +66,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: netcheck-operator-account
-    namespace: default
+    namespace: netcheck
