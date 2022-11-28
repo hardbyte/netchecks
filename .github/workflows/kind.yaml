@@ -46,12 +46,17 @@ jobs:
         run: |
           kubectl apply -f manifests/crds/networkassertion-crd.yaml
 
+      - name: List CRDs
+        run: |
+          kubectl get crd -A
+
       - name: Install Netcheck Operator
         run: |
           kubectl apply -f manifests/operator
 
       - name: Explain NetworkAssertion CRD
         run: |
+          sleep 10
           kubectl explain networkassertion
 
       # Check we can get NetcheckAssertions
