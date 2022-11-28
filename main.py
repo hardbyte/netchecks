@@ -20,13 +20,23 @@ async def creation(body, spec, name, namespace, **kwargs):
 
     # Validate the NetworkAssertion spec
     rules = spec.get('rules')
+    logger.info("Rules loaded from NetworkAssertion", rules=rules)
     if not rules:
         raise kopf.PermanentError(f"Rules must be set.")
 
     # TODO check if CM already exists
     config_map = V1ConfigMap(
         metadata=V1ObjectMeta(labels={'hardbyte.nz/netcheck-config': 'true'}),
-        data={"rules": json.dumps(rules)}
+        data={
+            # This gets mounted at /netcheck/rules.json
+            # For now we create one "Assertion", with all the rules
+            # from the NetworkAssertion
+            "rules.json": json.dumps({
+                "assertions": [
+                    {"name": r['name'], "rules": [r]} for r in rules
+                ]
+            })
+        }
     )
     kopf.adopt(config_map)
     logger.info("Creating config map", cm=config_map)
@@ -143,8 +153,10 @@ def create_job_object(job_name: str, cm: V1ConfigMap):
     # Container template first
     container = client.V1Container(
         name="netcheck",
-        image="python:3.11",
-        command=["cat", "/netcheck/rules"],
+        image="ghcr.io/hardbyte/netcheck:main",
+        image_pull_policy="Always", # Until we pin versions
+        #command=["cat", "/netcheck/rules.json"],
+        command=["poetry", "run", "netcheck", "run", "--config", "/netcheck/rules.json"],
         volume_mounts=[
             V1VolumeMount(name='netcheck-rules', mount_path='/netcheck')
         ],
@@ -163,9 +175,10 @@ def create_job_object(job_name: str, cm: V1ConfigMap):
             restart_policy="Never",
             containers=[container],
             volumes=[
-                V1Volume(name='netcheck-rules',
-                         config_map=V1ConfigMapVolumeSource(name=cm.metadata.name)
-                         )
+                V1Volume(
+                    name='netcheck-rules',
+                    config_map=V1ConfigMapVolumeSource(name=cm.metadata.name)
+                )
             ]
         )
     )
@@ -249,5 +262,4 @@ def create_job_object(job_name: str, cm: V1ConfigMap):
 #         body=client.V1DeleteOptions(),
 #     )
 #     print("Resource deleted")
-
 

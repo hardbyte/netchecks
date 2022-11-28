@@ -1,0 +1,103 @@
+name: Kind
+
+on:
+  push: {}
+
+
+env:
+  KIND_VERSION: v0.17.0
+  KIND_CONFIG: .github/kind-config.yaml
+  TIMEOUT: 2m
+  LOG_TIME: 30m
+  cilium_version: v1.12.2
+  cilium_cli_version: v0.12.9
+  kubectl_version: v1.23.6
+
+jobs:
+  k8s:
+    name: E2E Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+
+      - name: Install kubectl
+        run: |
+          curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
+          curl -sLO "https://dl.k8s.io/${{ env.kubectl_version }}/bin/linux/amd64/kubectl.sha256"
+          echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Install cilium CLI binary
+        run: |
+          curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${{ env.cilium_cli_version }}/cilium-linux-amd64.tar.gz{,.sha256sum}
+          sha256sum --check cilium-linux-amd64.tar.gz.sha256sum
+          sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.4.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          config: ${{ env.KIND_CONFIG }}
+
+      - name: Install Netcheck CRD
+        run: |
+          kubectl apply -f manifests/crds/networkassertion-crd.yaml
+
+      - name: Install Netcheck Operator
+        run: |
+          kubectl apply -f manifests/operator/deployment.yaml
+
+      # Check we can get NetcheckAssertions
+      - name: Get NetcheckAssertions
+        run: |
+          kubectl get networkassertions
+
+      # Check we can create a NetcheckAssertion
+      - name: Create a NetcheckAssertion
+        run: |
+          kubectl apply -f examples/default-k8s/dns.yaml
+
+      # Check we can get NetcheckAssertions
+      - name: Get NetcheckAssertions
+        run: |
+          kubectl get networkassertions
+
+      # Check a Job/Pod was created
+      - name: Get NetcheckAssertions
+        run: |
+          sleep 5
+          kubectl get Job
+          kubectl get pod
+
+      # Install Cilium with HostPort support for extended connectivity test.
+      - name: Install Cilium
+        run: |
+          cilium install \
+            --version=${{ env.cilium_version }} \
+            --wait=false \
+            --config monitor-aggregation=none \
+            --helm-set cni.chainingMode=portmap
+      - name: Enable Relay
+        run: |
+          cilium hubble enable --ui
+      - name: Relay Port Forward
+        run: |
+          cilium hubble port-forward&
+          sleep 10s
+          [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
+
+      - name: Cilium Connectivity Test
+        run: |
+          # Run the connectivity test 
+          cilium connectivity test --test dns-only,to-cidr-1111
+
+      - name: Cleanup
+        if: ${{ always() }}
+        run: |
+          cilium status
+          kubectl get pods --all-namespaces -o wide
+          cilium sysdump --output-filename cilium-sysdump-out --hubble-flows-count 10000
+        shell: bash {0} # Disable default fail-fast behaviour so that all commands run independently

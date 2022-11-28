@@ -1,0 +1,24 @@
+apiVersion: hardbyte.nz/v1
+kind: NetworkAssertion
+metadata:
+  name: cloudflare-dns-should-work
+  namespace: default
+  annotations:
+    description: Cluster should be able to lookup dns on cloudflare in default namespace.
+spec:
+  schedule: "@hourly"
+  rules:
+    - name: cloudflare-dns-lookup
+      type: dns
+      server: 1.1.1.1
+      host: hardbyte.nz
+      expected: pass
+      validate:
+        message: DNS requests to cloudflare's 1.1.1.1 should succeed.
+    - name: google-dns-lookup
+      type: dns
+      server: 8.8.8.8
+      host: hardbyte.nz
+      expected: pass
+      validate:
+        message: DNS requests to Google's 8.8.8.8 should succeed.

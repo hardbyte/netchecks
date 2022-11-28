@@ -2,11 +2,14 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: networkassertions.hardbyte.nz
+  labels:
+    app.kubernetes.io/part-of: netcheck
 spec:
   scope: Namespaced
   group: hardbyte.nz
   names:
     kind: NetworkAssertion
+    listKind: NetworkAssertionList
     plural: networkassertions
     singular: networkassertion
     shortNames:
@@ -21,8 +24,10 @@ spec:
 #          name:
 #          type:
       schema:
+
         openAPIV3Schema:
           type: object
+
           properties:
             spec:
               type: object
