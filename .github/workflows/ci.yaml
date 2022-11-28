@@ -119,7 +119,7 @@ jobs:
       # Check we can get NetcheckAssertions
       - name: Describe Operator
         run: |
-          kubectl describe deployment/netcheck-operator
+          kubectl describe -n netcheck deployment/netcheck-operator
 
       - name: Create a Network Assertion
         run: |
