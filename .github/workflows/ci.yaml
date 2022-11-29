@@ -90,7 +90,7 @@ jobs:
         uses: helm/kind-action@v1.4.0
         with:
           version: ${{ env.KIND_VERSION }}
-          config: ${{ env.KIND_CONFIG }}
+          #config: ${{ env.KIND_CONFIG }}
 
       - name: Get Cluster Info
         run: |
