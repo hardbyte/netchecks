@@ -112,22 +112,23 @@ jobs:
           sleep 30
           kubectl describe -n netcheck deployment.apps/netcheck-operator
 
-      - name: Operator Startup Logs
-        run: |
-          kubectl describe -n netcheck pod $(kubectl -n netcheck get pods --selector=application=netcheck-operator -o jsonpath='{.items[*].metadata.name}')
+      #- name: Describe Operator Startup
+      #  run: |
+      #    kubectl describe -n netcheck pod $(kubectl -n netcheck get pods --selector=application=netcheck-operator -o jsonpath='{.items[*].metadata.name}')
 
       - name: Wait for Netcheck Operator to be ready
         run: |    
           kubectl wait -n netcheck --for=condition=Ready --all pod --timeout=5m
 
-      - name: Explain NetworkAssertion CRD
-        run: |
-          kubectl explain networkassertion
+      # Handy for debugging
+      #- name: Explain NetworkAssertion CRD
+      #  run: |
+      #    kubectl explain networkassertion
 
-      # Check we can get NetcheckAssertions
-      - name: Describe Operator
-        run: |
-          kubectl describe -n netcheck deployment/netcheck-operator
+      ## Check we can get NetcheckAssertions
+      #- name: Describe Operator
+      #  run: |
+      #    kubectl describe -n netcheck deployment/netcheck-operator
 
       - name: Create a Network Assertion
         run: |
