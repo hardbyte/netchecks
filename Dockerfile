@@ -23,4 +23,4 @@ RUN poetry install --no-root
 
 COPY . /app
 RUN poetry install
-CMD ["poetry", "run", "kopf", "run", "main.py"]
+CMD ["poetry", "run", "kopf", "run", " --all-namespaces", "main.py"]
