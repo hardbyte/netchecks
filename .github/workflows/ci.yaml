@@ -106,12 +106,17 @@ jobs:
         run: |
           kubectl get crd -A
 
+
       - name: Install Netcheck Operator
         run: |
           kubectl create namespace netcheck
           kubectl apply -n netcheck -f manifests/operator
-          sleep 20
+          sleep 30
           kubectl describe -n netcheck deployment.apps/netcheck-operator
+
+      - name: Operator Startup Logs
+        run: |
+          kubectl describe -n netcheck pod $(kubectl -n netcheck get pods --selector=application=netcheck-operator -o jsonpath='{.items[*].metadata.name}')
 
       - name: Wait for Netcheck Operator to be ready
         run: |    
@@ -179,5 +184,4 @@ jobs:
         run: |
           cilium status
           kubectl get pods --all-namespaces -o wide
-          cilium sysdump --output-filename cilium-sysdump-out --hubble-flows-count 10000
         shell: bash {0} # Disable default fail-fast behaviour so that all commands run independently
