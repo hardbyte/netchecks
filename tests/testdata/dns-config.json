@@ -1,0 +1,5 @@
+{
+  "assertions": [
+    {"name":  "default-dns", "rules": [{"type": "dns", "host": "github.com", "expected": "pass"}] }
+  ]
+}

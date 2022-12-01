@@ -145,10 +145,10 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
     match test_type:
         case 'dns':
             if verbose:
-                err_console.print(f"DNS check with nameserver {test_config['server']} looking up host '{test_config['host']}'")
+                err_console.print(f"DNS check with nameserver {test_config.get('server')} looking up host '{test_config['host']}'")
             failed, test_detail = dns_lookup_check(
-                test_config['host'],
-                test_config.get('server'),
+                host=test_config['host'],
+                server=test_config.get('server'),
                 timeout=test_config.get('timeout'),
             )
         case 'http':
