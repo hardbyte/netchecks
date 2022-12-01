@@ -21,45 +21,6 @@ class NetcheckOutputType(str, Enum):
     json = 'json'
 
 
-@app.command()
-def run(
-        config: Path = typer.Option(..., exists=True, file_okay=True, help='Config file with netcheck assertions'),
-        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
-        verbose: bool = typer.Option(False, '-v')
-        ):
-    """Carry out all network assertions in given config file.
-    """
-    err_console.print(f"Loading assertions from {config}")
-    with config.open() as f:
-        data = json.load(f)
-
-    # TODO: Validate the config format
-
-    err_console.print(f"Loaded {len(data['assertions'])} assertions")
-
-    results = []
-    # Run each test
-    for test in data['assertions']:
-        err_console.print(f"Running test '{test['name']}'")
-        for rule in test['rules']:
-            result = check_individual_assertion(
-                rule['type'],
-                rule,
-                should_fail=rule['expected'] != 'pass',
-                verbose=verbose,
-            )
-            results.append(result)
-
-    # TODO summary output
-    err_console.print(f"Output type {output}")
-    # pass count
-    # fail count
-    # warn count ?
-    # error count
-    # skip count
-    print_json(data=results)
-
-
 class NetcheckHttpMethod(str, Enum):
     get = 'get'
     post = 'post'
@@ -71,6 +32,44 @@ class NetcheckHttpMethod(str, Enum):
 class NetcheckTestType(str, Enum):
     dns = "dns"
     http = 'http'
+
+
+@app.command()
+def run(
+        config: Path = typer.Option(..., exists=True, file_okay=True, help='Config file with netcheck assertions'),
+        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
+        verbose: bool = typer.Option(False, '-v')
+        ):
+    """Carry out all network assertions in given config file.
+    """
+    if verbose:
+        err_console.print(f"Loading assertions from {config}")
+    with config.open() as f:
+        data = json.load(f)
+
+    # TODO: Validate the config format
+    if verbose:
+        err_console.print(f"Loaded {len(data['assertions'])} assertions")
+
+    results = []
+    # Run each test
+    for test in data['assertions']:
+        if verbose:
+            err_console.print(f"Running test '{test['name']}'")
+        for rule in test['rules']:
+            result = check_individual_assertion(
+                rule['type'],
+                rule,
+                should_fail=rule['expected'] != 'pass',
+                verbose=verbose,
+            )
+            results.append(result)
+
+    # TODO summary output
+    if verbose:
+        err_console.print(f"Output type {output}")
+
+    print_json(data=results)
 
 
 @app.command()
@@ -204,7 +203,7 @@ def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verif
         response.raise_for_status()
     except Exception as e:
         failed = True
-        logger.info(f"Caught exception:\n\n{e}")
+        logger.debug(f"Caught exception:\n\n{e}")
         details['result']['exception-type'] = e.__class__.__name__
         details['result']['exception'] = str(e)
 
