@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: netcheck-operator
+  labels:
+    app: netcheck-operator
+spec:
+  podSelector:
+    matchLabels:
+      app: netcheck-operator
+  policyTypes:
+    - Egress
+
+  egress:
+    # Allow operator to talk to anything. Would be better to restrict to K8s API
+    - {}
