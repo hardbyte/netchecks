@@ -7,7 +7,7 @@ metadata:
     description: Check cluster dns restrictions are working
 spec:
   # Every 20 minutes
-  #schedule: "*/20 * * * *"
+  schedule: "*/20 * * * *"
   rules:
     - name: external-dns-lookup-should-fail
       type: dns
