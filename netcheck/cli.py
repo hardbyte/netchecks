@@ -169,20 +169,17 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
 
 
 def notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=False):
-    if failed:
-        if not should_fail:
-            err_console.print("[bold red]:boom: Failed but was expected to pass[/]")
-        else:
-            logging.debug("Failed (as expected)")
-            if verbose:
+    if verbose:
+        if failed:
+            if not should_fail:
+                err_console.print("[bold red]:boom: Failed but was expected to pass[/]")
+            else:
                 err_console.print("[yellow]:cross_mark: Failed. As expected.[/]")
-    else:
-        if not should_fail:
-            logging.debug("Passed (as expected)")
-            if verbose:
-                err_console.print("[green]✔ Passed (as expected)[/]")
         else:
-            err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
+            if not should_fail:
+                err_console.print("[green]✔ Passed (as expected)[/]")
+            else:
+                err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
 
 
 def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verify: bool = True):
