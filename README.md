@@ -163,7 +163,9 @@ http check with url 'https://github.com/status'
 
 ## Development
 
-Build and publish with poetry. First update the version.
+Update version and create a release on GitHub, Pypi release will be carried out by a Github action. 
+
+To release manually, use Poetry:
 
 ```
 poetry version patch

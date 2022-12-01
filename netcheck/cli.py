@@ -2,19 +2,25 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
-from rich import print, print_json
+from rich import print_json
 from rich.console import Console
 import typer
 import requests
 from typing import Optional
+import urllib3
 
 from netcheck.dns import get_A_records_by_dns_lookup
 
 app = typer.Typer()
 logger = logging.getLogger("netcheck")
 #logging.basicConfig(level=logging.DEBUG)
+logging.captureWarnings(True)
 
 err_console = Console(stderr=True)
+
+# We disable urllib warning because we expect to be carrying out tests against hosts using self-signed
+# certs etc.
+urllib3.disable_warnings()
 
 
 class NetcheckOutputType(str, Enum):
