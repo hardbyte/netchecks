@@ -148,7 +148,7 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
                 err_console.print(f"DNS check with nameserver {test_config['server']} looking up host '{test_config['host']}'")
             failed, test_detail = dns_lookup_check(
                 test_config['host'],
-                test_config['server'],
+                test_config.get('server'),
                 timeout=test_config.get('timeout'),
             )
         case 'http':
