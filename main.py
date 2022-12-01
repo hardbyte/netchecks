@@ -127,13 +127,13 @@ def edit(spec, old, name, namespace, body, **kwargs):
         try:
             batch_v1.delete_namespaced_cron_job(name=name, namespace=namespace)
         except client.exceptions.ApiException as e:
-            logger.info("Couldn't find existing CronJob. Ignoring")
+            logger.info("Couldn't find existing CronJob. Ignoring", exc_info=e)
     else:
         logger.info("Deleting Job")
         try:
             batch_v1.delete_namespaced_job(name=name, namespace=namespace)
         except client.exceptions.ApiException as e:
-            logger.info("Couldn't find existing Job. Ignoring")
+            logger.info("Couldn't find existing Job. Ignoring", exc_info=e)
 
     logger.info("Recreating resources")
     creation(body=body, spec=spec, name=name, namespace=namespace)
