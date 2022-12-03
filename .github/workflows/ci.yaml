@@ -1,4 +1,4 @@
-name: Kind
+name: CI
 
 on:
   release:
