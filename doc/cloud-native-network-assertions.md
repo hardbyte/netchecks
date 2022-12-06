@@ -1,28 +1,95 @@
 # Cloud Native Network Assertions
 
-## CRD design
-
 Introduces a `NetworkAssertion` object kind. Providing a cloud native way to dynamically
 declare a set of statements about the network (what should work and what shouldn't).
+
+## Purpose
+
+A tool to periodically validate that your cloud networking controls are working. Doesn't make
+any assumptions about how your security controls are implemented. Netcheck tests current conditions
+by verifying connections that should work do, and verifying that connection that shouldn't work 
+don't!
+
+## Example use-cases
+
+### Kubernetes Access
+
+- Verify that a Pod can connect to the K8s API
+- Verify that a Pod can connect via HTTP to a service in the same namespace
+- Verify that a Pod can connect via HTTP to a service in a different namespace
+
+Verifying that cluster internal restrictions are working. E.g., if `NetworkPolicies` have been configured to block access between namespaces:
+
+- Verify that a Pod cannot connect via HTTP to a service in a different namespace
+- Verify that a Pod with the correct labels/annotations/service account can connect via HTTP to a service in a different namespace
+
+
+### DNS Verification
+
+- Verify that DNS lookups of local cluster services is allowed
+- Verify that DNS lookups of external websites is allowed using the default nameserver
+
+### Verifying DNS Restrictions
+
+- Assert that external nameservers are blocked
+- Assert that approved hosts are allowed to be queried
+- Assert that denied hosts are not allowed to be queried
+
+## Implementation
 
 The netcheck operator watches for `NetworkAssertion` objects, creates CronJobs/Jobs to carry out the tests. CronJobs for 
 periodically scheduled tests (the default), and Jobs for one off assertions.
 
-Ultimately the operator makes the results available as `PolicyReport` instances. Each Pod would be ["owned"](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/) by the
+Ultimately the operator makes the results available as `PolicyReport` instances. 
+
+Each workload carrying out the test Pod would be ["owned"](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/) by the
 `NetworkAssertion` - so if the NetworkAssertion is deleted the test gets cleaned up by the Kubernetes garbage collector 
 thanks to a declared ownership model.
 
-Design decision - how should the result data get from the Job's Pod? Would be ideal to be stateless.
+
+
+## Design discussions
+
+### Scheduling
+
+Initially Netcheck will create CronJobs in the target namespace. For a cluster with a lot of assertions this could lead
+to a lot of CronJobs, Jobs and Pods in production namespaces which might be undesired.
+
+### Fixtures
+
+Not every assertion can be checked from inside one container, for example an assertion checking that
+egress UDP packets get blocked will require a listening server on the other side of the network control 
+(e.g., outside the firewall). 
+
+Fixtures should be able to call external services, or deploy resources within the cluster. 
+
+Likely out of scope in the first version. Initial proposal is to add a `prestartJob` to the NetworkAssertion.
+This Job would have to succeed before the test is run. The Job could run a bash script to trigger or validate
+deployments.
+
+A more complicated variation would be for each `NetworkAssertion` to have a list of required `fixtures`, which could 
+be deployed independently of each test. Tests would only get run once all fixtures are in a healthy state. 
+
+
+
+
+### Results
+
+How should the result data get from the Job's Pod? Would be ideal to be stateless.
+
 Kyverno manages to stay stateless with something like a `ReportChangeRequest`, which their operator
 integrates into the appropriate `PolicyReport` then deletes the change request CRD.
 
 Options:
-- Could be a netcheck api/service. So each test pod would be responsible for posting own results (e.g., to `netcheck.kube-system.svc.cluster.local`)
-- By setting a long `Job` TTL (or using a Finalizer), the operator could monitor progress. grab the Pod stdout, or attach to the pods and copy result files, then delete the Job. See https://kopf.readthedocs.io/en/stable/daemons/#spawning
-- I don't think having each test pod talk to the k8s api e.g. adding annotations, creating or modify CRDs is a good idea? Is it?
+- Could be a netcheck api/service. So each test pod would be responsible for posting own results (e.g., to `netcheck.kube-system.svc.cluster.local`). Issue is that requires network access between the namespaced pod under test and netcheck - not a good solution for a network security assurance tool.
+- By setting a `Job` Finalizer, the operator could monitor progress. Grab the Pod stdout, or attach to the pods and copy result files, then delete the Job. See https://kopf.readthedocs.io/en/stable/daemons/#spawning
+- Each test pod could talk to the k8s api e.g. adding annotations, creating or modify CRDs. Doesn't seem like a good idea as the test Pod's will often be running with user provided service accounts which may not have K8s api access.
 
+### Events and metrics
 
 Events are created in the k8s api, and exposed via the operator's `/metrics` endpoint?
+
+## Example manifests
 
 Example `NetworkAssertion`:
 
