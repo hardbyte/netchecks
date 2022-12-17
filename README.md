@@ -48,3 +48,15 @@ kubectl config use-context kind-kind
 ```shell
 kopf run main.py --verbose
 ```
+
+### Install the CRDs
+
+```shell
+kubectl apply -f manifests/crds
+```
+
+### Create a NetworkAssertion
+
+```shell
+kubectl apply -f examples/default-k8s/http.yaml
+```

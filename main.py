@@ -24,11 +24,13 @@ def creation(body, spec, name, namespace, **kwargs):
     if not rules:
         raise kopf.PermanentError(f"Rules must be set.")
 
+    # Grab any template overrides (metadata, spec->serviceAccountName)
+    job_template = spec.get('template')
+
     cm_response = create_network_assertions_config_map(rules, namespace, logger)
 
-
     # Create a job spec
-    job_spec = create_job_spec(cm_response)
+    job_spec = create_job_spec(cm_response, template_overides=job_template)
     logger.debug("Job spec created", job_spec=job_spec)
     job = create_job_object(name, job_spec)
     logger.debug("Job instance created", job=job)
@@ -215,7 +217,7 @@ def create_job_object(job_name: str, job_spec):
     return job
 
 
-def create_job_spec(cm: V1ConfigMap):
+def create_job_spec(cm: V1ConfigMap, template_overides: dict = None):
     # Container template first
     container = client.V1Container(
         name="netcheck",
@@ -230,7 +232,7 @@ def create_job_spec(cm: V1ConfigMap):
         ]
     )
     # Create and configure a pod spec section
-    template = client.V1PodTemplateSpec(
+    pod_template = client.V1PodTemplateSpec(
         metadata=client.V1ObjectMeta(
             labels={"app": "netcheck"},
             annotations={}
@@ -246,12 +248,50 @@ def create_job_spec(cm: V1ConfigMap):
             ]
         )
     )
+
+    if template_overides:
+        print("Applying template overrides", template_overides)
+        pod_template = apply_overrides(pod_template, template_overides)
+
+        print(pod_template)
+        #pod_template = client.V1PodTemplateSpec(**overridden_pod_template_dict)
+
     # Create the specification of the job
     spec = client.V1JobSpec(
-        template=template,
+        template=pod_template,
         backoff_limit=4
     )
+
     return spec
+
+
+def apply_overrides(template, overrides: dict):
+    # This is a bit of a hack to apply overrides to the pod template
+    def _apply_overrides(obj, overrides: dict):
+        for k, v in overrides.items():
+            key = k
+            # k will be in camelCase (as it appears in Kubernetes manifests e.g., serviceAccountName)
+            if hasattr(obj, 'attribute_map'):
+                # reverse the dict obj.attribute_map because the kubernetes python client
+                # expects attributes named with snake_case.
+                reverse_map = {v: k for k, v in obj.attribute_map.items()}
+                key = reverse_map.get(k, k)
+
+            if hasattr(obj, key):
+                if getattr(obj, key) is None:
+                    setattr(obj, key, {})
+                if isinstance(v, dict):
+                    _apply_overrides(getattr(obj, key), v)
+                else:
+                    setattr(obj, key, v)
+            else:
+                try:
+                    obj[key] = v
+                except TypeError:
+                    setattr(obj, key, v)
+
+    _apply_overrides(template, overrides)
+    return template
 
 # def main():
 #     config.load_kube_config()

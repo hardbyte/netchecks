@@ -38,7 +38,7 @@ Verifying that cluster internal restrictions are working. E.g., if `NetworkPolic
 ## Implementation
 
 The netcheck operator watches for `NetworkAssertion` objects, creates CronJobs/Jobs to carry out the tests. CronJobs for 
-periodically scheduled tests (the default), and Jobs for one off assertions.
+periodically scheduled tests (the default), and Jobs for one-off assertions.
 
 Ultimately the operator makes the results available as `PolicyReport` instances. 
 
@@ -91,7 +91,9 @@ Events are created in the k8s api, and exposed via the operator's `/metrics` end
 
 ## Example manifests
 
-Example `NetworkAssertion`:
+Example `NetworkAssertion` with one rule to check that DNS lookups of `google.com` using cloudflare's DNS server are allowed.
+
+Note the `spec.template` block is fully optional allowing the end user to override the created Job's Pod spec.
 
 ```yaml
 apiVersion: kopf.dev/v1
@@ -103,17 +105,20 @@ metadata:
     description: Cluster shouldn't be able to lookup dns on cloudflare in default namespace.
 spec:
   schedule: "@hourly"
-  failureActions:
-    - slackNotificationConfig
-    - SNS topic (TODO)
+  template:
+    metadata:
+      labels:
+        optional-label: applied-to-test-pod
+    spec:
+      serviceAccountName: optional-service-account
   rules:
-    - name: cloudflare-dns-lookup-must-fail
+    - name: cloudflare-dns-lookup
       type: dns
       server: 1.1.1.1
-      host: hardbyte.nz
+      host: google.com
+      expected: pass
       validate:
-        exitCode: 1
-        message: DNS requests to cloudflare's 1.1.1.1 shouldn't succeed.
+        message: DNS requests to cloudflare's 1.1.1.1 should succeed.
 ```
 
 A corresponding `PolicyReport` might look like:
