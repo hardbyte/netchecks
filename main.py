@@ -1,12 +1,14 @@
 import json
 from time import sleep
 
-from kubernetes.client import V1ConfigMap, V1Job, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
+from kubernetes.client import V1ConfigMap, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
     V1VolumeMount
 from structlog import get_logger
 from rich import print
 import kopf
 from kubernetes import client
+
+VERSION = '0.1.0'
 
 
 @kopf.on.create('networkassertions')
@@ -27,10 +29,10 @@ def creation(body, spec, name, namespace, **kwargs):
     # Grab any template overrides (metadata, spec->serviceAccountName)
     job_template = spec.get('template')
 
-    cm_response = create_network_assertions_config_map(rules, namespace, logger)
+    cm_response = create_network_assertions_config_map(name, rules, namespace, logger)
 
     # Create a job spec
-    job_spec = create_job_spec(cm_response, template_overides=job_template)
+    job_spec = create_job_spec(name, cm_response, template_overides=job_template)
     logger.debug("Job spec created", job_spec=job_spec)
     job = create_job_object(name, job_spec)
     logger.debug("Job instance created", job=job)
@@ -76,12 +78,12 @@ def creation(body, spec, name, namespace, **kwargs):
     }
 
 
-def create_network_assertions_config_map(rules, namespace, logger):
+def create_network_assertions_config_map(name, rules, namespace, logger):
     core_api = client.CoreV1Api()
 
     # This will inherit the name of the network assertion
     config_map = V1ConfigMap(
-        metadata=V1ObjectMeta(labels={'hardbyte.nz/netcheck-config': 'true'}),
+        metadata=V1ObjectMeta(labels=get_common_labels(name)),
         data={
             # This gets mounted at /netcheck/rules.json
             # For now we create one "Assertion", with all the rules
@@ -183,6 +185,7 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                 logger.info("Pod Log", log=pod_log, name=name, namespace=namespace)
                 # Process the results, create or update PolicyReport
 
+
                 break
             case _:
                 logger.info("Pod details retrieved", phase=pod.status.phase, status=pod.status)
@@ -203,10 +206,7 @@ def get_job_status(api_instance, job_name):
     return job_completed, api_response.status
 
 
-
-
 def create_job_object(job_name: str, job_spec):
-
     # Instantiate the job object
     job = client.V1Job(
         api_version="batch/v1",
@@ -217,7 +217,16 @@ def create_job_object(job_name: str, job_spec):
     return job
 
 
-def create_job_spec(cm: V1ConfigMap, template_overides: dict = None):
+def get_common_labels(name):
+    return {
+        'app.kubernetes.io/name': 'netcheck',
+        'app.kubernetes.io/component': 'probe',
+        'app.kubernetes.io/version': VERSION,
+        'app.kubernetes.io/instance': name
+    }
+
+
+def create_job_spec(name, cm: V1ConfigMap, template_overides: dict = None):
     # Container template first
     container = client.V1Container(
         name="netcheck",
@@ -234,7 +243,7 @@ def create_job_spec(cm: V1ConfigMap, template_overides: dict = None):
     # Create and configure a pod spec section
     pod_template = client.V1PodTemplateSpec(
         metadata=client.V1ObjectMeta(
-            labels={"app": "netcheck"},
+            labels=get_common_labels(name),
             annotations={}
         ),
         spec=client.V1PodSpec(

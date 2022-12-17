@@ -40,11 +40,21 @@ Verifying that cluster internal restrictions are working. E.g., if `NetworkPolic
 The netcheck operator watches for `NetworkAssertion` objects, creates CronJobs/Jobs to carry out the tests. CronJobs for 
 periodically scheduled tests (the default), and Jobs for one-off assertions.
 
-Ultimately the operator makes the results available as `PolicyReport` instances. 
+The netcheck operator uses a standard and open format published by the Kubernetes Policy working group which proposes
+a common policy report format across Kubernetes tools. 
 
-Each workload carrying out the test Pod would be ["owned"](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/) by the
+Each workload carrying out the test or tests run in a `Pod` deployed by a `Job`. The entire Job spec can be
+overridden for each Pod by specifying a `template` in the `NetworkAssertion` object. The k8s objects created by the
+operator are ["owned"](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/) by the 
 `NetworkAssertion` - so if the NetworkAssertion is deleted the test gets cleaned up by the Kubernetes garbage collector 
 thanks to a declared ownership model.
+
+Standard labels are added to the CronJob, Job, ConfigMap and Pod objects to make it easier to query for them:
+
+- app.kubernetes.io/name: netcheck
+- app.kubernetes.io/component: probe
+- app.kubernetes.io/instance: <name of the NetworkAssertion>
+- app.kubernetes.io/version: <version of NetworkAssertion>
 
 
 
