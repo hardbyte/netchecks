@@ -159,8 +159,10 @@ def on_resume(spec, name, namespace, **kwargs):
 
 @kopf.daemon('pod',
              #annotations={'some-annotation': 'some-value'},
-             labels={'app': 'netcheck'},
-             #when=lambda name, **_: 'some' in name
+             labels={
+                 'app.kubernetes.io/name': 'netcheck',
+                 'app.kubernetes.io/component': 'probe'
+             },
              )
 def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwargs):
     logger = get_logger()
@@ -170,6 +172,8 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
     while not stopped:
         logger.debug("Getting pod status", name=name, namespace=namespace)
         pod: V1Pod = core_v1.read_namespaced_pod(name=name, namespace=namespace)
+
+        assertion_name = pod.metadata.labels['app.kubernetes.io/instance']
 
         match pod.status.phase:
             case 'Pending':
@@ -181,16 +185,33 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                 logger.info("Succeeded")
                 logger.info("Getting pod output")
                 # Doesn't seem to be a nice way to separate stdout and stderr
-                pod_log = core_v1.read_namespaced_pod_log(name=name, namespace=namespace)
-                logger.info("Pod Log", log=pod_log, name=name, namespace=namespace)
-                # Process the results, create or update PolicyReport
-
+                pod_log_ws_client = core_v1.read_namespaced_pod_log(name=name, namespace=namespace, _preload_content=False)
+                #pod_log_ws_client.run_forever(timeout=10)
+                pod_log = pod_log_ws_client.data.decode('utf-8')
+                logger.debug("Pod Log", log=pod_log, name=name, namespace=namespace)
+                # Process the results, then create or update PolicyReport
+                probe_results = process_probe_output(pod_log, assertion_name, namespace)
 
                 break
             case _:
                 logger.info("Pod details retrieved", phase=pod.status.phase, status=pod.status)
                 sleep(1.0)
     logger.info("Pod monitoring complete", name=name, namespace=namespace)
+
+
+def upsert_policy_report(probe_results, name, namespace):
+    print("TODO: Upsert PolicyReport")
+
+
+
+def process_probe_output(pod_log: str, name, namespace):
+    """
+    Extract JSON from pod log
+    """
+
+    probe_results = json.loads(pod_log)
+    print("Probe results", results=probe_results)
+    upsert_policy_report(probe_results, name, namespace)
 
 
 def get_job_status(api_instance, job_name):
