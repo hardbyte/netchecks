@@ -27,24 +27,17 @@ docker pull ghcr.io/hardbyte/netcheck:latest
 
 ### Individual Assertions
 
-By default `netcheck` won't output anything if the check passes. 
+By default `netcheck` outputs a JSON result to stdout: 
 
-```
-$ poetry run netcheck dns
-```
-
-Pass the `-v` flag to see what is going on:
-
-```
-$ poetry run netcheck dns -v
-DNS check with nameserver None looking up host 'github.com'
-✔ Passed (as expected)
+```shell
+netcheck dns
 {
   "type": "dns",
   "nameserver": null,
   "host": "github.com",
-  "timeout": 10,
-  "result": {
+  "timeout": 30.0,
+  "result": "pass",
+  "data": {
     "A": [
       "20.248.137.48"
     ]
@@ -52,60 +45,72 @@ DNS check with nameserver None looking up host 'github.com'
 }
 ```
 
+Pass the `-v` flag to see log messages.
+
 Each check can be configured, e.g. you can specify the `server` and `host` for a `dns` check, and
 tell `netcheck` whether a particular configuration is expected to pass or fail:
 
+
+```shell
+netcheck dns --server 1.1.1.1 --host hardbyte.nz --should-pass
 ```
-$ poetry run netcheck dns --server 1.1.1.1 --host hardbyte.nz --should-pass -v
-DNS check with nameserver 1.1.1.1 looking up host 'hardbyte.nz'
-✔ Passed (as expected)
+
+```json
 {
   "type": "dns",
   "nameserver": "1.1.1.1",
   "host": "hardbyte.nz",
-  "timeout": 10,
-  "result": {
+  "timeout": 30.0,
+  "result": "pass",
+  "data": {
     "A": [
       "209.58.165.79"
     ]
   }
 }
-
 ```
 
-A few other individual examples:
+Netcheck can check that particular checks fail:
+```shell
+$ netcheck dns --server=1.1.1.1 --host=made.updomain --should-fail
 ```
-$ netcheck dns --server=1.1.1.1 --host=made.updomain --should-fail -v
-DNS check with nameserver 1.1.1.1 looking up host 'made.updomain'
-❌ Failed. As expected.
+```json
 {
   "type": "dns",
   "nameserver": "1.1.1.1",
   "host": "made.updomain",
-  "timeout": 10,
-  "result": {
+  "timeout": 30.0,
+  "result": "pass",
+  "data": {
     "exception-type": "NXDOMAIN",
     "exception": "The DNS query name does not exist: made.updomain."
   }
 }
+```
 
-$ netcheck http --method=get --url=https://s3.ap-southeast-2.amazonaws.com --should-pass
-$ poetry run netcheck http --method=post --url=https://s3.ap-southeast-2.amazonaws.com --should-fail -v
-http check with url 'https://s3.ap-southeast-2.amazonaws.com'
-❌ Failed. As expected.
+```shell
+netcheck http --method=get --url=https://s3.ap-southeast-2.amazonaws.com --should-pass
+```
+
+```shell
+$ netcheck http --method=post --url=https://s3.ap-southeast-2.amazonaws.com --should-fail
+```
+
+```json
 {
   "type": "http",
+  "timeout": 30.0,
+  "verify-tls-cert": true,
   "method": "post",
   "url": "https://s3.ap-southeast-2.amazonaws.com",
-  "result": {
+  "result": "pass",
+  "data": {
     "status-code": 405,
     "exception-type": "HTTPError",
     "exception": "405 Client Error: Method Not Allowed for url: https://s3.ap-southeast-2.amazonaws.com/"
   }
 }
-
 ```
-
 
 ### Configuration via file
 
@@ -121,46 +126,78 @@ A json file can be provided with a list of assertions to be checked:
 ```
 
 And the command can be called:
-```
-$ poetry run netcheck run --config config.json 
-Loaded 2 assertions
-Running test 'cloudflare-dns'
-Running test 'github-status'
+```shell
+netcheck run --config example-config.json 
 ```
 
 Or with `--verbose`:
 
 ```shell
-$ poetry run netcheck run --config tests/testdata/simple-config.json -v
-Loaded 2 assertions
-Running test 'cloudflare-dns'
-DNS check with nameserver 1.1.1.1 looking up host 'github.com'
-✔ Passed (as expected)
-{
-  "type": "dns",
-  "nameserver": "1.1.1.1",
-  "host": "github.com",
-  "timeout": 10,
-  "result": {
-    "A": [
-      "20.248.137.48"
-    ]
-  }
-}
-Running test 'github-status'
-http check with url 'https://github.com/status'
-✔ Passed (as expected)
-{
-  "type": "http",
-  "method": "get",
-  "url": "https://github.com/status",
-  "result": {
-    "status-code": 200
-  }
-}
-
+$ netcheck run --config tests/testdata/simple-config.json
 ```
 
+```json
+[
+  {
+    "type": "dns",
+    "nameserver": null,
+    "host": "github.com",
+    "timeout": null,
+    "result": "pass",
+    "data": {
+      "A": [
+        "20.248.137.48"
+      ]
+    }
+  },
+  {
+    "type": "dns",
+    "nameserver": "1.1.1.1",
+    "host": "github.com",
+    "timeout": null,
+    "result": "pass",
+    "data": {
+      "A": [
+        "20.248.137.48"
+      ]
+    }
+  },
+  {
+    "type": "http",
+    "timeout": null,
+    "verify-tls-cert": true,
+    "method": "get",
+    "url": "https://github.com/status",
+    "result": "pass",
+    "data": {
+      "status-code": 200
+    }
+  },
+  {
+    "type": "http",
+    "timeout": null,
+    "verify-tls-cert": false,
+    "method": "get",
+    "url": "https://self-signed.badssl.com/",
+    "result": "pass",
+    "data": {
+      "status-code": 200
+    }
+  },
+  {
+    "type": "http",
+    "timeout": null,
+    "verify-tls-cert": true,
+    "method": "get",
+    "url": "https://self-signed.badssl.com/",
+    "result": "pass",
+    "data": {
+      "exception-type": "SSLError",
+      "exception": "HTTPSConnectionPool(host='self-signed.badssl.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:997)')))"
+    }
+  }
+]
+```
 ## Development
 
 Update version and create a release on GitHub, Pypi release will be carried out by a Github action. 

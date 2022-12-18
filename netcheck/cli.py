@@ -146,29 +146,32 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
         case 'dns':
             if verbose:
                 err_console.print(f"DNS check with nameserver {test_config.get('server')} looking up host '{test_config['host']}'")
-            failed, test_detail = dns_lookup_check(
+            test_detail = dns_lookup_check(
                 host=test_config['host'],
                 server=test_config.get('server'),
                 timeout=test_config.get('timeout'),
+                should_fail=should_fail,
             )
         case 'http':
             if verbose:
                 err_console.print(f"http check with url '{test_config['url']}'")
-            failed, test_detail = http_request_check(
+            test_detail = http_request_check(
                 test_config['url'],
                 test_config.get('method', 'get'),
                 timeout=test_config.get('timeout'),
-                verify=test_config.get('verify-tls-cert', True)
+                verify=test_config.get('verify-tls-cert', True),
+                should_fail=should_fail,
             )
         case _:
             logger.warning("Unhandled test type")
             raise NotImplemented("Unknown test type")
-    notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=verbose)
+    failed = test_detail['result'] in {'fail', 'error'}
+    notify_for_unexpected_test_result(failed, should_fail, verbose=verbose)
 
     return test_detail
 
 
-def notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=False):
+def notify_for_unexpected_test_result(failed, should_fail, verbose=False):
     if verbose:
         if failed:
             if not should_fail:
@@ -182,8 +185,7 @@ def notify_for_unexpected_test_result(failed, should_fail, test_detail, verbose=
                 err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
 
 
-def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verify: bool = True):
-    failed = False
+def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verify: bool = True, should_fail: bool = False):
     # This structure gets stored along with the test results
     details = {
         'type': 'http',
@@ -191,7 +193,8 @@ def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verif
         'verify-tls-cert': verify,
         'method': method,
         'url': url,
-        'result': {}
+        'result': 'error',
+        'data': {}
     }
 
     # Prepare the arguments for requests
@@ -202,38 +205,41 @@ def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verif
 
     try:
         response = getattr(requests, method)(url, **requests_kwargs)
-        details['result']['status-code'] = response.status_code
+        details['data']['status-code'] = response.status_code
         response.raise_for_status()
+        details['result'] = 'pass' if not should_fail else 'fail'
     except Exception as e:
-        failed = True
+        details['result'] = 'pass' if should_fail else 'fail'
         logger.debug(f"Caught exception:\n\n{e}")
-        details['result']['exception-type'] = e.__class__.__name__
-        details['result']['exception'] = str(e)
+        details['data']['exception-type'] = e.__class__.__name__
+        details['data']['exception'] = str(e)
 
-    return failed, details
+    return details
 
 
-def dns_lookup_check(host, server, timeout=10):
-    failed = False
+def dns_lookup_check(host, server, timeout=10, should_fail=False):
+
     detail = {
         'type': 'dns',
         'nameserver': server,
         'host': host,
-        'timeout': timeout
+        'timeout': timeout,
+        'result': 'error',
     }
-    result = {}
+    result_data = {}
     try:
         ip_addresses = get_A_records_by_dns_lookup(host, nameserver=server, timeout=timeout)
-        result['A'] = ip_addresses
+        result_data['A'] = ip_addresses
+        detail['result'] = 'pass' if not should_fail else 'fail'
     except Exception as e:
         logger.info(f"Caught exception:\n\n{e}")
-        failed = True
+        detail['result'] = 'pass' if should_fail else 'fail'
+        result_data['exception-type'] = e.__class__.__name__
+        result_data['exception'] = str(e)
 
-        result['exception-type'] = e.__class__.__name__
-        result['exception'] = str(e)
+    detail['data'] = result_data
 
-    detail['result'] = result
-    return failed, detail
+    return detail
 
 
 if __name__ == '__main__':
