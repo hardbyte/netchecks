@@ -57,7 +57,7 @@ def test_http_check_with_timout():
 
     data = result.stdout
     payload = json.loads(data)
-    assert payload['timeout'] == 2.1
+    assert payload['spec']['timeout'] == 2.1
 
 
 def test_run_simple_config(simple_config_filename):

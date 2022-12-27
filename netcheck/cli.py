@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 from enum import Enum
@@ -8,8 +9,15 @@ import typer
 import requests
 from typing import Optional
 import urllib3
-
+import pkg_resources
 from netcheck.dns import get_A_records_by_dns_lookup
+
+try:
+    NETCHECK_VERSION = pkg_resources.get_distribution('netcheck').version
+except pkg_resources.DistributionNotFound:
+    NETCHECK_VERSION = 'unknown'
+
+OUTPUT_JSON_VERSION = 'dev' #set to v1 once stable
 
 app = typer.Typer()
 logger = logging.getLogger("netcheck")
@@ -57,25 +65,41 @@ def run(
     if verbose:
         err_console.print(f"Loaded {len(data['assertions'])} assertions")
 
-    results = []
+    overall_results = {
+        'type': 'netcheck-output',
+        'outputVersion': OUTPUT_JSON_VERSION,
+        'metadata': {
+            'creationTimestamp': datetime.datetime.utcnow().isoformat(),
+            'version': NETCHECK_VERSION,
+        },
+        'assertions': []
+    }
+
     # Run each test
-    for test in data['assertions']:
+    for assertion in data['assertions']:
+        assertion_results = []
         if verbose:
-            err_console.print(f"Running test '{test['name']}'")
-        for rule in test['rules']:
+            err_console.print(f"Running tests for assertion '{assertion['name']}'")
+        for rule in assertion['rules']:
             result = check_individual_assertion(
                 rule['type'],
                 rule,
                 should_fail=rule['expected'] != 'pass',
                 verbose=verbose,
             )
-            results.append(result)
+            assertion_results.append(result)
+
+        overall_results['assertions'].append({
+            'name': assertion['name'],
+            'results': assertion_results
+        })
 
     # TODO summary output
+
     if verbose:
         err_console.print(f"Output type {output}")
 
-    print_json(data=results)
+    print_json(data=overall_results)
 
 
 @app.command()
@@ -165,7 +189,7 @@ def check_individual_assertion(test_type, test_config, should_fail, verbose=Fals
         case _:
             logger.warning("Unhandled test type")
             raise NotImplemented("Unknown test type")
-    failed = test_detail['result'] in {'fail', 'error'}
+    failed = test_detail['status'] in {'fail', 'error'}
     notify_for_unexpected_test_result(failed, should_fail, verbose=verbose)
 
     return test_detail
@@ -187,59 +211,80 @@ def notify_for_unexpected_test_result(failed, should_fail, verbose=False):
 
 def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verify: bool = True, should_fail: bool = False):
     # This structure gets stored along with the test results
-    details = {
+    test_spec = {
         'type': 'http',
+        'shouldFail': should_fail,
         'timeout': timeout,
         'verify-tls-cert': verify,
         'method': method,
         'url': url,
-        'result': 'error',
-        'data': {}
+    }
+
+    result_data = {
+        'startTimestamp': datetime.datetime.utcnow().isoformat(),
+    }
+
+    output = {
+        'status': 'error',
+        'spec': test_spec,
+        'data': result_data
     }
 
     # Prepare the arguments for requests
     requests_kwargs = {
-        'timeout': details['timeout'],
-        'verify': details['verify-tls-cert'],
+        'timeout': test_spec['timeout'],
+        'verify': test_spec['verify-tls-cert'],
     }
 
     try:
         response = getattr(requests, method)(url, **requests_kwargs)
-        details['data']['status-code'] = response.status_code
+        result_data['status-code'] = response.status_code
+        #result_data['headers'] = response.headers
         response.raise_for_status()
-        details['result'] = 'pass' if not should_fail else 'fail'
+        output['status'] = 'pass' if not should_fail else 'fail'
     except Exception as e:
-        details['result'] = 'pass' if should_fail else 'fail'
+        output['status'] = 'pass' if should_fail else 'fail'
         logger.debug(f"Caught exception:\n\n{e}")
-        details['data']['exception-type'] = e.__class__.__name__
-        details['data']['exception'] = str(e)
+        result_data['exception-type'] = e.__class__.__name__
+        result_data['exception'] = str(e)
 
-    return details
+    result_data['endTimestamp'] = datetime.datetime.utcnow().isoformat()
+
+    return output
 
 
 def dns_lookup_check(host, server, timeout=10, should_fail=False):
 
-    detail = {
+    test_spec = {
         'type': 'dns',
+        'shouldFail': should_fail,
         'nameserver': server,
         'host': host,
         'timeout': timeout,
-        'result': 'error',
     }
-    result_data = {}
+    result_data = {
+        'startTimestamp': datetime.datetime.utcnow().isoformat(),
+    }
+
+    output = {
+        'status': 'error',
+        'spec': test_spec,
+        'data': result_data
+    }
+
     try:
         ip_addresses = get_A_records_by_dns_lookup(host, nameserver=server, timeout=timeout)
         result_data['A'] = ip_addresses
-        detail['result'] = 'pass' if not should_fail else 'fail'
+        output['status'] = 'pass' if not should_fail else 'fail'
     except Exception as e:
         logger.info(f"Caught exception:\n\n{e}")
-        detail['result'] = 'pass' if should_fail else 'fail'
+        output['status'] = 'pass' if should_fail else 'fail'
         result_data['exception-type'] = e.__class__.__name__
         result_data['exception'] = str(e)
 
-    detail['data'] = result_data
+    result_data['endTimestamp'] = datetime.datetime.utcnow().isoformat()
 
-    return detail
+    return output
 
 
 if __name__ == '__main__':

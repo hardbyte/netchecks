@@ -1,5 +1,9 @@
 {
   "assertions": [
-    {"name":  "deny-cloudflare-dns", "rules": [{"type": "dns", "server":  "1.1.1.1", "host": "github.com", "expected": "pass"}] }
+    {
+      "name":  "deny-cloudflare-dns",
+      "rules": [
+        {"type": "dns", "server":  "1.1.1.1", "host": "github.com", "expected": "pass"}]
+    }
   ]
 }
