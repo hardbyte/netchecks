@@ -23,4 +23,5 @@ RUN poetry install --no-root
 
 COPY . /app
 RUN poetry install
-CMD ["poetry", "run", "netcheck", "http", "-v"]
+ENTRYPOINT ["poetry", "run", "netcheck"]
+CMD ["http", "-v"]
