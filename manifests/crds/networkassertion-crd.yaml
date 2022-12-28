@@ -19,10 +19,10 @@ spec:
     - name: v1
       served: true
       storage: true
-#      additionalPrinterColumns:
-#        - jsonPath:
-#          name:
-#          type:
+      additionalPrinterColumns:
+        - jsonPath: .spec.schedule
+          name: Schedule
+          type: string
       schema:
 
         openAPIV3Schema:
