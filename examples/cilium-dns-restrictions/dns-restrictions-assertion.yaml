@@ -6,7 +6,7 @@ metadata:
   annotations:
     description: Check cluster dns restrictions are working
 spec:
-  #schedule: "*/20 * * * *"
+  schedule: "*/2 * * * *"
   rules:
     - name: external-dns-lookup-should-fail
       type: dns

@@ -24,6 +24,8 @@ kubectl apply -f ./dns-assertion.yaml
 
 # Can see what gets blocked using hubble
 cilium hubble port-forward&
+
+
 ```
 
 
