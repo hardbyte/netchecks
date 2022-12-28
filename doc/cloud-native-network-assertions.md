@@ -56,6 +56,7 @@ Standard labels are added to the CronJob, Job, ConfigMap and Pod objects to make
 - app.kubernetes.io/instance: <name of the NetworkAssertion>
 - app.kubernetes.io/version: <version of NetworkAssertion>
 
+Netcheck version will be moved to annotations.
 
 
 ## Design discussions

@@ -31,3 +31,4 @@ spec:
       expected: pass
       validate:
         message: Http request to Kubernetes API should succeed.
+

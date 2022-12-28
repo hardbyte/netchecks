@@ -1,4 +1,6 @@
+import datetime
 import json
+from collections import defaultdict
 from time import sleep
 
 from kubernetes.client import V1ConfigMap, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
@@ -9,14 +11,17 @@ import kopf
 from kubernetes import client
 
 VERSION = '0.1.0'
+API_GROUP_NAME = "hardbyte.nz"
+
+
 
 
 @kopf.on.create('networkassertions')
 def creation(body, spec, name, namespace, **kwargs):
-    logger = get_logger()
-    logger.info(f"NetworkAssertion on-create handler called", name=name, namespace=namespace)
-
+    logger = get_logger(name=name, namespace=namespace)
     batch_v1 = client.BatchV1Api()
+    logger.info(f"NetworkAssertion on-create handler called")
+
     logger.debug(f"Requested NetworkAssertion body", body=body)
     logger.info(f"Requested NetworkAssertion spec", spec=spec)
 
@@ -174,6 +179,7 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
         pod: V1Pod = core_v1.read_namespaced_pod(name=name, namespace=namespace)
 
         assertion_name = pod.metadata.labels['app.kubernetes.io/instance']
+        logger = logger.bind(assertion_name=assertion_name, pod_name=name, namespace=namespace)
 
         match pod.status.phase:
             case 'Pending':
@@ -182,8 +188,8 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                 sleep(5)
                 continue
             case 'Succeeded':
-                logger.info("Succeeded")
-                logger.info("Getting pod output")
+                logger.info("Probe Pod has completed", name=name, namespace=namespace)
+                logger.info("Getting pod output", name=name, namespace=namespace)
                 # Doesn't seem to be a nice way to separate stdout and stderr
                 pod_log_ws_client = core_v1.read_namespaced_pod_log(name=name, namespace=namespace, _preload_content=False)
                 #pod_log_ws_client.run_forever(timeout=10)
@@ -199,10 +205,139 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
     logger.info("Pod monitoring complete", name=name, namespace=namespace)
 
 
+def summarize_results(probe_results):
+    """
+    Summarize the results of the probe run
+    """
+    logger = get_logger()
+    logger.info("Summarizing probe results", probe_results=probe_results)
+    # Dict of pass/fail/warn/error counts defaulting to 0
+    summary = defaultdict(int)
+
+    for assertion_detail in probe_results['assertions']:
+        for test_result in assertion_detail['results']:
+            # Each individual assertion's test result is a dict with a 'status' key that should
+            # be one of: pass, fail, warn, error, skip
+            summary[test_result.get('status', 'skip')] += 1
+
+    return summary
+
+
+def convert_results_for_policy_report(probe_results):
+    # https://htmlpreview.github.io/?https://github.com/kubernetes-sigs/wg-policy-prototypes/blob/master/policy-report/docs/index.html
+    res = []
+    logger = get_logger()
+    for assertion_result in probe_results['assertions']:
+        for i, test_result in enumerate(assertion_result['results'], start=1):
+            policy_report_data = {
+                'spec': json.dumps(test_result['spec']),
+                'data': json.dumps(test_result['data'])
+            }
+
+            test_result_iso_timestamp = test_result['data']['endTimestamp']
+            policy_report_result = {
+                "source": "netcheck",
+                "policy": assertion_result['name'],
+                "rule": test_result.get('name', f"{assertion_result['name']}-rule-{i}"),
+                "category": test_result['spec']['type'],    # This is the test type: http/dns
+                # "severity": test_result.get('severity'),   # high, medium, low
+                "timestamp": convert_iso_timestamp_to_k8s_timestamp(test_result_iso_timestamp),
+                "result": test_result.get('status', 'skip'),
+                #"scored": True,
+                # TODO LabelSelector for checked resources
+                #   "resourceSelector": {}
+                "message": test_result.get('message', f'Rule from {assertion_result["name"]}'),
+                # Properties have to be str -> str
+                "properties": policy_report_data,
+
+
+            }
+            logger.info("Policy Report Result", policy_report_result=policy_report_result)
+            res.append(policy_report_result)
+    return res
+
+
+def convert_iso_timestamp_to_k8s_timestamp(iso_timestamp):
+    # Convert ISO timestamp to Kubernetes meta/v1.Timestamp format
+    return {
+        "nanos": 0,
+        "seconds": int(datetime.datetime.fromisoformat(iso_timestamp).timestamp())
+    }
+
+
 def upsert_policy_report(probe_results, name, namespace):
-    print("TODO: Upsert PolicyReport")
+    crd_api = client.CustomObjectsApi()
 
+    logger = get_logger(name=name, namespace=namespace)
+    logger.info("Upsert PolicyReport")
 
+    # get the resource and print out data
+
+    # If it doesn't exist, create it
+    policy_report_label_selector = f"app.kubernetes.io/instance={name}"
+    policy_reports = crd_api.list_namespaced_custom_object(
+        group='wgpolicyk8s.io',
+        version="v1alpha2",
+        namespace=namespace,
+        plural="policyreports",
+        label_selector=policy_report_label_selector,
+    )
+
+    if len(policy_reports['items']) > 0:
+        logger.info("Existing policy reports found", reports=policy_reports)
+        policy_report = crd_api.get_namespaced_custom_object(
+            group='wgpolicyk8s.io',
+            version="v1alpha2",
+            namespace=namespace,
+            plural="policyreports",
+            name=name,
+        )
+        logger.info("Existing policy report found", report=policy_report)
+
+        raise NotImplementedError("Updating existing PolicyReport not implemented")
+    else:
+        # Create a new PolicyReport
+        logger.info("Creating new PolicyReport")
+        labels = get_common_labels(name=name)
+        labels['policy.kubernetes.io/engine'] = 'netcheck'
+
+        policy_report_body = {
+            "apiVersion": "wgpolicyk8s.io/v1alpha2",
+            "kind": "PolicyReport",
+            "metadata": {
+                "name": name,
+                "labels": labels,
+                "annotations": {
+                    "category": "Network",
+                    "created-by": "netcheck",
+                    "netcheck-operator-version": VERSION
+                }
+            },
+            "results": convert_results_for_policy_report(probe_results),
+            "summary": summarize_results(probe_results)
+        }
+        kopf.adopt(policy_report_body)
+        policy_report = crd_api.create_namespaced_custom_object(
+            group='wgpolicyk8s.io',
+            version="v1alpha2",
+            namespace=namespace,
+            plural="policyreports",
+            body=policy_report_body
+        )
+
+        logger.info("PolicyReport created", policy_report=policy_report)
+
+    return policy_report
+
+#     my_resource = {
+#         "apiVersion": "stable.example.com/v1",
+#         "kind": "CronTab",
+#         "metadata": {"name": "my-new-cron-object"},
+#         "spec": {
+#             "cronSpec": "* * * * */5",
+#             "image": "my-awesome-cron-image"
+#         }
+#     }
 
 def process_probe_output(pod_log: str, name, namespace):
     """
@@ -210,7 +345,7 @@ def process_probe_output(pod_log: str, name, namespace):
     """
 
     probe_results = json.loads(pod_log)
-    print("Probe results", results=probe_results)
+    print("Probe results", probe_results)
     upsert_policy_report(probe_results, name, namespace)
 
 
@@ -241,7 +376,6 @@ def create_job_object(job_name: str, job_spec):
 def get_common_labels(name):
     return {
         'app.kubernetes.io/name': 'netcheck',
-        'app.kubernetes.io/component': 'probe',
         'app.kubernetes.io/version': VERSION,
         'app.kubernetes.io/instance': name
     }
@@ -262,9 +396,11 @@ def create_job_spec(name, cm: V1ConfigMap, template_overides: dict = None):
         ]
     )
     # Create and configure a pod spec section
+    labels = get_common_labels(name)
+    labels['app.kubernetes.io/component'] = 'probe'
     pod_template = client.V1PodTemplateSpec(
         metadata=client.V1ObjectMeta(
-            labels=get_common_labels(name),
+            labels=labels,
             annotations={}
         ),
         spec=client.V1PodSpec(

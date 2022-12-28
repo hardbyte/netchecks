@@ -51,8 +51,16 @@ kopf run main.py --verbose
 
 ### Install the CRDs
 
+Our Netcheck CRDs:
+
 ```shell
 kubectl apply -f manifests/crds
+```
+
+The PolicyReport CRD:
+
+```shell
+kubectl create -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
 ```
 
 ### Create a NetworkAssertion
