@@ -282,6 +282,25 @@ def upsert_policy_report(probe_results, name, namespace):
         plural="policyreports",
         label_selector=policy_report_label_selector,
     )
+    labels = get_common_labels(name=name)
+    labels['policy.kubernetes.io/engine'] = 'netcheck'
+    report_results = convert_results_for_policy_report(probe_results)
+    report_summary = summarize_results(probe_results)
+    policy_report_body = {
+        "apiVersion": "wgpolicyk8s.io/v1alpha2",
+        "kind": "PolicyReport",
+        "metadata": {
+            "name": name,
+            "labels": labels,
+            "annotations": {
+                "category": "Network",
+                "created-by": "netcheck",
+                "netcheck-operator-version": VERSION
+            }
+        },
+        "results": report_results,
+        "summary": report_summary
+    }
 
     if len(policy_reports['items']) > 0:
         logger.info("Existing policy reports found", reports=policy_reports)
@@ -293,29 +312,21 @@ def upsert_policy_report(probe_results, name, namespace):
             name=name,
         )
         logger.info("Existing policy report found", report=policy_report)
-
-        raise NotImplementedError("Updating existing PolicyReport not implemented")
+        crd_api.patch_namespaced_custom_object(
+            group='wgpolicyk8s.io',
+            version="v1alpha2",
+            namespace=namespace,
+            plural="policyreports",
+            body=policy_report_body,
+            name=name,
+        )
+        logger.info("Updated existing PolicyReport")
     else:
         # Create a new PolicyReport
         logger.info("Creating new PolicyReport")
-        labels = get_common_labels(name=name)
-        labels['policy.kubernetes.io/engine'] = 'netcheck'
 
-        policy_report_body = {
-            "apiVersion": "wgpolicyk8s.io/v1alpha2",
-            "kind": "PolicyReport",
-            "metadata": {
-                "name": name,
-                "labels": labels,
-                "annotations": {
-                    "category": "Network",
-                    "created-by": "netcheck",
-                    "netcheck-operator-version": VERSION
-                }
-            },
-            "results": convert_results_for_policy_report(probe_results),
-            "summary": summarize_results(probe_results)
-        }
+
+
         kopf.adopt(policy_report_body)
         policy_report = crd_api.create_namespaced_custom_object(
             group='wgpolicyk8s.io',
@@ -329,21 +340,11 @@ def upsert_policy_report(probe_results, name, namespace):
 
     return policy_report
 
-#     my_resource = {
-#         "apiVersion": "stable.example.com/v1",
-#         "kind": "CronTab",
-#         "metadata": {"name": "my-new-cron-object"},
-#         "spec": {
-#             "cronSpec": "* * * * */5",
-#             "image": "my-awesome-cron-image"
-#         }
-#     }
 
 def process_probe_output(pod_log: str, name, namespace):
     """
     Extract JSON from pod log
     """
-
     probe_results = json.loads(pod_log)
     print("Probe results", probe_results)
     upsert_policy_report(probe_results, name, namespace)
