@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from netcheck.cli import app
@@ -60,6 +61,7 @@ def test_http_check_with_timout():
     assert payload['spec']['timeout'] == 2.1
 
 
+@pytest.mark.filterwarnings("ignore:Unverified HTTPS request is being made to host")
 def test_run_simple_config(simple_config_filename):
     result = runner.invoke(app, ["run", "--config", simple_config_filename])
     assert result.exit_code == 0
