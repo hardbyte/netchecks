@@ -50,8 +50,12 @@ class NetcheckTestType(str, Enum):
 
 @app.command()
 def run(
-        config: Path = typer.Option(..., exists=True, file_okay=True, help='Config file with netcheck assertions'),
-        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
+        config: Path = typer.Option(..., exists=True, file_okay=True,
+                                    help='Config file with netcheck assertions'),
+        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json,
+                                                            '-o',
+                                                            '--output',
+                                                            help="Output format"),
         verbose: bool = typer.Option(False, '-v')
         ):
     """Carry out all network assertions in given config file.
@@ -105,10 +109,16 @@ def run(
 @app.command()
 def http(
         url: str = typer.Option('https://github.com/status', help="URL to request", rich_help_panel="http test"),
-        method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get, help="HTTP method", rich_help_panel='http test'),
+        method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get,
+                                                  help="HTTP method",
+                                                  rich_help_panel='http test'),
         timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
-        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
+        output: Optional[NetcheckOutputType] = typer.Option(
+            NetcheckOutputType.json,
+            '-o',
+            '--output',
+            help="Output format"),
         verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
     """Carry out a http network check"""
@@ -139,7 +149,11 @@ def dns(
         host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
         timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
-        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json, '-o', '--output', help="Output format"),
+        output: Optional[NetcheckOutputType] = typer.Option(
+            NetcheckOutputType.json,
+            '-o',
+            '--output',
+            help="Output format"),
         verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
     """Carry out a dns check"""
@@ -165,11 +179,11 @@ def dns(
     print_json(data=result)
 
 
-def check_individual_assertion(test_type, test_config, should_fail, verbose=False):
+def check_individual_assertion(test_type: str, test_config, should_fail, verbose=False):
     match test_type:
         case 'dns':
             if verbose:
-                err_console.print(f"DNS check with nameserver {test_config.get('server')} looking up host '{test_config['host']}'")
+                err_console.print(f"DNS check looking up host '{test_config['host']}'")
             test_detail = dns_lookup_check(
                 host=test_config['host'],
                 server=test_config.get('server'),
@@ -209,7 +223,13 @@ def notify_for_unexpected_test_result(failed, should_fail, verbose=False):
                 err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
 
 
-def http_request_check(url, method: NetcheckHttpMethod = 'get', timeout=5, verify: bool = True, should_fail: bool = False):
+def http_request_check(
+        url,
+        method: NetcheckHttpMethod = 'get',
+        timeout=5,
+        verify: bool = True,
+        should_fail: bool = False
+):
     # This structure gets stored along with the test results
     test_spec = {
         'type': 'http',

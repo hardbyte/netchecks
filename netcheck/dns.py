@@ -1,5 +1,4 @@
 import dns.resolver
-import socket
 
 
 def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
@@ -23,16 +22,3 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
 
     return A_records
 
-
-
-# # Alternative socket based approach
-# def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
-#     A_records = []
-#     # IPv4 only DNS query that uses resolv.conf search path
-#     # a_record = socket.gethostbyname(target)
-#
-#     # (family, type, proto, canonname, sockaddr)
-#     addr_infos = socket.getaddrinfo(target, None, proto=socket.IPPROTO_TCP)
-#     for (family, type, proto, canonname, sockaddr) in addr_infos:
-#         if family == socket.AddressFamily.AF_INET:
-#             A_records.append(sockaddr[0])
