@@ -16,9 +16,8 @@ spec:
         rules:
           dns:
             # https://docs.cilium.io/en/v1.12/policy/language/#dns-based
-            # Allow the DNS request for any URL:
-            #- matchPattern: "*"
-            # Specify the allowed patterns or urls:
+            - matchPattern: "*.github.com"
+            - matchName: "github.com"
             - matchPattern: "*.svc.cluster.local"
             - matchPattern: "*.*.svc.cluster.local"
             - matchPattern: "*.*.*.svc.cluster.local"
@@ -34,5 +33,3 @@ spec:
             - matchPattern: "*.*.*.localdomain"
             - matchPattern: "*.*.*.*.localdomain"
             - matchPattern: "*.*.*.*.*.localdomain"
-            - matchPattern: "*.github.com"
-            - matchName: "github.com"
