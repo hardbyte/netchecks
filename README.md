@@ -1,8 +1,6 @@
 
-
 ## Installation
 
-Warning: Don't actually use this yet!
 
 Install the CRDs and operator with:
 
