@@ -1,7 +1,7 @@
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck) [![Coverage Status](https://coveralls.io/repos/github/hardbyte/netcheck/badge.svg?branch=main)](https://coveralls.io/github/hardbyte/netcheck?branch=main) ![PyPI - Downloads](https://img.shields.io/pypi/dm/netcheck)
 
-# Network Health Check
+# Netchecks Command Line Tool
 
 Configurable command line application that can be used to test network conditions are as expected.
 
@@ -21,7 +21,7 @@ pip install netcheck
 Or run with Docker:
 
 ```shell
-docker run -it ghcr.io/hardbyte/netcheck:latest
+docker run -it ghcr.io/netchecks/netchecks:latest
 ```
 
 ### Individual Assertions
