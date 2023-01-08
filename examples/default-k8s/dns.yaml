@@ -13,14 +13,20 @@ spec:
     - name: cloudflare-dns-lookup
       type: dns
       server: 1.1.1.1
-      host: hardbyte.nz
+      host: netchecks.io
       expected: pass
       validate:
         message: DNS requests to cloudflare's 1.1.1.1 should succeed.
     - name: google-dns-lookup
       type: dns
       server: 8.8.8.8
-      host: hardbyte.nz
+      host: netchecks.io
+      expected: pass
+      validate:
+        message: DNS requests to Google's 8.8.8.8 should succeed.
+    - name: default-dns-lookup
+      type: dns
+      host: netchecks.io
       expected: pass
       validate:
         message: DNS requests to Google's 8.8.8.8 should succeed.
