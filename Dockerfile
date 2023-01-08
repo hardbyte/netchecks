@@ -1,5 +1,5 @@
 FROM python:3.11
-LABEL org.opencontainers.image.source=https://github.com/hardbyte/netcheck-operator
+LABEL org.opencontainers.image.source=https://github.com/netchecks/operator
 
 # Configure Poetry
 ENV POETRY_VERSION=1.2.2
