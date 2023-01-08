@@ -40,7 +40,7 @@ rules:
 
   - apiGroups: [wgpolicyk8s.io]
     resources: [policyreports]
-    verbs: [list, watch, patch, create]
+    verbs: [list, get, patch, create]
 
 
   # Application: other resources we produce and manipulate

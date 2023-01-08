@@ -1,19 +1,14 @@
+The **Netchecks Operator** provides a cloud native way to dynamically declare a set of statements about 
+the network (what should work and what shouldn't).
 
-## Installation
+
+## High Level Diagram
+
+![High Level Diagram](doc/High-Level-Diagram.png)
+
+## Example
 
 
-Install the NetworkAssertion and PolicyReport CRDs and the netchecks operator with:
-
-```shell
-kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/crds/networkassertion-crd.yaml
-kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
-kubectl create namespace netchecks
-kubectl apply -f manifests/operator -n netchecks
-```
-
-Then apply your `NetworkAssertions` as any other resource.
-
-For example:
 
 ```yaml
 apiVersion: hardbyte.nz/v1
@@ -38,6 +33,63 @@ spec:
       validate:
         message: Http request to Kubernetes API should succeed.
 ```
+
+`PolicyReport` resources will be created in the same namespace as the `NetworkAssertion`, e.g:
+
+```yaml
+apiVersion: wgpolicyk8s.io/v1alpha2
+kind: PolicyReport
+metadata:
+  annotations:
+    category: Network
+    created-by: netcheck
+    netcheck-operator-version: 0.1.0
+  creationTimestamp: '2023-01-08T04:14:07Z'
+  generation: 2
+  labels:
+    app.kubernetes.io/component: probe
+    app.kubernetes.io/instance: http-should-work
+    app.kubernetes.io/name: netcheck
+    job-name: http-should-work-manual-w7e1x
+    optional-label: applied-to-test-pod
+    policy.kubernetes.io/engine: netcheck
+  name: http-should-work
+  namespace: default
+results:
+  - category: http
+    message: Rule from kubernetes-version
+    policy: kubernetes-version
+    properties:
+      data: >-
+        {"startTimestamp": "2023-01-08T04:20:52.433681", "status-code": 200,
+        "endTimestamp": "2023-01-08T04:20:52.441192"}
+      spec: >-
+        {"type": "http", "shouldFail": false, "timeout": null,
+        "verify-tls-cert": false, "method": "get", "url":
+        "https://kubernetes/version"}
+    result: pass
+    rule: kubernetes-version-rule-1
+    source: netcheck
+    timestamp:
+      nanos: 0
+      seconds: 1673151652
+summary:
+  pass: 1
+```
+
+
+## Installation
+
+Install the NetworkAssertion and PolicyReport CRDs and the Netchecks operator with:
+
+```shell
+kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/crds/networkassertion-crd.yaml
+kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
+kubectl create namespace netchecks
+kubectl apply -f manifests/operator -n netchecks
+```
+
+Then apply your `NetworkAssertions` as any other resource.
 
 ## Image Verification
 
