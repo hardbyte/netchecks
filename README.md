@@ -1,10 +1,11 @@
 # Syntax
 
-Syntax is a [Tailwind UI](https://tailwindui.com) site template built using [Tailwind CSS](https://tailwindcss.com) and [Next.js](https://nextjs.org).
+Netchecks docs uses the commercial `Syntax` template from [Tailwind UI](https://tailwindui.com) built using [Tailwind CSS](https://tailwindcss.com) and [Next.js](https://nextjs.org).
+See the [LICENSE](TAILWINDUI_TEMPLATE_LICENSE.md) file for more information about the commercial template license.
 
 ## Getting started
 
-To get started with this template, first install the npm dependencies:
+To get started with development of the docs site, first install the npm dependencies:
 
 ```bash
 npm install
@@ -32,10 +33,6 @@ NEXT_PUBLIC_DOCSEARCH_APP_ID=
 NEXT_PUBLIC_DOCSEARCH_API_KEY=
 NEXT_PUBLIC_DOCSEARCH_INDEX_NAME=
 ```
-
-## License
-
-This site template is a commercial product and is licensed under the [Tailwind UI license](https://tailwindui.com/license).
 
 ## Learn more
 
