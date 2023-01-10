@@ -33,18 +33,24 @@ const navigation = [
 
         ],
     },
-
     {
-        title: 'Development guides',
+        title: 'Examples',
         links: [
 
-            {
-                title: 'Command Line Application',
-                href: '/docs/cli',
-            },
+        ],
+    },
+    {
+        title: 'Contributor Guide',
+        links: [
+
+            {title: 'Command Line Application', href: '/docs/cli',},
             {title: 'Kubernetes Operator', href: '/docs/operator'},
             {title: 'Writing plugins', href: '/docs/writing-plugins'},
             {title: 'Testing', href: '/docs/testing'},
+            {title: 'How to contribute', href: '/docs/how-to-contribute'},
+            {title: 'Architecture guide', href: '/docs/architecture-guide'},
+            {title: 'Design principles', href: '/docs/design-principles'},
+            {title: 'Roadmap', href: '/docs/roadmap'},
         ],
     },
     // {
@@ -55,14 +61,7 @@ const navigation = [
     //     { title: 'ping', href: '/docs/ping' },
     //   ],
     // },
-    {
-        title: 'Contributing',
-        links: [
-            {title: 'How to contribute', href: '/docs/how-to-contribute'},
-            {title: 'Architecture guide', href: '/docs/architecture-guide'},
-            {title: 'Design principles', href: '/docs/design-principles'},
-        ],
-    },
+
 ]
 
 function GitHubIcon(props) {
