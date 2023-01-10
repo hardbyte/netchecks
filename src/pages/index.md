@@ -21,45 +21,71 @@ Learn how to get Netchecks set up in your own Kubernetes cluster. {% .lead %}
 Possimus saepe veritatis sint nobis et quam eos. Architecto consequatur odit perferendis fuga eveniet possimus rerum cumque. Ea deleniti voluptatum deserunt voluptatibus ut non iste.
 
 ---
-
 ## Quick start
 
+### Installation
 
----
-## Extra
+Install the `NetworkAssertion` and `PolicyReport` CRDs and the `Netchecks` operator with:
 
-{% callout type="warning" title="Oh no! Something bad happened!" %}
-This is what a disclaimer message looks like. You might want to include inline `code` in it. Or maybe you’ll want to include a [link](/) in it. I don’t think we should get too carried away with other scenarios like lists or tables — that would be silly.
-{% /callout %}
-
-### Configuring the library
-
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur quaerat exercitationem. Consequatur et cum atque mollitia qui quia necessitatibus.
-
-```js
-// cache-advance.config.js
-export default {
-  strategy: 'predictive',
-  engine: {
-    cpus: 12,
-    backups: ['./storage/cache.wtf'],
-  },
-}
+```bash
+kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/crds/networkassertion-crd.yaml
+kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
+kubectl create namespace netchecks
+kubectl apply -f manifests/operator -n netchecks
 ```
 
-Possimus saepe veritatis sint nobis et quam eos. Architecto consequatur odit perferendis fuga eveniet possimus rerum cumque. Ea deleniti voluptatum deserunt voluptatibus ut non iste. Provident nam asperiores vel laboriosam omnis ducimus enim nesciunt quaerat. Minus tempora cupiditate est quod.
+Wait until the netchecks namespace is running a Deployment with a ready Pod:
 
-{% callout title="You should know!" %}
-This is what a disclaimer message looks like. You might want to include inline `code` in it. Or maybe you’ll want to include a [link](/) in it. I don’t think we should get too carried away with other scenarios like lists or tables — that would be silly.
+```shell
+kubectl wait Deployment -n netchecks -l app=netcheck-operator --for condition=Available --timeout=90s
+```
+
+### Basic Usage
+
+Create and apply your `NetworkAssertions` as any other Kubernetes resource.
+
+For example a `NetworkAssertion` that checks HTTP requests to the Kubernetes API should succeed:
+
+
+```yaml
+apiVersion: hardbyte.nz/v1
+kind: NetworkAssertion
+metadata:
+  name: http-k8s-api-should-work
+  namespace: default
+  annotations:
+    description: Assert pod can connect to k8s API
+spec:
+  template:
+    metadata:
+      labels:
+        optional-label: applied-to-test-pod
+  schedule: "@hourly"
+  rules:
+    - name: kubernetes-version
+      type: http
+      url: https://kubernetes/version
+      verify-tls-cert: false
+      expected: pass
+      validate:
+        message: Http request to Kubernetes API should succeed.
+```
+
+
+
+{% callout title="What happens next?" %}
+Once you have applied the `NetworkAssertion`, netchecks reacts by creating a `CronJob` in the
+same namespace to schedule the test. After the first test has run Netchecks creates a `PolicyReport` resource with the same name in the same namespace as the `NetworkAssertion`.
 {% /callout %}
 
 ---
 
-## Basic usage
+## Example Assertions
 
 Praesentium laudantium magni. Consequatur reiciendis aliquid nihil iusto ut in et. Quisquam ut et aliquid occaecati. Culpa veniam aut et voluptates amet perspiciatis. Qui exercitationem in qui. Vel qui dignissimos sit quae distinctio.
 
-### Your first cache
+### HTTP Assertions
+
 
 Minima vel non iste debitis. Consequatur repudiandae et quod accusamus sit molestias consequatur aperiam. Et sequi ipsa eum voluptatibus ipsam. Et quisquam ut.
 
@@ -67,7 +93,7 @@ Qui quae esse aspernatur fugit possimus. Quam sed molestiae temporibus. Eum perf
 
 Atque eos laudantium. Optio odit aspernatur consequuntur corporis soluta quidem sunt aut doloribus. Laudantium assumenda commodi.
 
-### Clearing the cache
+### DNS Assertions
 
 Vel aut velit sit dolor aut suscipit at veritatis voluptas. Laudantium tempore praesentium. Qui ut voluptatem.
 
@@ -75,7 +101,16 @@ Ea est autem fugiat velit esse a alias earum. Dolore non amet soluta eos libero 
 
 Ut dolore qui aut nam. Natus temporibus nisi voluptatum labore est ex error vel officia. Vero repellendus ut. Suscipit voluptate et placeat. Eius quo corporis ab et consequatur quisquam. Nihil officia facere dolorem occaecati alias deleniti deleniti in.
 
-### Adding middleware
+
+
+## Next Steps
+
+### Policy Reporter Integration
+
+#### UI
+#### Alerts
+#### Reports
+#### Metrics
 
 Officia nobis tempora maiores id iusto magni reprehenderit velit. Quae dolores inventore molestiae perspiciatis aut. Quis sequi officia quasi rem officiis officiis. Nesciunt ut cupiditate. Sunt aliquid explicabo enim ipsa eum recusandae. Vitae sunt eligendi et non beatae minima aut.
 
@@ -83,24 +118,3 @@ Harum perferendis aut qui quibusdam tempore laboriosam voluptatum qui sed. Amet 
 
 Ut quo libero aperiam mollitia est repudiandae quaerat corrupti explicabo. Voluptas accusantium sed et doloribus voluptatem fugiat a mollitia. Numquam est magnam dolorem asperiores fugiat. Soluta et fuga amet alias temporibus quasi velit. Laudantium voluptatum perspiciatis doloribus quasi facere. Eveniet deleniti veniam et quia veritatis minus veniam perspiciatis.
 
----
-
-## Getting help
-
-Consequuntur et aut quisquam et qui consequatur eligendi. Necessitatibus dolorem sit. Excepturi cumque quibusdam soluta ullam rerum voluptatibus. Porro illo sequi consequatur nisi numquam nisi autem. Ut necessitatibus aut. Veniam ipsa voluptatem sed.
-
-### Submit an issue
-
-Inventore et aut minus ut voluptatem nihil commodi doloribus consequatur. Facilis perferendis nihil sit aut aspernatur iure ut dolores et. Aspernatur odit dignissimos. Aut qui est sint sint.
-
-Facere aliquam qui. Dolorem officia ipsam adipisci qui molestiae. Error voluptatem reprehenderit ex.
-
-Consequatur enim quia maiores aperiam et ipsum dicta. Quam ut sit facere sit quae. Eligendi veritatis aut ut veritatis iste ut adipisci illo.
-
-### Join the community
-
-Praesentium facilis iste aliquid quo quia a excepturi. Fuga reprehenderit illo sequi voluptatem voluptatem omnis. Id quia consequatur rerum consectetur eligendi et omnis. Voluptates iusto labore possimus provident praesentium id vel harum quisquam. Voluptatem provident corrupti.
-
-Eum et ut. Qui facilis est ipsa. Non facere quia sequi commodi autem. Dicta autem sit sequi omnis impedit. Eligendi amet dolorum magnam repudiandae in a.
-
-Molestiae iusto ut exercitationem dolorem unde iusto tempora atque nihil. Voluptatem velit facere laboriosam nobis ea. Consequatur rerum velit ipsum ipsam. Et qui saepe consequatur minima laborum tempore voluptatum et. Quia eveniet eaque sequi consequatur nihil eos.
