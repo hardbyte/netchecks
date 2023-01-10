@@ -1,5 +1,5 @@
 FROM python:3.11
-LABEL org.opencontainers.image.source=https://github.com/hardbyte/netcheck
+LABEL org.opencontainers.image.source=https://github.com/netchecks/netchecks
 
 # Configure Poetry
 ENV POETRY_VERSION=1.2.2
