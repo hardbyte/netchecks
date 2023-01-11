@@ -1,6 +1,7 @@
 import datetime
 import json
 from collections import defaultdict
+from json import JSONDecodeError
 from time import sleep
 import prometheus_client as prometheus
 
@@ -16,79 +17,94 @@ prometheus.start_http_server(9090)
 VERSION = '0.1.0'
 API_GROUP_NAME = "hardbyte.nz"
 
+# define Prometheus metrics
+ASSERTION_COUNT = prometheus.Counter(
+    'netchecks_assertions',
+    'Number of network assertions',
+    ['name']
+)
+ASSERTION_REQUEST_TIME = prometheus.Summary(
+    'netchecks_operator_assertion_processing_seconds',
+    'Time spent processing network assertions by the netchecks operator',
+    ['name', 'method']
+)
+ASSERTION_RESULT_TIME = prometheus.Summary('netchecks_operator_assertion_results_processing_seconds',
+                                           'Time spent processing network assertion results by the netchecks operator'
+                                           )
 
-ASSERTION_REQUEST_TIME = prometheus.Summary('netcheck_assertion_processing_seconds',
-                                            'Time spent processing new and updated network assertions')
-ASSERTION_RESULT_TIME = prometheus.Summary('netcheck_results_processing_seconds',
-                                           'Time spent processing network assertion results')
-
+ASSERTION_TEST_TIME = prometheus.Summary(
+    'netchecks_probe_processing_seconds',
+    'Time spent testing network assertions by netchecks probe',
+    ['name', 'type']
+)
 
 @kopf.on.create('networkassertions')
-@ASSERTION_REQUEST_TIME.time()
 def creation(body, spec, name, namespace, **kwargs):
-    logger = get_logger(name=name, namespace=namespace)
-    batch_v1 = client.BatchV1Api()
-    logger.info(f"NetworkAssertion on-create handler called")
+    with ASSERTION_REQUEST_TIME.labels(name, 'create').time():
+        logger = get_logger(name=name, namespace=namespace)
+        batch_v1 = client.BatchV1Api()
+        logger.info(f"NetworkAssertion on-create handler called")
+        ASSERTION_COUNT.labels(name).inc()
 
-    logger.debug(f"Requested NetworkAssertion body", body=body)
-    logger.info(f"Requested NetworkAssertion spec", spec=spec)
+        logger.debug(f"Requested NetworkAssertion body", body=body)
+        logger.info(f"Requested NetworkAssertion spec", spec=spec)
 
-    # Validate the NetworkAssertion spec
-    rules = spec.get('rules')
-    logger.info("Rules loaded from NetworkAssertion", rules=rules)
-    if not rules:
-        raise kopf.PermanentError(f"Rules must be set.")
+        # Validate the NetworkAssertion spec
+        rules = spec.get('rules')
+        logger.info("Rules loaded from NetworkAssertion", rules=rules)
+        if not rules:
+            raise kopf.PermanentError(f"Rules must be set.")
 
-    # Grab any template overrides (metadata, spec->serviceAccountName)
-    job_template = spec.get('template')
+        # Grab any template overrides (metadata, spec->serviceAccountName)
+        job_template = spec.get('template')
 
-    cm_response = create_network_assertions_config_map(name, rules, namespace, logger)
+        cm_response = create_network_assertions_config_map(name, rules, namespace, logger)
 
-    # Create a job spec
-    job_spec = create_job_spec(name, cm_response, template_overides=job_template)
-    logger.debug("Job spec created", job_spec=job_spec)
-    job = create_job_object(name, job_spec)
-    logger.debug("Job instance created", job=job)
+        # Create a job spec
+        job_spec = create_job_spec(name, cm_response, template_overides=job_template)
+        logger.debug("Job spec created", job_spec=job_spec)
+        job = create_job_object(name, job_spec)
+        logger.debug("Job instance created", job=job)
 
-    schedule = spec.get('schedule')
-    if schedule is not None:
-        logger.info("Schedule defined. Creating CronJob", schedule=schedule)
-        # Create a CronJob
+        schedule = spec.get('schedule')
+        if schedule is not None:
+            logger.info("Schedule defined. Creating CronJob", schedule=schedule)
+            # Create a CronJob
 
-        cron_job_spec = client.V1CronJobSpec(
-            job_template=job,
-            schedule=schedule
-        )
+            cron_job_spec = client.V1CronJobSpec(
+                job_template=job,
+                schedule=schedule
+            )
 
-        cron_job = client.V1CronJob(
-            api_version="batch/v1",
-            kind="CronJob",
-            metadata=client.V1ObjectMeta(name=name),
-            spec=cron_job_spec
-        )
-        logger.info("Creating CronJob in k8s")
-        logger.debug("Linking CronJob with NetworkAssertion")
-        kopf.adopt(cron_job)
-        api_response = batch_v1.create_namespaced_cron_job(body=cron_job, namespace=namespace)
-        # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
-        kopf.info(body, reason="CronJobCreated",
-                  message=f"CronJob '{api_response.metadata.name}' created to carry out check.")
+            cron_job = client.V1CronJob(
+                api_version="batch/v1",
+                kind="CronJob",
+                metadata=client.V1ObjectMeta(name=name),
+                spec=cron_job_spec
+            )
+            logger.info("Creating CronJob in k8s")
+            logger.debug("Linking CronJob with NetworkAssertion")
+            kopf.adopt(cron_job)
+            api_response = batch_v1.create_namespaced_cron_job(body=cron_job, namespace=namespace)
+            # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
+            kopf.info(body, reason="CronJobCreated",
+                      message=f"CronJob '{api_response.metadata.name}' created to carry out check.")
 
-    else:
-        logger.info("Creating a Job")
-        logger.debug("Linking job with NetworkAssertion")
-        kopf.adopt(job)
-        api_response = batch_v1.create_namespaced_job(body=job, namespace=namespace)
-        logger.info("Pushed job object to k8s api")
-        # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
-        kopf.info(body, reason="JobCreated",
-                  message=f"Job '{api_response.metadata.name}' created to carry out check.")
+        else:
+            logger.info("Creating a Job")
+            logger.debug("Linking job with NetworkAssertion")
+            kopf.adopt(job)
+            api_response = batch_v1.create_namespaced_job(body=job, namespace=namespace)
+            logger.info("Pushed job object to k8s api")
+            # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
+            kopf.info(body, reason="JobCreated",
+                      message=f"Job '{api_response.metadata.name}' created to carry out check.")
 
-    # Note the returned data gets attached to the NetworkAssertion `status.creation`
-    return {
-        "job-name": api_response.metadata.name,
-        "job-uid": api_response.metadata.uid
-    }
+        # Note the returned data gets attached to the NetworkAssertion `status.creation`
+        return {
+            "job-name": api_response.metadata.name,
+            "job-uid": api_response.metadata.uid
+        }
 
 
 def create_network_assertions_config_map(name, rules, namespace, logger):
@@ -130,30 +146,31 @@ def edit(spec, old, name, namespace, body, **kwargs):
 
     # https://kopf.readthedocs.io/en/stable/walkthrough/diffs/
     """
-    logger = get_logger()
-    logger.info(f"Mutation handler called", name=name, namespace=namespace)
-    logger.info("Spec", spec=spec)
-    logger.info("Old", old=old)
-    logger.info("Diff", diff=kwargs.get('diff'))
+    with ASSERTION_REQUEST_TIME.labels(name, 'update').time():
+        logger = get_logger()
+        logger.info(f"Mutation handler called", name=name, namespace=namespace)
+        logger.info("Spec", spec=spec)
+        logger.info("Old", old=old)
+        logger.info("Diff", diff=kwargs.get('diff'))
 
-    logger.info("Trying to find associated Job/CronJob")
-    batch_v1 = client.BatchV1Api()
+        logger.info("Trying to find associated Job/CronJob")
+        batch_v1 = client.BatchV1Api()
 
-    if 'schedule' in old['spec']:
-        logger.info("Deleting CronJob")
-        try:
-            batch_v1.delete_namespaced_cron_job(name=name, namespace=namespace)
-        except client.exceptions.ApiException as e:
-            logger.info("Couldn't find existing CronJob. Ignoring", exc_info=e)
-    else:
-        logger.info("Deleting Job")
-        try:
-            batch_v1.delete_namespaced_job(name=name, namespace=namespace)
-        except client.exceptions.ApiException as e:
-            logger.info("Couldn't find existing Job. Ignoring", exc_info=e)
+        if 'schedule' in old['spec']:
+            logger.info("Deleting CronJob")
+            try:
+                batch_v1.delete_namespaced_cron_job(name=name, namespace=namespace)
+            except client.exceptions.ApiException as e:
+                logger.info("Couldn't find existing CronJob. Ignoring", exc_info=e)
+        else:
+            logger.info("Deleting Job")
+            try:
+                batch_v1.delete_namespaced_job(name=name, namespace=namespace)
+            except client.exceptions.ApiException as e:
+                logger.info("Couldn't find existing Job. Ignoring", exc_info=e)
 
-    logger.info("Recreating resources")
-    creation(body=body, spec=spec, name=name, namespace=namespace)
+        logger.info("Recreating resources")
+        creation(body=body, spec=spec, name=name, namespace=namespace)
 
 
 @kopf.on.delete('networkassertions')
@@ -197,6 +214,8 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                 sleep(5)
                 continue
             case 'Succeeded':
+                # Note it is possible to get here having already processed this container
+                # (e.g. after operator restart)
                 logger.info("Probe Pod has completed", name=name, namespace=namespace)
                 logger.info("Getting pod output", name=name, namespace=namespace)
                 # Doesn't seem to be a nice way to separate stdout and stderr
@@ -204,8 +223,13 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                 #pod_log_ws_client.run_forever(timeout=10)
                 pod_log = pod_log_ws_client.data.decode('utf-8')
                 logger.debug("Pod Log", log=pod_log, name=name, namespace=namespace)
-                # Process the results, then create or update PolicyReport
-                probe_results = process_probe_output(pod_log, assertion_name, namespace)
+                if pod_log.startswith('unable to retrieve container logs'):
+                    logger.warning("Unable to retrieve container logs.")
+                    return
+
+                # Process the results, creating or updating the associated PolicyReport
+
+                process_probe_output(pod_log, assertion_name, namespace, name)
 
                 break
             case _:
@@ -274,16 +298,16 @@ def convert_iso_timestamp_to_k8s_timestamp(iso_timestamp):
     }
 
 
-def upsert_policy_report(probe_results, name, namespace):
+def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_name):
     crd_api = client.CustomObjectsApi()
 
-    logger = get_logger(name=name, namespace=namespace)
+    logger = get_logger(name=nework_assertion_name, namespace=namespace, pod_name=pod_name)
     logger.info("Upsert PolicyReport")
-
+    # TODO Use the Pod name to record in the PolicyReport result
     # get the resource and print out data
 
     # If it doesn't exist, create it
-    policy_report_label_selector = f"app.kubernetes.io/instance={name}"
+    policy_report_label_selector = f"app.kubernetes.io/instance={nework_assertion_name}"
     policy_reports = crd_api.list_namespaced_custom_object(
         group='wgpolicyk8s.io',
         version="v1alpha2",
@@ -291,7 +315,7 @@ def upsert_policy_report(probe_results, name, namespace):
         plural="policyreports",
         label_selector=policy_report_label_selector,
     )
-    labels = get_common_labels(name=name)
+    labels = get_common_labels(name=nework_assertion_name)
     labels['policy.kubernetes.io/engine'] = 'netcheck'
     report_results = convert_results_for_policy_report(probe_results)
     report_summary = summarize_results(probe_results)
@@ -299,7 +323,7 @@ def upsert_policy_report(probe_results, name, namespace):
         "apiVersion": "wgpolicyk8s.io/v1alpha2",
         "kind": "PolicyReport",
         "metadata": {
-            "name": name,
+            "name": nework_assertion_name,
             "labels": labels,
             "annotations": {
                 "category": "Network",
@@ -318,7 +342,7 @@ def upsert_policy_report(probe_results, name, namespace):
             version="v1alpha2",
             namespace=namespace,
             plural="policyreports",
-            name=name,
+            name=nework_assertion_name,
         )
         logger.info("Existing policy report found", report=policy_report)
         crd_api.patch_namespaced_custom_object(
@@ -327,14 +351,12 @@ def upsert_policy_report(probe_results, name, namespace):
             namespace=namespace,
             plural="policyreports",
             body=policy_report_body,
-            name=name,
+            name=nework_assertion_name,
         )
         logger.info("Updated existing PolicyReport")
     else:
         # Create a new PolicyReport
         logger.info("Creating new PolicyReport")
-
-
 
         kopf.adopt(policy_report_body)
         policy_report = crd_api.create_namespaced_custom_object(
@@ -350,14 +372,28 @@ def upsert_policy_report(probe_results, name, namespace):
     return policy_report
 
 
-def process_probe_output(pod_log: str, name, namespace):
+def process_probe_output(pod_log: str, network_assertion_name, namespace, pod_name):
     """
     Extract JSON from pod log
     """
-    probe_results = json.loads(pod_log)
-    print("Probe results", probe_results)
-    upsert_policy_report(probe_results, name, namespace)
+    try:
+        probe_results = json.loads(pod_log)
+    except JSONDecodeError as e:
+        print("Error parsing output from probe pod as JSON.\n\n", pod_log)
+        raise e
 
+    print("Probe results", probe_results)
+    upsert_policy_report(probe_results, network_assertion_name, namespace, pod_name)
+
+    # Update prometheus metrics for the probe results
+
+    for assertion_result in probe_results['assertions']:
+        for test_result in assertion_result['results']:
+            test_start_iso_timestamp = datetime.datetime.fromisoformat(test_result['data']['startTimestamp'])
+            test_end_iso_timestamp = datetime.datetime.fromisoformat(test_result['data']['endTimestamp'])
+            test_duration = (test_end_iso_timestamp - test_start_iso_timestamp).total_seconds()
+
+            ASSERTION_TEST_TIME.labels(name=network_assertion_name, type=test_result['spec']['type']).observe(test_duration)
 
 def get_job_status(api_instance, job_name):
     api_response = api_instance.read_namespaced_job_status(
