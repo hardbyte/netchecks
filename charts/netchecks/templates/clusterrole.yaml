@@ -1,12 +1,7 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: netcheck-operator-account
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: netcheck-role-cluster
+  name: {{ include "netchecks.fullname" . }}
 rules:
   # Kopf Framework: knowing which other operators are running (i.e. peering).
   - apiGroups: [kopf.dev]
@@ -34,14 +29,13 @@ rules:
 
   # Application: Access to our NetworkAssertions cluster-wide
   # Note we don't create or delete them - that's up to the user.
-  - apiGroups: [hardbyte.nz]
+  - apiGroups: [netchecks.io]
     resources: [networkassertions]
     verbs: [list, watch, patch]
 
   - apiGroups: [wgpolicyk8s.io]
     resources: [policyreports]
     verbs: [list, get, patch, create]
-
 
   # Application: other resources we produce and manipulate
   # Here, we create and patch CronJobs, Jobs, Pods, configmaps but we don't delete them.
@@ -58,17 +52,3 @@ rules:
   - apiGroups: [""]
     resources: [configmaps]
     verbs: ["create"]
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: netcheck-rolebinding-cluster
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: netcheck-role-cluster
-subjects:
-  - kind: ServiceAccount
-    name: netcheck-operator-account
-    namespace: netchecks

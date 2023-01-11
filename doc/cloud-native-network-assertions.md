@@ -179,7 +179,7 @@ results:
 ### Another example
 
 ```yaml
-apiVersion: hardbyte.nz/v1
+apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: allow-https-s3-api

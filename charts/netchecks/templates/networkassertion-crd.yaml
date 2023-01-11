@@ -1,12 +1,13 @@
+{{- if .Values.installCRDs }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: networkassertions.hardbyte.nz
+  name: networkassertions.netchecks.io
   labels:
     app.kubernetes.io/part-of: netcheck
 spec:
   scope: Namespaced
-  group: hardbyte.nz
+  group: netchecks.io
   names:
     kind: NetworkAssertion
     listKind: NetworkAssertionList
@@ -36,3 +37,4 @@ spec:
               type: object
               x-kubernetes-preserve-unknown-fields: true
 
+{{- end }}

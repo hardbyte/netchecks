@@ -1,4 +1,4 @@
-apiVersion: hardbyte.nz/v1
+apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: dns-should-work
@@ -7,7 +7,7 @@ metadata:
     description: Cluster should be able to lookup using public dns servers from default namespace.
 spec:
   # https://crontab.guru
-  schedule: "*/3 * * * *"
+  schedule: "*/5 * * * *"
   #schedule: "@hourly"
   rules:
     - name: cloudflare-dns-lookup
