@@ -29,10 +29,10 @@ spec:
           - name: metrics
             containerPort: 9090
             protocol: TCP
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: liveness
+#        livenessProbe:
+#          httpGet:
+#            path: /healthz
+#            port: liveness
         resources:
           limits:
             cpu: 100m
