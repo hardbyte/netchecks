@@ -22,3 +22,18 @@ spec:
       - name: netcheck
         image: ghcr.io/hardbyte/netcheck-operator:main
         imagePullPolicy: Always
+        ports:
+          - name: liveness
+            containerPort: 8080
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /
+            port: liveness
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 20m
+            memory: 64Mi

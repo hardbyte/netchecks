@@ -23,4 +23,4 @@ RUN poetry install --no-root
 
 COPY . /app
 RUN poetry install
-CMD ["poetry", "run", "kopf", "run", "main.py"]
+CMD ["poetry", "run", "kopf", "run", "main.py", "--liveness=http://0.0.0.0:8080/healthz"]

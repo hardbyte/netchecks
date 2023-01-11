@@ -123,7 +123,7 @@ kubectl config use-context kind-kind
 ### Start the operator
 
 ```shell
-kopf run main.py --verbose
+kopf run main.py --liveness=http://0.0.0.0:8080/healthz
 ```
 
 ### Install the CRDs
