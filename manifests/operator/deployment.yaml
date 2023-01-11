@@ -28,7 +28,7 @@ spec:
             protocol: TCP
         livenessProbe:
           httpGet:
-            path: /
+            path: /healthz
             port: liveness
         resources:
           limits:
