@@ -29,4 +29,4 @@ spec:
       host: netchecks.io
       expected: pass
       validate:
-        message: DNS requests to Google's 8.8.8.8 should succeed.
+        message: DNS requests using default namesever should succeed.
