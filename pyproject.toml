@@ -12,6 +12,7 @@ kopf = "^1.36.0"
 kubernetes = "^25.3.0"
 rich = "^12.6.0"
 structlog = "^22.3.0"
+prometheus-client = "^0.15.0"
 
 
 [build-system]

@@ -2,6 +2,7 @@ import datetime
 import json
 from collections import defaultdict
 from time import sleep
+import prometheus_client as prometheus
 
 from kubernetes.client import V1ConfigMap, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
     V1VolumeMount
@@ -10,13 +11,20 @@ from rich import print
 import kopf
 from kubernetes import client
 
+prometheus.start_http_server(9090)
+
 VERSION = '0.1.0'
 API_GROUP_NAME = "hardbyte.nz"
 
 
+ASSERTION_REQUEST_TIME = prometheus.Summary('netcheck_assertion_processing_seconds',
+                                            'Time spent processing new and updated network assertions')
+ASSERTION_RESULT_TIME = prometheus.Summary('netcheck_results_processing_seconds',
+                                           'Time spent processing network assertion results')
 
 
 @kopf.on.create('networkassertions')
+@ASSERTION_REQUEST_TIME.time()
 def creation(body, spec, name, namespace, **kwargs):
     logger = get_logger(name=name, namespace=namespace)
     batch_v1 = client.BatchV1Api()
@@ -169,6 +177,7 @@ def on_resume(spec, name, namespace, **kwargs):
                  'app.kubernetes.io/component': 'probe'
              },
              )
+@ASSERTION_RESULT_TIME.time()
 def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwargs):
     logger = get_logger()
     logger.info("Monitoring pod", name=name, namespace=namespace)
