@@ -45,7 +45,7 @@ data:
       "probe": {
         "image": {"pullPolicy":"Always","repository":"ghcr.io/netchecks/netchecks","tag":"main"},
         "imagePullSecrets": [],
-        "podAnnotations": {"customAnnotation":"test"}
+        "podAnnotations": {}
         }
     }
 ---

@@ -10,7 +10,7 @@ set -o nounset
 set -o pipefail
 
 
-cd $(dirname "${BASH_SOURCE}")/.. && pwd -P
+cd $(dirname "${BASH_SOURCE}") && pwd -P
 
 MANIFEST=manifests/deploy.yaml
 

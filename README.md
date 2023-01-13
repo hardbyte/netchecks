@@ -128,6 +128,13 @@ To verify that an image was created for a specific release add the following to 
 
 ## Development
 
+
+### Generate the static manifests (manually)
+
+```shell
+./create-static-manifests.sh
+```
+
 ### Start a test cluster
 
 ```shell
