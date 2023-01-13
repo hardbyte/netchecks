@@ -60,6 +60,7 @@ jobs:
         uses: sigstore/cosign-installer@main
       - name: Sign the images with GitHub OIDC Token
         run: cosign sign ${TAGS}
+        if: github.event_name != 'pull_request'
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           COSIGN_EXPERIMENTAL: true
@@ -96,29 +97,31 @@ jobs:
           kubectl cluster-info
           export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
 
-      - name: Install Netcheck CRD
+      - name: Install PolicyReport CRD
         run: |
-          kubectl apply -f manifests/crds/networkassertion-crd.yaml
-          kubectl wait --for condition=Established crd/networkassertions.hardbyte.nz --timeout=5m
+          kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
+          kubectl wait --for condition=Established crd/policyreports.wgpolicyk8s.io --timeout=5m
 
       - name: List CRDs
         run: |
           kubectl get crd -A
 
-      - name: Install Netcheck Operator
+      - name: Install Netcheck Operator via Helm
         run: |
-          kubectl create namespace netcheck
-          kubectl apply -n netcheck -f manifests/operator
-          sleep 30
-          kubectl describe -n netcheck deployment.apps/netcheck-operator
-
-      #- name: Describe Operator Startup
-      #  run: |
-      #    kubectl describe -n netcheck pod $(kubectl -n netcheck get pods --selector=application=netcheck-operator -o jsonpath='{.items[*].metadata.name}')
+          helm dependency build charts/netchecks
+          helm upgrade \
+            --install netchecks-operator \
+            charts/netchecks/ \
+            -f examples/kind-installation/values.yaml \
+            -n netchecks \
+            --create-namespace \
+            --wait --timeout 5m
+          sleep 10
+          kubectl describe -n netchecks deployment.apps/netchecks-operator
 
       - name: Wait for Netcheck Operator to be ready
         run: |    
-          kubectl wait -n netcheck --for=condition=Ready --all pod --timeout=5m
+          kubectl wait -n netchecks --for=condition=Ready --all pod --timeout=5m
 
       # Handy for debugging
       #- name: Explain NetworkAssertion CRD
@@ -134,7 +137,7 @@ jobs:
         run: |
           kubectl apply -f examples/default-k8s/dns.yaml
 
-      # Check we can get NetcheckAssertions
+      # Check we can get the assertion
       - name: Get NetcheckAssertions
         run: |
           kubectl get networkassertions
@@ -142,7 +145,7 @@ jobs:
       # Check a Job/Pod was created
       - name: See if the operator created a Job/Pod
         run: |
-          sleep 30
+          sleep 60
           echo "Listing CronJobs"
           kubectl get CronJob
           echo "Listing Jobs"
@@ -154,7 +157,7 @@ jobs:
       - name: Operator logs
         if: ${{ always() }}
         run: |
-          kubectl logs -n netcheck deployment/netcheck-operator
+          kubectl logs -n netchecks deployment/netchecks-operator
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium
@@ -164,7 +167,7 @@ jobs:
             --wait=false \
             --config monitor-aggregation=none \
             --helm-set cni.chainingMode=portmap
-      - name: Enable Relay
+      - name: Enable Hubble Relay
         run: |
           cilium hubble enable --ui
       - name: Relay Port Forward

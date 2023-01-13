@@ -1,0 +1,6 @@
+
+Thank you for installing {{ .Chart.Name | upper }}.
+
+Your release is named {{ .Release.Name }}.
+
+https://docs.netchecks.io

@@ -1,0 +1,246 @@
+---
+# Source: netchecks/templates/netpol.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: netchecks-operator
+  labels:
+    app.kubernetes.io/name: netchecks
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "0.1.0"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: netchecks
+      app.kubernetes.io/instance: netchecks-operator
+  policyTypes:
+    - Egress
+
+  egress:
+    # Allow operator to talk to anything. Would be better to restrict to K8s API
+    - {}
+---
+# Source: netchecks/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: netcheck-operator-account
+  labels:
+    app.kubernetes.io/name: netchecks
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "0.1.0"
+---
+# Source: netchecks/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netchecks-operator
+  labels: 
+    app.kubernetes.io/name: netchecks
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "0.1.0"
+data:
+  config.json: |-
+    {
+      "probe": {
+        "image": {"pullPolicy":"Always","repository":"ghcr.io/netchecks/netchecks","tag":"main"},
+        "imagePullSecrets": [],
+        "podAnnotations": {"customAnnotation":"test"}
+        }
+    }
+---
+# Source: netchecks/templates/networkassertion-crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: networkassertions.netchecks.io
+  labels:
+    app.kubernetes.io/part-of: netcheck
+spec:
+  scope: Namespaced
+  group: netchecks.io
+  names:
+    kind: NetworkAssertion
+    listKind: NetworkAssertionList
+    plural: networkassertions
+    singular: networkassertion
+    shortNames:
+      - nas
+      - na
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      additionalPrinterColumns:
+        - jsonPath: .spec.schedule
+          name: Schedule
+          type: string
+      schema:
+
+        openAPIV3Schema:
+          type: object
+
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+---
+# Source: netchecks/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: netchecks-operator
+rules:
+  # Kopf Framework: knowing which other operators are running (i.e. peering).
+  - apiGroups: [kopf.dev]
+    resources: [clusterkopfpeerings]
+    verbs: [list, watch, patch, get]
+
+  # Kopf Framework: runtime observation of namespaces & CRDs (addition/deletion).
+  - apiGroups: [apiextensions.k8s.io]
+    resources: [customresourcedefinitions]
+    verbs: [list, watch]
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [list, watch]
+
+  # Kopf Framework: admission webhook configuration management.
+  - apiGroups: [admissionregistration.k8s.io/v1, admissionregistration.k8s.io/v1beta1]
+    resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
+    verbs: [create, patch]
+
+  # This could be restricted to our operator namespace
+  # Framework: posting the events about the handlers progress/errors.
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create]
+
+  # Application: Access to our NetworkAssertions cluster-wide
+  # Note we don't create or delete them - that's up to the user.
+  - apiGroups: [netchecks.io]
+    resources: [networkassertions]
+    verbs: [list, watch, patch]
+
+  - apiGroups: [wgpolicyk8s.io]
+    resources: [policyreports]
+    verbs: [list, get, patch, create]
+
+  # Application: other resources we produce and manipulate
+  # Here, we create and patch CronJobs, Jobs, Pods, configmaps but we don't delete them.
+  - apiGroups: [batch, extensions]
+    resources: [jobs, cronjobs]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list", "watch"]
+  # We directly create config maps. At some point we may need to patch them.
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: ["create"]
+---
+# Source: netchecks/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: netchecks-operator
+  labels:
+    app.kubernetes.io/name: netchecks
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "0.1.0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: netchecks-operator
+subjects:
+  - kind: ServiceAccount
+    name: netcheck-operator-account
+    namespace: 'netchecks'
+---
+# Source: netchecks/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: netchecks-operator
+  labels:
+    app.kubernetes.io/name: netchecks
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "0.1.0"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: netchecks
+    app.kubernetes.io/instance: netchecks-operator
+---
+# Source: netchecks/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netchecks-operator
+  labels:
+    app.kubernetes.io/name: netchecks
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "0.1.0"
+spec:
+  # Please note that only one replica is required for the operator
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: netchecks
+      app.kubernetes.io/instance: netchecks-operator
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+      labels:
+        app.kubernetes.io/name: netchecks
+        app.kubernetes.io/instance: netchecks-operator
+    spec:
+      serviceAccountName: netcheck-operator-account
+      securityContext:
+        {}
+      containers:
+        - name: netchecks
+          securityContext:
+            {}
+          image: "ghcr.io/netchecks/operator:main"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 60
+            timeoutSeconds: 10
+            successThreshold: 1
+            failureThreshold: 10
+          resources:
+            {}
+          env:
+            - name: JSON_CONFIG
+              value: /var/config/config.json
+          volumeMounts:
+            - mountPath: /var/config
+              name: config-file
+              readOnly: true
+      volumes:
+        - name: config-file
+          configMap:
+            name: netchecks-operator

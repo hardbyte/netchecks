@@ -11,7 +11,7 @@ the network (what should work and what shouldn't).
 
 
 ```yaml
-apiVersion: hardbyte.nz/v1
+apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: http-k8s-api-should-work
@@ -80,13 +80,29 @@ summary:
 
 ## Installation
 
-Install the NetworkAssertion and PolicyReport CRDs and the Netchecks operator with:
+The PolicyReport CRD is required to be installed before the operator. The CRD can be installed by running:
+
+```shell 
+kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
+```
+
+
+### Helm
+
+The helm chart is not **yet** available in a public helm repository. To install the operator, 
+clone the git repo and run:
 
 ```shell
-kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/crds/networkassertion-crd.yaml
-kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
-kubectl create namespace netchecks
-kubectl apply -f manifests/operator -n netchecks
+helm upgrade --install netchecks-operator  charts/netchecks/ -n netchecks --create-namespace
+```
+
+
+### Static Manifests
+
+Alternatively, install the NetworkAssertion and PolicyReport CRDs and the Netchecks operator with:
+
+```shell
+kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/deploy.yaml
 ```
 
 Then apply your `NetworkAssertions` as any other resource.
@@ -108,7 +124,7 @@ $ COSIGN_EXPERIMENTAL=1 cosign verify --certificate-github-workflow-repository n
 
 To verify that an image was created for a specific release add the following to the cosign command:
 
---certificate-github-workflow-ref refs/tags/[RELEASE TAG] ghcr.io/hardbyte/netcheck-operator:[VERSION] | jq
+--certificate-github-workflow-ref refs/tags/[RELEASE TAG] ghcr.io/netchecks/operator:[VERSION] | jq
 
 ## Development
 
@@ -120,24 +136,10 @@ kubectl config use-context kind-kind
 ```
 
 
-### Start the operator
+### Start the operator outside of Kubernetes
 
 ```shell
 kopf run main.py --liveness=http://0.0.0.0:8080/healthz
-```
-
-### Install the CRDs
-
-Our Netcheck CRDs:
-
-```shell
-kubectl apply -f manifests/crds
-```
-
-The PolicyReport CRD:
-
-```shell
-kubectl create -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
 ```
 
 ### Create a NetworkAssertion

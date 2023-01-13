@@ -1,0 +1,35 @@
+apiVersion: v2
+name: netchecks
+description: Netchecks proactively verifies whether your security controls are working as intended.
+type: application
+icon: https://raw.githubusercontent.com/netchecks/netchecks/main/.github/logo.png
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "0.1.0"
+sources:
+  - https://github.com/netchecks/operator
+maintainers:
+  - name: Brian Thorne
+    email: brian@hardbyte.nz
+annotations:
+  artifacthub.io/operator: "true"
+  artifacthub.io/prerelease: "true"
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://docs.netchecks.io
+  # valid kinds are: added, changed, deprecated, removed, fixed and security
+  artifacthub.io/changes: |
+    - kind: added
+      description: A helm chart for netchecks operator
+dependencies:
+  - name: policy-reporter
+    version: 2.14.1
+    repository: https://kyverno.github.io/policy-reporter
+    condition: policyreporter.enabled

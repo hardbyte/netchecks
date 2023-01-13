@@ -5,17 +5,25 @@ from json import JSONDecodeError
 from time import sleep
 import prometheus_client as prometheus
 
-from kubernetes.client import V1ConfigMap, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
+from kubernetes.client import ApiException, V1ConfigMap, V1ObjectMeta, V1Pod, V1ConfigMapVolumeSource, V1Volume, \
     V1VolumeMount
 from structlog import get_logger
 from rich import print
 import kopf
 from kubernetes import client
 
-prometheus.start_http_server(9090)
+from netchecksoperator.config import Config
+
+
+logger = get_logger()
+settings = Config()
+
+logger.debug("Starting operator", config=settings.json())
+if settings.metrics.enabled:
+    prometheus.start_http_server(settings.metrics.port)
 
 VERSION = '0.1.0'
-API_GROUP_NAME = "hardbyte.nz"
+API_GROUP_NAME = "netchecks.io"
 
 # define Prometheus metrics
 ASSERTION_COUNT = prometheus.Counter(
@@ -38,7 +46,7 @@ ASSERTION_TEST_TIME = prometheus.Summary(
     ['name', 'type']
 )
 
-@kopf.on.create('networkassertions')
+@kopf.on.create('networkassertions.v1.netchecks.io')
 def creation(body, spec, name, namespace, **kwargs):
     with ASSERTION_REQUEST_TIME.labels(name, 'create').time():
         logger = get_logger(name=name, namespace=namespace)
@@ -61,7 +69,7 @@ def creation(body, spec, name, namespace, **kwargs):
         cm_response = create_network_assertions_config_map(name, rules, namespace, logger)
 
         # Create a job spec
-        job_spec = create_job_spec(name, cm_response, template_overides=job_template)
+        job_spec = create_job_spec(name, cm_response,settings, template_overides=job_template)
         logger.debug("Job spec created", job_spec=job_spec)
         job = create_job_object(name, job_spec)
         logger.debug("Job instance created", job=job)
@@ -136,7 +144,7 @@ def create_network_assertions_config_map(name, rules, namespace, logger):
     return cm_response
 
 
-@kopf.on.update('networkassertions')
+@kopf.on.update('networkassertions.v1.netchecks.io')
 def edit(spec, old, name, namespace, body, **kwargs):
     """
     This is called when someone modifies their NetworkAssertion.
@@ -173,13 +181,13 @@ def edit(spec, old, name, namespace, body, **kwargs):
         creation(body=body, spec=spec, name=name, namespace=namespace)
 
 
-@kopf.on.delete('networkassertions')
+@kopf.on.delete('networkassertions.v1.netchecks.io')
 def delete(name, namespace, **kwargs):
     logger = get_logger()
     logger.info(f"networkassertion delete handler called", name=name, namespace=namespace)
 
 
-@kopf.on.resume('networkassertions')
+@kopf.on.resume('networkassertions.v1.netchecks.io')
 def on_resume(spec, name, namespace, **kwargs):
     logger = get_logger()
     logger.info(f"networkassertions resume handler called", name=name, namespace=namespace)
@@ -188,9 +196,8 @@ def on_resume(spec, name, namespace, **kwargs):
 
 
 @kopf.daemon('pod',
-             #annotations={'some-annotation': 'some-value'},
              labels={
-                 'app.kubernetes.io/name': 'netcheck',
+                 'app.kubernetes.io/name': 'netchecks',
                  'app.kubernetes.io/component': 'probe'
              },
              )
@@ -359,13 +366,17 @@ def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_na
         logger.info("Creating new PolicyReport")
 
         kopf.adopt(policy_report_body)
-        policy_report = crd_api.create_namespaced_custom_object(
-            group='wgpolicyk8s.io',
-            version="v1alpha2",
-            namespace=namespace,
-            plural="policyreports",
-            body=policy_report_body
-        )
+        try:
+            policy_report = crd_api.create_namespaced_custom_object(
+                group='wgpolicyk8s.io',
+                version="v1alpha2",
+                namespace=namespace,
+                plural="policyreports",
+                body=policy_report_body
+            )
+        except ApiException as e:
+            logger.error("Failed to create PolicyReport", status=e.status, error=e)
+            raise
 
         logger.info("PolicyReport created", policy_report=policy_report)
 
@@ -427,12 +438,13 @@ def get_common_labels(name):
     }
 
 
-def create_job_spec(name, cm: V1ConfigMap, template_overides: dict = None):
+def create_job_spec(name, cm: V1ConfigMap, settings: Config, template_overides: dict = None):
     # Container template first
     container = client.V1Container(
         name="netcheck",
-        image="ghcr.io/netchecks/netchecks:main",
-        image_pull_policy="Always",  # Until we pin versions
+        # e.g "ghcr.io/netchecks/netchecks:main"
+        image=f"{settings.probe.image.repository}:{settings.probe.image.tag}",
+        image_pull_policy=settings.probe.image.pullPolicy,
         command=["poetry", "run", "netcheck", "run", "--config", "/netcheck/rules.json"],
         volume_mounts=[
             V1VolumeMount(name='netcheck-rules', mount_path='/netcheck')
@@ -447,7 +459,7 @@ def create_job_spec(name, cm: V1ConfigMap, template_overides: dict = None):
     pod_template = client.V1PodTemplateSpec(
         metadata=client.V1ObjectMeta(
             labels=labels,
-            annotations={}
+            annotations=settings.probe.podAnnotations
         ),
         spec=client.V1PodSpec(
             restart_policy="Never",

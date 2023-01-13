@@ -4,7 +4,7 @@ metadata:
   name: test-http-netcheck-sa
   namespace: default
 ---
-apiVersion: hardbyte.nz/v1
+apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: http-should-work
