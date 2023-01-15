@@ -43,14 +43,15 @@ const navigation = [
         title: 'Contributor Guide',
         links: [
 
-            {title: 'Command Line Application', href: '/docs/cli',},
-            {title: 'Kubernetes Operator', href: '/docs/operator'},
-            {title: 'Writing plugins', href: '/docs/writing-plugins'},
-            {title: 'Testing', href: '/docs/testing'},
             {title: 'How to contribute', href: '/docs/how-to-contribute'},
+            {title: 'Development', href: '/docs/development',},
             {title: 'Architecture guide', href: '/docs/architecture-guide'},
+            {title: 'Kubernetes Operator', href: '/docs/operator'},
+            {title: 'Testing', href: '/docs/testing'},
             {title: 'Design principles', href: '/docs/design-principles'},
+            {title: 'Release Guide', href: '/docs/releasing'},
             {title: 'Roadmap', href: '/docs/roadmap'},
+            {title: 'Writing plugins', href: '/docs/writing-plugins'},
         ],
     },
     // {

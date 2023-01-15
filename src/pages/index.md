@@ -18,7 +18,6 @@ Learn how to get Netchecks set up in your own Kubernetes cluster. {% .lead %}
 
 {% /quick-links %}
 
-Possimus saepe veritatis sint nobis et quam eos. Architecto consequatur odit perferendis fuga eveniet possimus rerum cumque. Ea deleniti voluptatum deserunt voluptatibus ut non iste.
 
 ---
 ## Quick start
@@ -27,11 +26,10 @@ Possimus saepe veritatis sint nobis et quam eos. Architecto consequatur odit per
 
 Install the `NetworkAssertion` and `PolicyReport` CRDs and the `Netchecks` operator with:
 
-```bash
-kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/crds/networkassertion-crd.yaml
+```shell
 kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
 kubectl create namespace netchecks
-kubectl apply -f manifests/operator -n netchecks
+kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/deploy.yaml
 ```
 
 Wait until the netchecks namespace is running a Deployment with a ready Pod:
@@ -44,11 +42,11 @@ kubectl wait Deployment -n netchecks -l app=netcheck-operator --for condition=Av
 
 Create and apply your `NetworkAssertions` as any other Kubernetes resource.
 
-For example a `NetworkAssertion` that checks HTTP requests to the Kubernetes API should succeed:
+For example a `NetworkAssertion` with a single rule that checks HTTP requests to the Kubernetes API should succeed:
 
 
 ```yaml
-apiVersion: hardbyte.nz/v1
+apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: http-k8s-api-should-work
@@ -72,7 +70,6 @@ spec:
 ```
 
 
-
 {% callout title="What happens next?" %}
 Once you have applied the `NetworkAssertion`, netchecks reacts by creating a `CronJob` in the
 same namespace to schedule the test. After the first test has run Netchecks creates a `PolicyReport` resource with the same name in the same namespace as the `NetworkAssertion`.
@@ -80,27 +77,174 @@ same namespace to schedule the test. After the first test has run Netchecks crea
 
 ---
 
-## Example Assertions
+## Example
 
-Praesentium laudantium magni. Consequatur reiciendis aliquid nihil iusto ut in et. Quisquam ut et aliquid occaecati. Culpa veniam aut et voluptates amet perspiciatis. Qui exercitationem in qui. Vel qui dignissimos sit quae distinctio.
+Assume we have a Kubernetes cluster using Cilium as a CNI plugin. We can use Netchecks to verify that the network policies are being enforced.
 
-### HTTP Assertions
+### DNS Policy
+
+Cilium allows you to restrict DNS access to specific domains. For example, the following 
+CiliumNetworkPolicy only allows access to the Kubernetes API, and github.com, denying all
+other DNS requests:
 
 
-Minima vel non iste debitis. Consequatur repudiandae et quod accusamus sit molestias consequatur aperiam. Et sequi ipsa eum voluptatibus ipsam. Et quisquam ut.
+```yaml
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: intercept-dns
+spec:
+  endpointSelector: {}
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        "k8s:io.kubernetes.pod.namespace": kube-system
+        "k8s:k8s-app": kube-dns
+    toPorts:
+      - ports:
+          - port: "53"
+            protocol: ANY
+        rules:
+          dns:
+            # https://docs.cilium.io/en/v1.12/policy/language/#dns-based
+            - matchPattern: "*.github.com"
+            - matchName: "github.com"
+            - matchPattern: "*.svc.cluster.local"
+            - matchPattern: "*.*.svc.cluster.local"
+            - matchPattern: "*.*.*.svc.cluster.local"
+            - matchPattern: "*.*.*.*.svc.cluster.local"
+            - matchPattern: "*.cluster.local"
+            - matchPattern: "*.*.cluster.local"
+            - matchPattern: "*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.localdomain"
+            - matchPattern: "*.*.*.localdomain"
+            - matchPattern: "*.*.*.*.localdomain"
+            - matchPattern: "*.*.*.*.*.localdomain"
+```
 
-Qui quae esse aspernatur fugit possimus. Quam sed molestiae temporibus. Eum perferendis dignissimos provident ea et. Et repudiandae quasi accusamus consequatur dolore nobis. Quia reiciendis necessitatibus a blanditiis iste quia. Ut quis et amet praesentium sapiente.
+### Network Assertions
 
-Atque eos laudantium. Optio odit aspernatur consequuntur corporis soluta quidem sunt aut doloribus. Laudantium assumenda commodi.
+We can create a `NetworkAssertion` to verify every 10 minutes that the DNS restrictions
+are working as expected:
 
-### DNS Assertions
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: dns-restrictions-should-work
+  namespace: default
+  annotations:
+    description: Check cluster dns restrictions are working
+spec:
+  schedule: "*/10 * * * *"
+  rules:
+    - name: external-dns-lookup-should-fail
+      type: dns
+      server: 1.1.1.1
+      host: hardbyte.nz
+      expected: fail
+      validate:
+        message: DNS requests using an external DNS provider such as cloudflare should fail.
+    - name: external-dns-host-lookup-should-fail
+      type: dns
+      host: hardbyte.nz
+      expected: fail
+      validate:
+        message: DNS requests to a non-approved host should fail.
+    - name: approved-dns-host-lookup-should-work
+      type: dns
+      host: github.com
+      expected: pass
+      validate:
+        message: DNS requests to an approved host.
+    - name: approved-dns-host-subdomain-lookup-should-work
+      type: dns
+      host: status.github.com
+      expected: pass
+      validate:
+        message: DNS requests for a subdomain of an approved host.
+    - name: internal-k8s-service-dns-lookup-should-work
+      type: dns
+      host: kubernetes
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
+    - name: k8s-svc-dns-lookup-should-work
+      type: dns
+      host: kubernetes.default
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service with namespace should work.
+    - name: k8s-svc-dns-lookup-should-work
+      type: dns
+      host: kubernetes.default.svc
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
+    - name: k8s-svc-with-cluster-domain-lookup-should-work
+      type: dns
+      host: kubernetes.default.svc.cluster.local
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
 
-Vel aut velit sit dolor aut suscipit at veritatis voluptas. Laudantium tempore praesentium. Qui ut voluptatem.
+```
 
-Ea est autem fugiat velit esse a alias earum. Dolore non amet soluta eos libero est. Consequatur qui aliquam qui odit eligendi ut impedit illo dignissimos.
+Optionally you may want to verify that DNS that is expected to work continues to work too:
 
-Ut dolore qui aut nam. Natus temporibus nisi voluptatum labore est ex error vel officia. Vero repellendus ut. Suscipit voluptate et placeat. Eius quo corporis ab et consequatur quisquam. Nihil officia facere dolorem occaecati alias deleniti deleniti in.
-
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: cluster-dns-should-work
+  namespace: default
+  annotations:
+    description: Check cluster dns behaviour
+spec:
+  # Every 20 minutes
+  schedule: "*/20 * * * *"
+  rules:
+    - name: external-dns-host-lookup-should-work
+      type: dns
+      host: github.com
+      expected: pass
+      validate:
+        message: DNS lookup of an external host using default nameserver.
+    - name: approved-dns-host-subdomain-lookup-should-work
+      type: dns
+      host: status.github.com
+      expected: pass
+      validate:
+        message: DNS requests for a subdomain of an external host.
+    - name: internal-k8s-service-dns-lookup-should-work
+      type: dns
+      host: kubernetes
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
+    - name: k8s-svc-dns-lookup-should-work
+      type: dns
+      host: kubernetes.default.svc
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
+    - name: k8s-svc-with-cluster-domain-lookup-should-work
+      type: dns
+      host: kubernetes.default.svc.cluster.local
+      expected: pass
+      validate:
+        message: DNS lookup of the fqdn kubernetes service should work.
+    - name: missing-svc-dns-lookup-should-fail
+      type: dns
+      host: unlikely-a-real-service.default.svc.cluster.local
+      expected: fail
+      validate:
+        message: DNS lookup of the missing service should fail.
+```
 
 
 ## Next Steps
@@ -111,10 +255,4 @@ Ut dolore qui aut nam. Natus temporibus nisi voluptatum labore est ex error vel 
 #### Alerts
 #### Reports
 #### Metrics
-
-Officia nobis tempora maiores id iusto magni reprehenderit velit. Quae dolores inventore molestiae perspiciatis aut. Quis sequi officia quasi rem officiis officiis. Nesciunt ut cupiditate. Sunt aliquid explicabo enim ipsa eum recusandae. Vitae sunt eligendi et non beatae minima aut.
-
-Harum perferendis aut qui quibusdam tempore laboriosam voluptatum qui sed. Amet error amet totam exercitationem aut corporis accusantium dolorum. Perspiciatis aut animi et. Sed unde error ut aut rerum.
-
-Ut quo libero aperiam mollitia est repudiandae quaerat corrupti explicabo. Voluptas accusantium sed et doloribus voluptatem fugiat a mollitia. Numquam est magnam dolorem asperiores fugiat. Soluta et fuga amet alias temporibus quasi velit. Laudantium voluptatum perspiciatis doloribus quasi facere. Eveniet deleniti veniam et quia veritatis minus veniam perspiciatis.
 

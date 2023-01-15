@@ -10,7 +10,7 @@ import blurIndigoImage from '@/images/blur-indigo.png'
 
 
 const tabs = [
-  { name: 'k8s-api-assertion.yaml', isActive: true, codeLanguage: 'yaml', code: `apiVersion: hardbyte.nz/v1
+  { name: 'k8s-api-assertion.yaml', isActive: true, codeLanguage: 'yaml', code: `apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: http-k8s-api-should-work
@@ -28,7 +28,7 @@ spec:
       validate:
         message: Http request to Kubernetes API should succeed.`
   },
-  { name: 'dns-assertion.yaml', isActive: false, codeLanguage: 'yaml', code: `apiVersion: hardbyte.nz/v1
+  { name: 'dns-assertion.yaml', isActive: false, codeLanguage: 'yaml', code: `apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: dns-should-work
