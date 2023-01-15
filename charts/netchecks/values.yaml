@@ -10,7 +10,6 @@ installCRDs: true
 networkPolicy:
   enabled: true
 
-
 policyreporter:
   enabled: false
 
