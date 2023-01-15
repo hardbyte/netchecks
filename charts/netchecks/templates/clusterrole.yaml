@@ -31,7 +31,7 @@ rules:
   # Note we don't create or delete them - that's up to the user.
   - apiGroups: [netchecks.io]
     resources: [networkassertions]
-    verbs: [list, watch, patch]
+    verbs: [list, get, watch, patch]
 
   - apiGroups: [wgpolicyk8s.io]
     resources: [policyreports]
