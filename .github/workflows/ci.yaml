@@ -2,7 +2,7 @@ name: CI
 
 on:
   release:
-    types: [ published ]
+    types: [published]
   pull_request:
   push:
     branches: [ main ]
