@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: list-policy-reports-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: list-policy-reports-cr
+rules:
+  - verbs:
+      - get
+      - list
+      - watch
+    apiGroups:
+      - '*'
+    resources:
+      - pods
+      - policyreports
+      - policyreports/status
+      - clusterpolicyreports
+      - clusterpolicyreports/status
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: list-policy-reports-crb
+subjects:
+  - kind: ServiceAccount
+    name: list-policy-reports-sa
+    namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: list-policy-reports-cr
+---
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: k8s-api-to-list-policyreports-should-work
+  namespace: default
+  annotations:
+    description: Assert that a service account with list policyreports permission can do so via the k8s http API
+spec:
+  template:
+    spec:
+      serviceAccountName: list-policy-reports-sa
+  schedule: "*/10 * * * *"
+  rules:
+    - name: kubernetes-list-pods
+      type: http
+      url: https://kubernetes/api/v1/pods
+      verify-tls-cert: false
+      expected: pass
+      validate:
+        message: Request to list pods should succeed.
+
+    - name: kubernetes-list-policy-reports
+      type: http
+      url: https://kubernetes/apis/wgpolicyk8s.io/v1alpha2/policyreports?limit=5
+      verify-tls-cert: false
+
+      # How should this work? For k8s apis we know the sa token is mounted
+      # into a file at:
+      # /var/run/secrets/kubernetes.io/serviceaccount/token
+      # But often the token will be in a k8s secret we will have to mount.
+      headers:
+        - name: Authorization
+          type: bearer  # or basic
+          # options:
+          # value: xyz
+          #valueFrom:
+            #configMapKeyRef:
+            #secretKeyRef:
+            #  name: list-policy-reports-sa-token-xxxxx
+            #  key: token
+
+            #fileRef: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+      expected: pass
+      validate:
+        message: Request to list policy reports from Kubernetes API should succeed.
+
