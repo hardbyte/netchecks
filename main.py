@@ -155,7 +155,7 @@ def edit(spec, old, name, namespace, body, **kwargs):
     # https://kopf.readthedocs.io/en/stable/walkthrough/diffs/
     """
     with ASSERTION_REQUEST_TIME.labels(name, 'update').time():
-        logger = get_logger()
+        logger = get_logger(name=name, namespace=namespace)
         logger.info(f"Mutation handler called", name=name, namespace=namespace)
         logger.info("Spec", spec=spec)
         logger.info("Old", old=old)
@@ -177,20 +177,30 @@ def edit(spec, old, name, namespace, body, **kwargs):
             except client.exceptions.ApiException as e:
                 logger.info("Couldn't find existing Job. Ignoring", exc_info=e)
 
+        # TODO: Upsert instead of replace the existing config map
+        logger.info("Deleting existing config map")
+        core_api = client.CoreV1Api()
+        core_api.delete_namespaced_config_map(
+            name=name,
+            namespace=namespace,
+        )
+        logger.info("Removed existing config map")
+
+
         logger.info("Recreating resources")
         creation(body=body, spec=spec, name=name, namespace=namespace)
 
 
 @kopf.on.delete('networkassertions.v1.netchecks.io')
 def delete(name, namespace, **kwargs):
-    logger = get_logger()
-    logger.info(f"networkassertion delete handler called", name=name, namespace=namespace)
+    logger = get_logger(name=name, namespace=namespace)
+    logger.info(f"networkassertion delete handler called")
 
 
 @kopf.on.resume('networkassertions.v1.netchecks.io')
 def on_resume(spec, name, namespace, **kwargs):
-    logger = get_logger()
-    logger.info(f"networkassertions resume handler called", name=name, namespace=namespace)
+    logger = get_logger(name=name, namespace=namespace)
+    logger.info(f"networkassertions resume handler called")
 
     # May need to explicitly restart daemon?
 
@@ -203,16 +213,16 @@ def on_resume(spec, name, namespace, **kwargs):
              )
 @ASSERTION_RESULT_TIME.time()
 def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwargs):
-    logger = get_logger()
-    logger.info("Monitoring pod", name=name, namespace=namespace)
+    logger = get_logger(name=name, namespace=namespace)
+    logger.info("Monitoring pod")
     core_v1 = client.api.core_v1_api.CoreV1Api()
 
     while not stopped:
-        logger.debug("Getting pod status", name=name, namespace=namespace)
+        logger.debug("Getting pod status")
         pod: V1Pod = core_v1.read_namespaced_pod(name=name, namespace=namespace)
 
         assertion_name = pod.metadata.labels['app.kubernetes.io/instance']
-        logger = logger.bind(assertion_name=assertion_name, pod_name=name, namespace=namespace)
+        logger = logger.bind(assertion_name=assertion_name)
 
         match pod.status.phase:
             case 'Pending':
@@ -223,13 +233,13 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
             case 'Succeeded':
                 # Note it is possible to get here having already processed this container
                 # (e.g. after operator restart)
-                logger.info("Probe Pod has completed", name=name, namespace=namespace)
-                logger.info("Getting pod output", name=name, namespace=namespace)
+                logger.info("Probe Pod has completed")
+                logger.info("Getting pod output")
                 # Doesn't seem to be a nice way to separate stdout and stderr
                 pod_log_ws_client = core_v1.read_namespaced_pod_log(name=name, namespace=namespace, _preload_content=False)
                 #pod_log_ws_client.run_forever(timeout=10)
                 pod_log = pod_log_ws_client.data.decode('utf-8')
-                logger.debug("Pod Log", log=pod_log, name=name, namespace=namespace)
+                logger.debug("Pod Log", log=pod_log)
                 if pod_log.startswith('unable to retrieve container logs'):
                     logger.warning("Unable to retrieve container logs.")
                     return
@@ -263,7 +273,7 @@ def summarize_results(probe_results):
     return summary
 
 
-def convert_results_for_policy_report(probe_results):
+def convert_results_for_policy_report(probe_results, namespace, pod_name):
     # https://htmlpreview.github.io/?https://github.com/kubernetes-sigs/wg-policy-prototypes/blob/master/policy-report/docs/index.html
     res = []
     logger = get_logger()
@@ -276,7 +286,7 @@ def convert_results_for_policy_report(probe_results):
 
             test_result_iso_timestamp = test_result['data']['endTimestamp']
             policy_report_result = {
-                "source": "netcheck",
+                "source": "netchecks",
                 "policy": assertion_result['name'],
                 "rule": test_result.get('name', f"{assertion_result['name']}-rule-{i}"),
                 "category": test_result['spec']['type'],    # This is the test type: http/dns
@@ -284,13 +294,19 @@ def convert_results_for_policy_report(probe_results):
                 "timestamp": convert_iso_timestamp_to_k8s_timestamp(test_result_iso_timestamp),
                 "result": test_result.get('status', 'skip'),
                 #"scored": True,
-                # TODO LabelSelector for checked resources
-                #   "resourceSelector": {}
+
                 "message": test_result.get('message', f'Rule from {assertion_result["name"]}'),
                 # Properties have to be str -> str
                 "properties": policy_report_data,
 
-
+                # "resources": [
+                #     {
+                #         "name": pod_name,
+                #         "namespace": namespace,
+                #         "kind": "Pod",
+                #         "apiVersion": "v1",
+                #     }
+                # ],
             }
             logger.info("Policy Report Result", policy_report_result=policy_report_result)
             res.append(policy_report_result)
@@ -324,11 +340,12 @@ def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_na
     )
     labels = get_common_labels(name=nework_assertion_name)
     labels['policy.kubernetes.io/engine'] = 'netcheck'
-    report_results = convert_results_for_policy_report(probe_results)
+    report_results = convert_results_for_policy_report(probe_results, namespace, pod_name)
     report_summary = summarize_results(probe_results)
     policy_report_body = {
         "apiVersion": "wgpolicyk8s.io/v1alpha2",
         "kind": "PolicyReport",
+        "scope": {"kind": "Namespace", "name": namespace, "apiGroup": "v1"},
         "metadata": {
             "name": nework_assertion_name,
             "labels": labels,
@@ -405,6 +422,7 @@ def process_probe_output(pod_log: str, network_assertion_name, namespace, pod_na
             test_duration = (test_end_iso_timestamp - test_start_iso_timestamp).total_seconds()
 
             ASSERTION_TEST_TIME.labels(name=network_assertion_name, type=test_result['spec']['type']).observe(test_duration)
+
 
 def get_job_status(api_instance, job_name):
     api_response = api_instance.read_namespaced_job_status(
