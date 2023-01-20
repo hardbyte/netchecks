@@ -32,4 +32,4 @@ dependencies:
   - name: policy-reporter
     version: 2.14.1
     repository: https://kyverno.github.io/policy-reporter
-    condition: policyreporter.enabled
+    condition: policy-reporter.enabled

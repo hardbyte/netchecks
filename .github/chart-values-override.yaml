@@ -1,0 +1,7 @@
+operator:
+  image:
+    tag: main
+
+probeConfig:
+  image:
+    tag: main

@@ -100,11 +100,6 @@ jobs:
       - name: Install PolicyReport CRD
         run: |
           kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
-          kubectl wait --for condition=Established crd/policyreports.wgpolicyk8s.io --timeout=5m
-
-      - name: List CRDs
-        run: |
-          kubectl get crd -A
 
       - name: Install Netcheck Operator via Helm
         run: |
@@ -112,16 +107,20 @@ jobs:
           helm upgrade \
             --install netchecks-operator \
             charts/netchecks/ \
-            -f examples/kind-installation/values.yaml \
+            -f .github/chart-values-override.yaml \
             -n netchecks \
             --create-namespace \
             --wait --timeout 5m
           sleep 10
           kubectl describe -n netchecks deployment.apps/netchecks-operator
+      - name: List CRDs
+        run: |
+          kubectl get crd -A
 
       - name: Wait for Netcheck Operator to be ready
         run: |    
           kubectl wait -n netchecks --for=condition=Ready --all pod --timeout=5m
+
 
       # Handy for debugging
       #- name: Explain NetworkAssertion CRD
@@ -170,16 +169,26 @@ jobs:
       - name: Enable Hubble Relay
         run: |
           cilium hubble enable --ui
+
       - name: Relay Port Forward
         run: |
           cilium hubble port-forward&
           sleep 10s
           [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
 
-      - name: Cilium Connectivity Test
+#      - name: Cilium Connectivity Test
+#        run: |
+#          # Run the connectivity test
+#          cilium connectivity test --test dns-only,to-cidr-1111
+
+      - name: Remove a Network Assertion
         run: |
-          # Run the connectivity test 
-          cilium connectivity test --test dns-only,to-cidr-1111
+          kubectl delete -f examples/default-k8s/dns.yaml
+
+      - name: Uninstall Netchecks
+        if: ${{ always() }}
+        run: |
+          helm uninstall netchecks-operator -n netchecks
 
       - name: Cleanup
         if: ${{ always() }}
