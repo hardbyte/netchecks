@@ -6,9 +6,7 @@ from pathlib import Path
 from rich import print_json
 from rich.console import Console
 import typer
-from pydantic import BaseModel, Field
-import requests
-from typing import Optional
+from typing import List, Optional
 import urllib3
 import pkg_resources
 from netcheck.dns import get_A_records_by_dns_lookup
@@ -79,10 +77,11 @@ def run(
         if verbose:
             err_console.print(f"Running tests for assertion '{assertion['name']}'")
         for rule in assertion['rules']:
+
             result = check_individual_assertion(
                 rule['type'],
                 rule,
-                should_fail=rule['expected'] != 'pass',
+                should_fail=rule.get('expected', 'pass') != 'pass',
                 verbose=verbose,
             )
             assertion_results.append(result)
@@ -108,24 +107,30 @@ def http(
                                                   rich_help_panel='http test'),
         timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
-        output: Optional[NetcheckOutputType] = typer.Option(
-            NetcheckOutputType.json,
-            '-o',
-            '--output',
-            help="Output format"),
+        headers: Optional[List[str]] = typer.Option(
+            None,
+            '-h',
+            '--header',
+            help="Headers to send with request. Format: 'key:value'"),
         verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
     """Carry out a http network check"""
+    parsed_headers = {}
+    for h in headers:
+        if ":" in h:
+            key, value = h.split(':')
+            parsed_headers[key.strip()] = value.strip()
 
     test_config = {
         "url": url,
         'method': method,
-        'timeout': timeout
+        'timeout': timeout,
+        'headers': parsed_headers
     }
 
     if verbose:
-        err_console.print(f"netcheck http")
-        err_console.print(f"Options")
+
+        err_console.print(f"Netcheck http configuration:")
         err_console.print_json(data=test_config)
 
     result = check_individual_assertion(
@@ -190,7 +195,7 @@ def check_individual_assertion(test_type: str, test_config, should_fail, verbose
             test_detail = http_request_check(
                 test_config['url'],
                 test_config.get('method', 'get'),
-                headers=test_config.get('headers', []),
+                headers=test_config.get('headers'),
                 timeout=test_config.get('timeout'),
                 verify=test_config.get('verify-tls-cert', True),
                 should_fail=should_fail,

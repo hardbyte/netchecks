@@ -1,7 +1,7 @@
 import datetime
 import logging
 from enum import Enum
-from typing import Optional
+from typing import Dict, Optional
 
 import requests
 from pydantic import BaseModel, Field
@@ -30,11 +30,16 @@ class NetcheckHttpMethod(str, Enum):
 def http_request_check(
         url,
         method: NetcheckHttpMethod = 'get',
-        headers: list[NetcheckHttpHeaders] = None,
+        headers: Dict[str, str] = None,
         timeout=5,
         verify: bool = True,
         should_fail: bool = False
 ):
+    if headers is None:
+        headers = {}
+    if 'User-Agent' not in headers:
+        headers['User-Agent'] = 'netcheck'
+
     # This structure gets stored along with the test results
     test_spec = {
         'type': 'http',
@@ -42,7 +47,7 @@ def http_request_check(
         'timeout': timeout,
         'verify-tls-cert': verify,
         'method': method,
-        'headers': [h.name for h in headers],
+        'headers': headers,
         'url': url,
     }
 
@@ -60,16 +65,14 @@ def http_request_check(
     requests_kwargs = {
         'timeout': test_spec['timeout'],
         'verify': test_spec['verify-tls-cert'],
-
-        'headers': {
-            'User-Agent': 'netcheck',
-        },
+        'headers': test_spec['headers'],
     }
 
     try:
         response = getattr(requests, method)(url, **requests_kwargs)
         result_data['status-code'] = response.status_code
-        #result_data['headers'] = response.headers
+        result_data['headers'] = dict(response.headers)
+        result_data['body'] = response.text
         response.raise_for_status()
         output['status'] = 'pass' if not should_fail else 'fail'
     except Exception as e:
@@ -82,6 +85,3 @@ def http_request_check(
 
     return output
 
-
-class NetcheckHttpHeaderType(str, Enum):
-    bearer = 'bearer'   # Uses the template f"Bearer {value}" for the header

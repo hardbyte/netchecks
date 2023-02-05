@@ -4,6 +4,6 @@
     {"name":  "http-expected-404", "rules": [{"type": "http", "url": "https://pie.dev/status/404", "expected": "fail"}]},
     {"name":  "http-expected-401", "rules": [{"type": "http", "url": "https://pie.dev/status/401", "expected": "fail"}]},
     {"name":  "http-expected-500", "rules": [{"type": "http", "url": "https://pie.dev/status/500", "expected": "fail"}]},
-    {"name":  "http-expected-timeout", "rules": [{"type": "http", "url": "https://pie.dev/delay/10", "expected": "fail"}]}
+    {"name":  "http-expected-timeout", "rules": [{"type": "http", "url": "https://pie.dev/delay/1","timeout": 0.1, "expected": "fail"}]}
   ]
 }
