@@ -61,6 +61,16 @@ def test_http_check_with_timout():
     assert payload['spec']['timeout'] == 2.1
 
 
+def test_http_check_with_headers():
+    result = runner.invoke(app, ["http", "--url", "https://pie.dev/headers", "--header", "X-Test-Header: test"])
+    assert result.exit_code == 0, result.stderr
+
+    data = result.stdout
+    payload = json.loads(data)
+    assert payload['spec']['headers']['X-Test-Header'] == 'test'
+    assert 'X-Test-Header' in json.loads(payload['data']['body'])['headers']
+
+
 @pytest.mark.filterwarnings("ignore:Unverified HTTPS request is being made to host")
 def test_run_simple_config(simple_config_filename):
     result = runner.invoke(app, ["run", "--config", simple_config_filename])
@@ -72,10 +82,6 @@ def test_run_simple_config(simple_config_filename):
 def test_run_invalid_config_unknown_check(invalid_config_filename):
     result = runner.invoke(app, ["run", "--config", invalid_config_filename])
     assert result.exit_code != 0
-    data = result.stdout
-
-    # Potentially still want valid JSON output here?
-    #json.loads(data)
 
 
 def test_run_valid_config_expected_fail_check(valid_config_expected_fail_filename):
@@ -90,4 +96,15 @@ def test_run_valid_config_unexpected_failures(valid_config_unexpected_fail_filen
     assert result.exit_code == 0
     data = result.stdout
     json.loads(data)
+
+
+def test_run_http_config_with_headers(http_headers_config_filename):
+    result = runner.invoke(app, ["run", "--config", http_headers_config_filename])
+    assert result.exit_code == 0, result.stderr
+    data = result.stdout
+    response = json.loads(data)
+
+    test_result = response['assertions'][0]['results'][0]
+    assert test_result['spec']['headers']['X-Test-Header'] == 'value'
+    assert 'X-Test-Header' in json.loads(test_result['data']['body'])['headers']
 

@@ -6,11 +6,11 @@ from pathlib import Path
 from rich import print_json
 from rich.console import Console
 import typer
-import requests
-from typing import Optional
+from typing import List, Optional
 import urllib3
 import pkg_resources
 from netcheck.dns import get_A_records_by_dns_lookup
+from netcheck.http import NetcheckHttpMethod, http_request_check
 
 try:
     NETCHECK_VERSION = pkg_resources.get_distribution('netcheck').version
@@ -33,14 +33,6 @@ urllib3.disable_warnings()
 
 class NetcheckOutputType(str, Enum):
     json = 'json'
-
-
-class NetcheckHttpMethod(str, Enum):
-    get = 'get'
-    post = 'post'
-    patch = 'patch'
-    put = 'put'
-    delete = 'delete'
 
 
 class NetcheckTestType(str, Enum):
@@ -85,10 +77,11 @@ def run(
         if verbose:
             err_console.print(f"Running tests for assertion '{assertion['name']}'")
         for rule in assertion['rules']:
+
             result = check_individual_assertion(
                 rule['type'],
                 rule,
-                should_fail=rule['expected'] != 'pass',
+                should_fail=rule.get('expected', 'pass') != 'pass',
                 verbose=verbose,
             )
             assertion_results.append(result)
@@ -114,24 +107,30 @@ def http(
                                                   rich_help_panel='http test'),
         timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
-        output: Optional[NetcheckOutputType] = typer.Option(
-            NetcheckOutputType.json,
-            '-o',
-            '--output',
-            help="Output format"),
+        headers: Optional[List[str]] = typer.Option(
+            None,
+            '-h',
+            '--header',
+            help="Headers to send with request. Format: 'key:value'"),
         verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
     """Carry out a http network check"""
+    parsed_headers = {}
+    for h in headers:
+        if ":" in h:
+            key, value = h.split(':')
+            parsed_headers[key.strip()] = value.strip()
 
     test_config = {
         "url": url,
         'method': method,
-        'timeout': timeout
+        'timeout': timeout,
+        'headers': parsed_headers
     }
 
     if verbose:
-        err_console.print(f"netcheck http")
-        err_console.print(f"Options")
+
+        err_console.print(f"Netcheck http configuration:")
         err_console.print_json(data=test_config)
 
     result = check_individual_assertion(
@@ -196,6 +195,7 @@ def check_individual_assertion(test_type: str, test_config, should_fail, verbose
             test_detail = http_request_check(
                 test_config['url'],
                 test_config.get('method', 'get'),
+                headers=test_config.get('headers'),
                 timeout=test_config.get('timeout'),
                 verify=test_config.get('verify-tls-cert', True),
                 should_fail=should_fail,
@@ -221,56 +221,6 @@ def notify_for_unexpected_test_result(failed, should_fail, verbose=False):
                 err_console.print("[green]✔ Passed (as expected)[/]")
             else:
                 err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
-
-
-def http_request_check(
-        url,
-        method: NetcheckHttpMethod = 'get',
-        timeout=5,
-        verify: bool = True,
-        should_fail: bool = False
-):
-    # This structure gets stored along with the test results
-    test_spec = {
-        'type': 'http',
-        'shouldFail': should_fail,
-        'timeout': timeout,
-        'verify-tls-cert': verify,
-        'method': method,
-        'url': url,
-    }
-
-    result_data = {
-        'startTimestamp': datetime.datetime.utcnow().isoformat(),
-    }
-
-    output = {
-        'status': 'error',
-        'spec': test_spec,
-        'data': result_data
-    }
-
-    # Prepare the arguments for requests
-    requests_kwargs = {
-        'timeout': test_spec['timeout'],
-        'verify': test_spec['verify-tls-cert'],
-    }
-
-    try:
-        response = getattr(requests, method)(url, **requests_kwargs)
-        result_data['status-code'] = response.status_code
-        #result_data['headers'] = response.headers
-        response.raise_for_status()
-        output['status'] = 'pass' if not should_fail else 'fail'
-    except Exception as e:
-        output['status'] = 'pass' if should_fail else 'fail'
-        logger.debug(f"Caught exception:\n\n{e}")
-        result_data['exception-type'] = e.__class__.__name__
-        result_data['exception'] = str(e)
-
-    result_data['endTimestamp'] = datetime.datetime.utcnow().isoformat()
-
-    return output
 
 
 def dns_lookup_check(host, server, timeout=10, should_fail=False):

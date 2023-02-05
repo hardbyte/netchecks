@@ -1,0 +1,5 @@
+{
+  "assertions": [
+    {"name":  "get-with-header", "rules": [{"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Test-Header":  "value"}}]}
+  ]
+}

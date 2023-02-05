@@ -29,3 +29,8 @@ def valid_config_unexpected_fail_filename():
     return os.path.join(TEST_DATA_DIR, "simple-config-with-unexpected-failures.json")
 
 
+@fixture()
+def http_headers_config_filename():
+    return os.path.join(TEST_DATA_DIR, "http-with-headers.json")
+
+
