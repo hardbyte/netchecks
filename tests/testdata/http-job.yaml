@@ -1,0 +1,22 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-should-work
+  annotations:
+    description: Assert pod can connect to k8s API
+spec:
+  template:
+    metadata:
+      labels:
+        optional-label: applied-to-test-pod
+      annotations:
+        my: override-annotation
+  rules:
+    - name: kubernetes-version
+      type: http
+      url: https://kubernetes.default.svc/version
+      verify-tls-cert: false
+      expected: pass
+      validate:
+        message: Http request to Kubernetes API should succeed.
+

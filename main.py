@@ -102,6 +102,7 @@ def creation(body, spec, name, namespace, **kwargs):
             logger.info("Creating a Job")
             logger.debug("Linking job with NetworkAssertion")
             kopf.adopt(job)
+            # It is possible for this to fail as we don't validate everything from the user's input
             api_response = batch_v1.create_namespaced_job(body=job, namespace=namespace)
             logger.info("Pushed job object to k8s api")
             # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
@@ -175,17 +176,26 @@ def edit(spec, old, name, namespace, body, **kwargs):
             try:
                 batch_v1.delete_namespaced_job(name=name, namespace=namespace)
             except client.exceptions.ApiException as e:
-                logger.info("Couldn't find existing Job. Ignoring", exc_info=e)
+                if e.status == 404:
+                    logger.info("Couldn't find existing Job. Ignoring")
+                else:
+                    raise
 
         # TODO: Upsert instead of replace the existing config map
         logger.info("Deleting existing config map")
         core_api = client.CoreV1Api()
-        core_api.delete_namespaced_config_map(
-            name=name,
-            namespace=namespace,
-        )
-        logger.info("Removed existing config map")
-
+        # This can also be missing...
+        try:
+            core_api.delete_namespaced_config_map(
+                name=name,
+                namespace=namespace,
+            )
+            logger.info("Removed existing config map")
+        except client.exceptions.ApiException as e:
+            if e.status == 404:
+                logger.info("Couldn't find existing configmap. Ignoring")
+            else:
+                raise
 
         logger.info("Recreating resources")
         creation(body=body, spec=spec, name=name, namespace=namespace)
@@ -395,7 +405,7 @@ def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_na
             logger.error("Failed to create PolicyReport", status=e.status, error=e)
             raise
 
-        logger.info("PolicyReport created", policy_report=policy_report)
+        logger.info("PolicyReport created")
 
     return policy_report
 
@@ -443,7 +453,8 @@ def create_job_object(job_name: str, job_spec):
         api_version="batch/v1",
         kind="Job",
         metadata=client.V1ObjectMeta(name=job_name),
-        spec=job_spec)
+        spec=job_spec
+    )
 
     return job
 
@@ -501,7 +512,7 @@ def create_job_spec(name, cm: V1ConfigMap, settings: Config, template_overides: 
     # Create the specification of the job
     spec = client.V1JobSpec(
         template=pod_template,
-        backoff_limit=4
+        backoff_limit=4,
     )
 
     return spec
