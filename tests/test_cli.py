@@ -82,10 +82,6 @@ def test_run_simple_config(simple_config_filename):
 def test_run_invalid_config_unknown_check(invalid_config_filename):
     result = runner.invoke(app, ["run", "--config", invalid_config_filename])
     assert result.exit_code != 0
-    data = result.stdout
-
-    # Potentially still want valid JSON output here?
-    #json.loads(data)
 
 
 def test_run_valid_config_expected_fail_check(valid_config_expected_fail_filename):
