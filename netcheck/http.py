@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Dict, Optional
 
 import requests
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger("netcheck.http")
 

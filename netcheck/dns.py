@@ -1,8 +1,12 @@
+import datetime
+import logging
+
 import dns.resolver
+
+logger = logging.getLogger("netcheck.dns")
 
 
 def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
-
     # We always reset the default dns resolver
     dns.resolver.reset_default_resolver()
     resolver = dns.resolver.get_default_resolver()
@@ -22,3 +26,36 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
 
     return A_records
 
+
+def dns_lookup_check(host, server, timeout=10, should_fail=False):
+
+    test_spec = {
+        'type': 'dns',
+        'shouldFail': should_fail,
+        'nameserver': server,
+        'host': host,
+        'timeout': timeout,
+    }
+    result_data = {
+        'startTimestamp': datetime.datetime.utcnow().isoformat(),
+    }
+
+    output = {
+        'status': 'error',
+        'spec': test_spec,
+        'data': result_data
+    }
+
+    try:
+        ip_addresses = get_A_records_by_dns_lookup(host, nameserver=server, timeout=timeout)
+        result_data['A'] = ip_addresses
+        output['status'] = 'pass' if not should_fail else 'fail'
+    except Exception as e:
+        logger.info(f"Caught exception:\n\n{e}")
+        output['status'] = 'pass' if should_fail else 'fail'
+        result_data['exception-type'] = e.__class__.__name__
+        result_data['exception'] = str(e)
+
+    result_data['endTimestamp'] = datetime.datetime.utcnow().isoformat()
+
+    return output
