@@ -9,7 +9,6 @@ To get started with development of the docs site, first install the npm dependen
 
 ```bash
 npm install
-cp .env.example .env.local
 ```
 
 Next, run the development server:

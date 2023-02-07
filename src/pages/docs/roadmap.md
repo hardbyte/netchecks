@@ -10,14 +10,15 @@ likely to be considered for implementation in the near future.
 
 ## Open Source
 
+- Custom validation rules for probes (e.g. check that the response body contains a specific string)
 - Support for configuring probes using secrets (e.g. injecting API keys into http requests)
 - NetworkAssertion CRD validation and documentation
-- Operator exposed metrics
 - Tracing support for better debugging.
 - Plugin architecture for supporting custom test types.
 - Full CI integration test suite across managed Kubernetes providers.
 - The option to run certain probes on matching Nodes via DaemonSets instead of CronJobs.
 - PolicyReporter plugin to better expose NetworkAssertion results.
+- Example of alert manager integration
 - Grafana dashboard
 
 ## Enterprise
