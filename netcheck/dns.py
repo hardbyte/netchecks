@@ -2,11 +2,12 @@ import datetime
 import logging
 
 import dns.resolver
-from dns.exception import Timeout, TooBig, UnexpectedEnd, SyntaxError, FormError
+from dns.exception import Timeout
 logger = logging.getLogger("netcheck.dns")
 
 
 DEFAULT_DNS_VALIDATION_RULE = """
+data['response-code'] == 'NOERROR' &&
 size(data['A']) >= 1 && 
 (timestamp(data['endTimestamp']) - timestamp(data['startTimestamp']) < duration('10s'))
 """
@@ -27,7 +28,6 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
     try:
         answer = resolver.resolve(target, 'A', lifetime=timeout, search=True)
 
-
         # canonical name of the target
         result['canonical_name'] = answer.canonical_name.to_text()
         # answer.expiration is the TTL as a float timestamp
@@ -39,13 +39,13 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
         result['A'] = []
         for IPval in answer:
             result['A'].append(IPval.to_text())
-
+        result['response-code'] = "NOERROR"
     except Timeout as e:
-        result['response'] = "TIMEOUT"
-    except dns.resolver.NXDOMAIN as e:
-        result['response'] = "NXDOMAIN"
+        result['response-code'] = "TIMEOUT"
+    except dns.resolver.NXDOMAIN:
+        result['response-code'] = "NXDOMAIN"
     except dns.exception.DNSException as e:
-        result['response'] = "DNSERROR"
+        result['response-code'] = "DNSERROR"
         result['exception-name'] = e.__class__.__name__
         result['exception-type'] = type(e)
         result['exception'] = str(e)

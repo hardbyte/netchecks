@@ -27,12 +27,14 @@ docker run -it ghcr.io/netchecks/netchecks:latest
 
 ### Individual Assertions
 
-By default `netcheck` outputs a JSON result to stdout: 
+By default `netcheck` outputs a JSON result to stdout including response details: 
 
 ```shell
-netcheck dns
+$ netcheck dns
+```
+
+```json
 {
-  "status": "pass",
   "spec": {
     "type": "dns",
     "nameserver": null,
@@ -40,13 +42,18 @@ netcheck dns
     "timeout": 30.0
   },
   "data": {
-    "startTimestamp": "2022-12-27T22:07:44.592562",
+    "canonical_name": "github.com.",
+    "expiration": 1675825244.2986872,
+    "response": "id 6176\nopcode QUERY\nrcode NOERROR\nflags QR RD RA\nedns 0\npayload 65494\n;QUESTION\ngithub.com. IN A\n;ANSWER\ngithub.com. 60 IN A 20.248.137.48\n;AUTHORITY\n;ADDITIONAL",
     "A": [
       "20.248.137.48"
     ],
-    "endTimestamp": "2022-12-27T22:07:44.610156"
-  }
+    "startTimestamp": "2023-02-08T02:59:44.248174",
+    "endTimestamp": "2023-02-08T02:59:44.298773"
+  },
+  "status": "pass"
 }
+
 ```
 
 Pass the `-v` flag to see log messages.
@@ -61,7 +68,6 @@ netcheck dns --server 1.1.1.1 --host hardbyte.nz --should-pass
 
 ```json
 {
-  "status": "pass",
   "spec": {
     "type": "dns",
     "nameserver": "1.1.1.1",
@@ -69,69 +75,75 @@ netcheck dns --server 1.1.1.1 --host hardbyte.nz --should-pass
     "timeout": 30.0
   },
   "data": {
-    "startTimestamp": "2022-12-27T22:09:33.449567",
+    "canonical_name": "hardbyte.nz.",
+    "expiration": 1675827006.4370346,
+    "response": "id 23453\nopcode QUERY\nrcode NOERROR\nflags QR RD RA\nedns 0\npayload 1232\noption EDE 10: for DNSKEY nz., id = 13646\n;QUESTION\nhardbyte.nz. IN A\n;ANSWER\nhardbyte.nz. 985 IN A 209.58.165.79\n;AUTHORITY\n;ADDITIONAL",
     "A": [
       "209.58.165.79"
     ],
-    "endTimestamp": "2022-12-27T22:09:33.467162"
-  }
+    "response-code": "NOERROR",
+    "startTimestamp": "2023-02-08T03:13:41.402313",
+    "endTimestamp": "2023-02-08T03:13:41.437115"
+  },
+  "status": "pass"
 }
 ```
 
-Netcheck can check that particular checks fail:
+Netcheck can handle checks that are expected to fail:
 ```shell
 $ netcheck dns --server=1.1.1.1 --host=made.updomain --should-fail
 ```
 
 Note the resulting status will show **pass** if the check fails as expected, and **fail** if the check passes unexpectedly!
 
-```json
-{
-  "status": "pass",
-  "spec": {
-    "type": "dns",
-    "nameserver": "1.1.1.1",
-    "host": "made.updomain",
-    "timeout": 30.0
-  },
-  "data": {
-    "startTimestamp": "2022-12-27T22:10:07.726285",
-    "exception-type": "NXDOMAIN",
-    "exception": "The DNS query name does not exist: made.updomain.",
-    "endTimestamp": "2022-12-27T22:10:07.743219"
-  }
-}
-```
+netcheck has built in default validation for each check type. For example, the `dns` check will pass if the DNS response code is `NOERROR`, there is at least one `A` record, and resolver responds in under 10 seconds. Custom validation is also possible, see the [Custom Validation](#custom-validation) section below.
 
-A few http checks are also available:
+
+### Custom Validation
+
+Custom validation can be added to checks by providing a `validation-rule` option on the command line, or a `validation` key in the rules of a test spec when configuring via json. 
+
+For example to override the default validation for the `dns` check to check that the A record resolves to a particular IP:
 
 ```shell
-netcheck http --method=get --url=https://s3.ap-southeast-2.amazonaws.com --should-pass
+netcheck dns --host github.com --validation-rule "data['A'].contains('20.248.137.48')"
 ```
+
+The validation rule is a CEL expression that is evaluated with the `data` returned by the check and `spec` objects in scope. For an introduction to CEL see https://github.com/google/cel-spec/blob/master/doc/intro.md
+
+
+
+### http checks
+
+`http` checks are also available:
+
+Assert that GitHub's status page includes the text "GitHub lives!" and that the response code is 200:
+
+```shell
+netcheck http --url=https://github.com/status --validation-rule "data.body.contains('GitHub lives!') && data['status-code'] in [200, 201]"
+```
+
+Provide a header with a request:
+
+```shell
+netcheck http --url https://pie.dev/headers --header "X-Header:special"
+```
+
+Validate that the response body is valid JSON and includes a `headers` object containing the `X-Header` key with the value `special`:
+
+```shell
+netcheck http --url https://pie.dev/headers \
+  --header "X-Header:special" \
+  --validation-rule "parse_json(data.body).headers['X-Header'] == 'special'"
+```
+
+
+Ensure that a POST request fails:
 
 ```shell
 $ netcheck http --method=post --url=https://s3.ap-southeast-2.amazonaws.com --should-fail
 ```
 
-```json
-{
-  "status": "pass",
-  "spec": {
-    "type": "http",
-    "timeout": 30.0,
-    "verify-tls-cert": true,
-    "method": "post",
-    "url": "https://s3.ap-southeast-2.amazonaws.com"
-  },
-  "data": {
-    "startTimestamp": "2022-12-27T22:11:33.696001",
-    "status-code": 405,
-    "exception-type": "HTTPError",
-    "exception": "405 Client Error: Method Not Allowed for url: https://s3.ap-southeast-2.amazonaws.com/",
-    "endTimestamp": "2022-12-27T22:11:33.900833"
-  }
-}
-```
 
 ### Configuration via file
 
@@ -144,14 +156,14 @@ A json file can be provided with a list of assertions to be checked:
     {
       "name":  "deny-cloudflare-dns", 
       "rules": [
-        {"type": "dns", "server":  "1.1.1.1", "host": "github.com", "expected": "pass"}
+        {"type": "dns", "server":  "1.1.1.1", "host": "github.com"}
       ]
     }
   ]
 }
 ```
 
-And the command can be called:
+And the `run` command can be called:
 
 
 ```shell
@@ -193,10 +205,22 @@ $ netcheck run --config tests/testdata/dns-config.json
 }
 ```
 
+Multiple assertions with multiple rules can be specified in the config file, configuration can be provided
+to each rule such as headers and custom validation:
+
+```json
+{
+  "assertions": [
+    {"name":  "get-with-header", "rules": [
+      {"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Test-Header":  "value"}},
+      {"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Header":  "secret"}, "validation": "parse_json(data.body).headers['X-Header'] == 'secret'" }
+    ]}
+  ]
+}
+```
+
 ## Coming Soon
 
-- Propagation of optional rule names and messages through to the output
-- Expected status codes and specific DNS errors.
 - JSON Schema for config file and outputs
 - More checks
 

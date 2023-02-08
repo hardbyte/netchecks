@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "netcheck"
-version = "0.1.11"
+version = "0.1.12"
 description = ""
 authors = ["Brian Thorne <brian@hardbyte.nz>"]
 readme = "README.md"

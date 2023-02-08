@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 logger = logging.getLogger("netcheck.http")
 DEFAULT_HTTP_VALIDATION_RULE = """
-(data['status-code'] == 201) || (data['status-code'] == 200)
+data['status-code'] in [200, 201]
 """
 
 class NetcheckHttpHeaderType(str, Enum):

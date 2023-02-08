@@ -99,7 +99,8 @@ def http(
         "url": url,
         'method': method,
         'timeout': timeout,
-        'headers': parsed_headers
+        'headers': parsed_headers,
+        'expected': "fail" if should_fail else None
     }
 
     if verbose:
@@ -142,6 +143,7 @@ def dns(
         "server": server,
         "host": host,
         "timeout": timeout,
+        'expected': "fail" if should_fail else None
     }
     if verbose:
         err_console.print(f"netcheck dns")

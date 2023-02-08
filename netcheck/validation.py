@@ -1,8 +1,9 @@
+import json
 import logging
 from typing import Dict
 
 import celpy
-from celpy import CELParseError, CELEvalError
+from celpy import CELParseError, CELEvalError, json_to_cel
 
 logger = logging.getLogger("netcheck.validation")
 
@@ -20,7 +21,10 @@ def validate_probe_result(result: Dict, validation_rule: str):
         raise
 
     # create the CEL program
-    prgm = env.program(ast)
+    functions = {
+        "parse_json": lambda s: json_to_cel(json.loads(s)),
+    }
+    prgm = env.program(ast, functions=functions)
 
     # Set up the context
     activation = celpy.json_to_cel(result)
