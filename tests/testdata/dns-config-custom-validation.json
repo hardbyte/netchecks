@@ -1,0 +1,8 @@
+{
+  "assertions": [
+    {"name":  "default-dns", "rules": [
+      {"type": "dns", "host": "github.com", "validation": "data.canonical_name == 'github.com.' && data.response.contains('NOERROR') && size(data.A)>=1"}
+    ]
+    }
+  ]
+}

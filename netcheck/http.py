@@ -3,11 +3,20 @@ import logging
 from enum import Enum
 from typing import Dict, Optional
 
+import urllib3
+
+# We disable urllib warning because we expect to be carrying out tests against hosts using self-signed
+# certs etc.
+urllib3.disable_warnings()
+
+
 import requests
 from pydantic import BaseModel
 
 logger = logging.getLogger("netcheck.http")
-
+DEFAULT_HTTP_VALIDATION_RULE = """
+(data['status-code'] == 201) || (data['status-code'] == 200)
+"""
 
 class NetcheckHttpHeaderType(str, Enum):
     bearer = "bearer"
@@ -33,7 +42,6 @@ def http_request_check(
         headers: Dict[str, str] = None,
         timeout=5,
         verify: bool = True,
-        should_fail: bool = False
 ):
     if headers is None:
         headers = {}
@@ -43,7 +51,6 @@ def http_request_check(
     # This structure gets stored along with the test results
     test_spec = {
         'type': 'http',
-        'shouldFail': should_fail,
         'timeout': timeout,
         'verify-tls-cert': verify,
         'method': method,
@@ -56,7 +63,6 @@ def http_request_check(
     }
 
     output = {
-        'status': 'error',
         'spec': test_spec,
         'data': result_data
     }
@@ -74,9 +80,7 @@ def http_request_check(
         result_data['headers'] = dict(response.headers)
         result_data['body'] = response.text
         response.raise_for_status()
-        output['status'] = 'pass' if not should_fail else 'fail'
     except Exception as e:
-        output['status'] = 'pass' if should_fail else 'fail'
         logger.debug(f"Caught exception:\n\n{e}")
         result_data['exception-type'] = e.__class__.__name__
         result_data['exception'] = str(e)
