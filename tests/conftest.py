@@ -14,6 +14,14 @@ def simple_config_filename():
 
 
 @fixture()
+def dns_config_filename():
+    return os.path.join(TEST_DATA_DIR, "dns-config.json")
+
+@fixture()
+def dns_config_with_validation_filename():
+    return os.path.join(TEST_DATA_DIR, "dns-config-custom-validation.json")
+
+@fixture()
 def invalid_config_filename():
     return os.path.join(TEST_DATA_DIR, "invalid-config-unknown-check.json")
 

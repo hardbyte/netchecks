@@ -2,12 +2,12 @@ import datetime
 import logging
 from typing import Dict
 
+from netcheck.validation import validate_probe_result
 from netcheck.version import OUTPUT_JSON_VERSION
 
 from netcheck.version import NETCHECK_VERSION
-from netcheck.dns import dns_lookup_check
-from netcheck.http import http_request_check
-
+from netcheck.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
+from netcheck.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
 
 logger = logging.getLogger("netcheck.runner")
 
@@ -33,8 +33,8 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
             result = check_individual_assertion(
                 rule['type'],
                 rule,
-                should_fail=rule.get('expected', 'pass') != 'pass',
                 err_console=err_console,
+                validation_rule=rule.get('validation'),
                 verbose=verbose,
             )
             assertion_results.append(result)
@@ -46,8 +46,9 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
     return overall_results
 
 
-def check_individual_assertion(test_type: str, test_config, should_fail, err_console, verbose=False):
+def check_individual_assertion(test_type: str, test_config, err_console, validation_rule=None, verbose=False):
     match test_type:
+
         case 'dns':
             if verbose:
                 err_console.print(f"DNS check looking up host '{test_config['host']}'")
@@ -55,7 +56,7 @@ def check_individual_assertion(test_type: str, test_config, should_fail, err_con
                 host=test_config['host'],
                 server=test_config.get('server'),
                 timeout=test_config.get('timeout'),
-                should_fail=should_fail,
+
             )
         case 'http':
             if verbose:
@@ -66,10 +67,26 @@ def check_individual_assertion(test_type: str, test_config, should_fail, err_con
                 headers=test_config.get('headers'),
                 timeout=test_config.get('timeout'),
                 verify=test_config.get('verify-tls-cert', True),
-                should_fail=should_fail,
+
             )
         case _:
             logger.warning("Unhandled test type")
             raise NotImplemented("Unknown test type")
 
+    if validation_rule is None:
+        # use the default validation rule
+        match test_type:
+            case 'http': validation_rule = DEFAULT_HTTP_VALIDATION_RULE
+            case 'dns': validation_rule = DEFAULT_DNS_VALIDATION_RULE
+    elif verbose:
+        err_console.print("Using custom validation rule")
+
+    passed = validate_probe_result(test_detail, validation_rule)
+
+    # Add the pass/status to the individual result. We also support an "expected": "fail" option
+    # which will cause the test to fail if the validation passes.
+    if test_config.get('expected') == 'fail':
+        test_detail['status'] = 'fail' if passed else 'pass'
+    else:
+        test_detail['status'] = 'pass' if passed else 'fail'
     return test_detail

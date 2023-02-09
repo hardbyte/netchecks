@@ -6,25 +6,22 @@ from rich import print_json
 from rich.console import Console
 import typer
 from typing import List, Optional
-import urllib3
 
-from netcheck.version import NETCHECK_VERSION, OUTPUT_JSON_VERSION
-from netcheck.http import NetcheckHttpMethod
-from netcheck.runner import run_from_config, check_individual_assertion
+from netcheck.dns import DEFAULT_DNS_VALIDATION_RULE
+from .validation import validate_probe_result
+from .version import NETCHECK_VERSION
+from .http import NetcheckHttpMethod, DEFAULT_HTTP_VALIDATION_RULE
+from .runner import run_from_config, check_individual_assertion
 
 
 
 
 app = typer.Typer()
 logger = logging.getLogger("netcheck")
-#logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.INFO)
 logging.captureWarnings(True)
 
 err_console = Console(stderr=True)
-
-# We disable urllib warning because we expect to be carrying out tests against hosts using self-signed
-# certs etc.
-urllib3.disable_warnings()
 
 
 class NetcheckOutputType(str, Enum):
@@ -83,6 +80,7 @@ def http(
                                                   rich_help_panel='http test'),
         timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+        validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
         headers: Optional[List[str]] = typer.Option(
             None,
             '-h',
@@ -101,7 +99,8 @@ def http(
         "url": url,
         'method': method,
         'timeout': timeout,
-        'headers': parsed_headers
+        'headers': parsed_headers,
+        'expected': "fail" if should_fail else None
     }
 
     if verbose:
@@ -109,14 +108,22 @@ def http(
         err_console.print(f"Netcheck http configuration:")
         err_console.print_json(data=test_config)
 
+
+
     result = check_individual_assertion(
         NetcheckTestType.http,
         test_config,
-        should_fail,
         err_console,
+        validation_rule,
         verbose=verbose
     )
-    failed = result['status'] in {'fail', 'error'}
+
+
+    output_result(result, should_fail, verbose)
+
+
+def output_result(result, should_fail, verbose):
+    failed = result['status'] == 'fail'
     notify_for_unexpected_test_result(failed, should_fail, verbose=verbose)
     print_json(data=result)
 
@@ -126,6 +133,7 @@ def dns(
         server: str = typer.Option(None, help="DNS server to use for dns tests.", rich_help_panel="dns test"),
         host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+        validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
         timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
         verbose: bool = typer.Option(False, '-v', '--verbose')
 ):
@@ -135,24 +143,29 @@ def dns(
         "server": server,
         "host": host,
         "timeout": timeout,
+        'expected': "fail" if should_fail else None
     }
     if verbose:
         err_console.print(f"netcheck dns")
         err_console.print(f"Options")
         err_console.print_json(data=test_config)
 
+    if validation_rule is None:
+        # use the default DNS validation rule
+        validation_rule = DEFAULT_DNS_VALIDATION_RULE
+    else:
+        err_console.print("Validating result against custom validation rule")
+
     result = check_individual_assertion(
         NetcheckTestType.dns,
         test_config,
-        should_fail,
         err_console,
+        validation_rule=validation_rule,
         verbose=verbose
     )
 
-    failed = result['status'] in {'fail', 'error'}
-    notify_for_unexpected_test_result(failed, should_fail, verbose=verbose)
-    # Currently always output JSON to stdout
-    print_json(data=result)
+
+    output_result(result, should_fail, verbose)
 
 
 def notify_for_unexpected_test_result(failed, should_fail, verbose=False):

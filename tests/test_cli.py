@@ -33,14 +33,25 @@ def test_verbose_default_dns_check():
     data = result.stdout
     json.loads(data)
 
+def test_dns_check_with_custom_validation():
+    result = runner.invoke(app, [
+        "dns",
+        "--validation-rule",
+        "data.canonical_name == 'github.com.' && data.response.contains('NOERROR') && size(data.A)>=1"
+    ])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+
+    assert data['status'] == 'pass'
+
+
 
 def test_default_http_check():
     result = runner.invoke(app, ["http"])
     assert result.exit_code == 0
     assert len(result.stderr) == 0
-    data = result.stdout
-    json.loads(data)
-
+    data = json.loads(result.stdout)
+    assert data['status'] == 'pass'
 
 def test_verbose_default_http_check():
     result = runner.invoke(app, ["http", "-v"])
@@ -48,8 +59,15 @@ def test_verbose_default_http_check():
     assert "http" in result.stderr
     assert "Passed" in result.stderr
     assert "github.com/status" in result.stderr
-    data = result.stdout
-    json.loads(data)
+    data = json.loads(result.stdout)
+    assert data['status'] == 'pass'
+
+def test_default_http_check_should_fail():
+    result = runner.invoke(app, ["http", "--should-fail"])
+    assert result.exit_code == 0
+
+    data = json.loads(result.stdout)
+    assert data['status'] == 'fail'
 
 
 def test_http_check_with_timout():
@@ -69,6 +87,30 @@ def test_http_check_with_headers():
     payload = json.loads(data)
     assert payload['spec']['headers']['X-Test-Header'] == 'test'
     assert 'X-Test-Header' in json.loads(payload['data']['body'])['headers']
+
+
+def test_http_check_with_custom_validation_passing():
+    result = runner.invoke(app, ["http", "--url", "https://pie.dev/headers",
+                                 "--header", "X-Test-Header: test",
+                                 "--validation-rule", "data.body.contains('X-Test-Header') && data['status-code'] == 200"
+                                 ])
+    assert result.exit_code == 0, result.stderr
+
+    data = result.stdout
+    payload = json.loads(data)
+    assert payload['status'] == 'pass'
+
+
+def test_http_check_with_custom_validation_failing():
+    result = runner.invoke(app, ["http", "--url", "https://pie.dev/headers",
+                                 "--header", "X-Test-Header: test",
+                                 "--validation-rule", "data.body.contains('missing') && data['status-code'] == 200"
+                                 ])
+    assert result.exit_code == 0, result.stderr
+
+    data = result.stdout
+    payload = json.loads(data)
+    assert payload['status'] == 'fail'
 
 
 @pytest.mark.filterwarnings("ignore:Unverified HTTPS request is being made to host")
@@ -96,6 +138,25 @@ def test_run_valid_config_unexpected_failures(valid_config_unexpected_fail_filen
     assert result.exit_code == 0
     data = result.stdout
     json.loads(data)
+
+def test_run_valid_dns_config(dns_config_filename):
+    result = runner.invoke(app, ["run", "--config", dns_config_filename])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    for assertion in data['assertions']:
+        for result in assertion['results']:
+            assert 'status' in result
+            assert result['status'] == 'pass'
+
+def test_run_valid_dns_custom_config(dns_config_with_validation_filename):
+    result = runner.invoke(app, ["run", "--config", dns_config_with_validation_filename])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+
+    for assertion in data['assertions']:
+        for result in assertion['results']:
+            assert 'status' in result
+            assert result['status'] == 'pass'
 
 
 def test_run_http_config_with_headers(http_headers_config_filename):
