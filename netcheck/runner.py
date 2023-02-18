@@ -81,6 +81,7 @@ def check_individual_assertion(test_type: str, test_config, err_console, validat
     elif verbose:
         err_console.print("Using custom validation rule")
 
+    test_detail['spec']['pattern'] = validation_rule
     passed = validate_probe_result(test_detail, validation_rule)
 
     # Add the pass/status to the individual result. We also support an "expected": "fail" option
@@ -89,4 +90,5 @@ def check_individual_assertion(test_type: str, test_config, err_console, validat
         test_detail['status'] = 'fail' if passed else 'pass'
     else:
         test_detail['status'] = 'pass' if passed else 'fail'
+
     return test_detail
