@@ -116,8 +116,20 @@ def creation(body, spec, name, namespace, **kwargs):
         }
 
 
+def apply_context_to_rule(rule, context):
+    # Move the 'validate->pattern' key to 'validation'
+    if 'validate' in rule and 'pattern' in rule['validate']:
+        validation_pattern = rule['validate']['pattern']
+        del rule['validate']['pattern']
+        rule['validation'] = validation_pattern
+
+    return rule
+
+
 def create_network_assertions_config_map(name, rules, namespace, logger):
     core_api = client.CoreV1Api()
+
+    context = {}
 
     # This will inherit the name of the network assertion
     config_map = V1ConfigMap(
@@ -125,10 +137,14 @@ def create_network_assertions_config_map(name, rules, namespace, logger):
         data={
             # This gets mounted at /netcheck/rules.json
             # For now we create one "Assertion", with all the rules
-            # from the NetworkAssertion
+            # from the NetworkAssertion. Templated context variables will
+            # come later.
             "rules.json": json.dumps({
                 "assertions": [
-                    {"name": r['name'], "rules": [r]} for r in rules
+                    {
+                        "name": r['name'],
+                        "rules": [apply_context_to_rule(r, context)]
+                    } for r in rules
                 ]
             })
         }
