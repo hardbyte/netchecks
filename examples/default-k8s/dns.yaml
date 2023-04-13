@@ -7,26 +7,26 @@ metadata:
     description: Cluster should be able to lookup using public dns servers from default namespace.
 spec:
   # https://crontab.guru
-  schedule: "*/5 * * * *"
+  schedule: "*/10 * * * *"
   #schedule: "@hourly"
   rules:
     - name: cloudflare-dns-lookup
       type: dns
       server: 1.1.1.1
-      host: netchecks.io
-      expected: pass
+      host: github.com
+      expected: fail
       validate:
-        message: DNS requests to cloudflare's 1.1.1.1 should succeed.
+        message: DNS requests to cloudflare's 1.1.1.1 should be blocked.
     - name: google-dns-lookup
       type: dns
       server: 8.8.8.8
-      host: netchecks.io
-      expected: pass
+      host: github.com
+      expected: fail
       validate:
-        message: DNS requests to Google's 8.8.8.8 should succeed.
+        message: DNS requests to Google's 8.8.8.8 should fail.
     - name: default-dns-lookup
       type: dns
-      host: netchecks.io
+      host: github.com
       expected: pass
       validate:
         message: DNS requests using default namesever should succeed.

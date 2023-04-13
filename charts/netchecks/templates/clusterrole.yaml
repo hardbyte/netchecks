@@ -31,11 +31,11 @@ rules:
   # Note we don't create or delete them - that's up to the user.
   - apiGroups: [netchecks.io]
     resources: [networkassertions]
-    verbs: [list, get, watch, patch]
+    verbs: [list, get, watch, patch, update]
 
   - apiGroups: [wgpolicyk8s.io]
     resources: [policyreports]
-    verbs: [list, get, patch, create]
+    verbs: [list, get, patch, create, update, watch]
 
   # Application: other resources we produce and manipulate
   # The operator can create CronJobs, Jobs, and ConfigMaps but we don't delete them.
@@ -51,6 +51,7 @@ rules:
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch", "patch"]
+
   - apiGroups: [""]
     resources: ["pods/log"]
     verbs: ["get", "list", "watch"]
