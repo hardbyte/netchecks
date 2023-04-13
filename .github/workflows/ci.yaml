@@ -1,4 +1,4 @@
-name: CI
+name: Operator CI
 
 on:
   release:
@@ -103,10 +103,10 @@ jobs:
 
       - name: Install Netcheck Operator via Helm
         run: |
-          helm dependency build charts/netchecks
+          helm dependency build operator/charts/netchecks
           helm upgrade \
             --install netchecks-operator \
-            charts/netchecks/ \
+            operator/charts/netchecks/ \
             -f .github/chart-values-override.yaml \
             -n netchecks \
             --create-namespace \
@@ -134,7 +134,7 @@ jobs:
 
       - name: Create a Network Assertion
         run: |
-          kubectl apply -f examples/default-k8s/dns.yaml
+          kubectl apply -f operator/examples/default-k8s/dns.yaml
 
       # Check we can get the assertion
       - name: Get NetcheckAssertions
@@ -183,7 +183,7 @@ jobs:
 
       - name: Remove a Network Assertion
         run: |
-          kubectl delete -f examples/default-k8s/dns.yaml
+          kubectl delete -f operator/examples/default-k8s/dns.yaml
 
       - name: Uninstall Netchecks
         if: ${{ always() }}
