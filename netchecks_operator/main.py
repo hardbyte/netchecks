@@ -12,7 +12,7 @@ from rich import print
 import kopf
 from kubernetes import client
 
-from netchecksoperator.config import Config
+from netchecks_operator.config import Config
 
 
 logger = get_logger()
