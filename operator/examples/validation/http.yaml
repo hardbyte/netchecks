@@ -1,0 +1,33 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-should-work
+  namespace: default
+  annotations:
+    description: Assert pod can connect to k8s API
+spec:
+  #schedule: "@hourly"
+  rules:
+    - name: pie-dev-200
+      type: http
+      url: https://pie.dev/status/200
+      expected: pass
+      validate:
+        message: Http request to pie.dev service should succeed.
+    - name: pie-dev-headers
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "testvalue"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should succeed.
+    - name: pie-dev-headers-and-validation
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "secret"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == 'secret'"

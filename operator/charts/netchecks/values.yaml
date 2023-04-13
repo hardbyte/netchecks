@@ -1,0 +1,97 @@
+# Default values for netchecks operator
+
+nameOverride: ""
+fullnameOverride: ""
+
+# If the CRDs are not installed by Helm, they must be added before installing
+# the operator.
+installCRDs: true
+
+networkPolicy:
+  enabled: true
+
+policyreporter:
+  enabled: false
+
+operator:
+  image:
+    repository: ghcr.io/netchecks/operator
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+
+  imagePullSecrets: []
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: "netcheck-operator"
+
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
+    prometheus.io/port: "9090"
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  resources: {}
+    # Helm recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+probeConfig:
+  image:
+    repository: ghcr.io/netchecks/netchecks
+    pullPolicy: Always # Until we release and start pinning versions
+    tag: "main"
+
+  imagePullSecrets: []
+
+#  serviceAccount:
+#    # Specifies whether a service account should be created
+#    create: true
+#    # Annotations to add to the service account
+#    annotations: {}
+#    # The name of the service account to use.
+#    # If not set and create is true, a name is generated using the fullname template
+#    name: "netcheck-probe-account"
+
+  podAnnotations: {}
+
+  resources: {}
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}

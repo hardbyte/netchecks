@@ -1,0 +1,53 @@
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: intercept-cluster-wide-dns
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      "k8s:io.kubernetes.pod.namespace": kube-system
+      "k8s:k8s-app": kube-dns
+  egress:
+  - toEndpoints:
+    toPorts:
+      - ports:
+          - port: "53"
+            protocol: ANY
+        rules:
+          dns:
+            #- matchPattern: "*"
+            # https://docs.cilium.io/en/v1.12/policy/language/#dns-based
+            # Specify the allowed patterns or urls:
+            - matchPattern: "*.svc.cluster.local"
+            - matchPattern: "*.*.svc.cluster.local"
+            - matchPattern: "*.*.*.svc.cluster.local"
+            - matchPattern: "*.*.*.*.svc.cluster.local"
+            - matchPattern: "*.cluster.local"
+            - matchPattern: "*.*.cluster.local"
+            - matchPattern: "*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.localdomain"
+            - matchPattern: "*.*.*.localdomain"
+            - matchPattern: "*.*.*.*.localdomain"
+            - matchPattern: "*.*.*.*.*.localdomain"
+            - matchPattern: "*.github.com"
+            - matchName: "github.com"
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-kube-system-egress
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      "k8s:io.kubernetes.pod.namespace": kube-system
+  egress:
+  - toPorts:
+      - ports:
+        - port: "443"
+        - port: "6443"
