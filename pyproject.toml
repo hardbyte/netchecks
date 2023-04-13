@@ -12,7 +12,7 @@ dnspython = "^2.2"
 requests = "^2.28"
 typer = {extras = ["all"], version = "^0.7"}
 pydantic = "^1.10"
-rich = "^12.6"
+rich = "^13.3"
 cel-python = "^0.1.5"
 
 
