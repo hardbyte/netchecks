@@ -134,7 +134,7 @@ jobs:
     env:
       IMAGE_NAME: netchecks
       IMAGE_REGISTRY: ghcr.io
-      IMAGE_REPOSITORY: netchecks
+      IMAGE_REPOSITORY: hardbyte
 
     steps:
       - name: Checkout code

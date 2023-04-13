@@ -1,8 +1,21 @@
-![](.github/logo.png)
+
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck) [![Coverage Status](https://coveralls.io/repos/github/hardbyte/netcheck/badge.svg?branch=main)](https://coveralls.io/github/hardbyte/netcheck?branch=main) ![PyPI - Downloads](https://img.shields.io/pypi/dm/netcheck)
 
-# Netchecks Command Line Tool
+# Netchecks 
+
+<img alt="Netchecks Logo" src=".github/logo.png" />
+
+**Netchecks** is a set of tools for testing network conditions and asserting that they are as expected.
+
+There are two main components:
+- **Netchecks Operator** - Kubernetes Operator that runs network checks and reports results as `PolicyReport` resources.
+- **Netchecks CLI** - Command line tool for running network checks and asserting that they are as expected.
+
+
+Documentation can be found at [https://docs.netchecks.io](https://docs.netchecks.io)
+
+# Python Library and Command Line Tool
 
 Configurable command line application that can be used to test network conditions are as expected.
 
