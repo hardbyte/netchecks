@@ -22,7 +22,7 @@ const nodes = {
         type: String,
       },
     },
-  },
+  }
 }
 
 export default nodes

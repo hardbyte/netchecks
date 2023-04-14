@@ -41,7 +41,8 @@ const tags = {
       icon: { type: String },
       href: { type: String },
     },
-  },
+  }
+
 }
 
 export default tags
