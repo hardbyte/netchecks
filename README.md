@@ -3,7 +3,9 @@
 
 # Netchecks 
 
-<img alt="Netchecks Logo" src=".github/logo.png" />
+<p align="center">
+  <img alt="Netchecks Logo" src=".github/logo.png" width="150" />
+</p>
 
 **Netchecks** is a set of tools for testing network conditions and asserting that they are as expected.
 
