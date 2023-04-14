@@ -29,9 +29,9 @@ jobs:
       packages: write
       id-token: write # needed for signing the images with GitHub OIDC Token
     env:
-      IMAGE_NAME: operator
+      IMAGE_NAME: netchecks-operator
       IMAGE_REGISTRY: ghcr.io
-      IMAGE_REPOSITORY: netchecks
+      IMAGE_REPOSITORY: hardbyte
 
     steps:
       - name: Checkout code

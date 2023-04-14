@@ -15,7 +15,7 @@ policyreporter:
 
 operator:
   image:
-    repository: ghcr.io/netchecks/operator
+    repository: ghcr.io/hardbyte/netchecks-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
@@ -71,7 +71,7 @@ operator:
 
 probeConfig:
   image:
-    repository: ghcr.io/netchecks/netchecks
+    repository: ghcr.io/hardbyte/netchecks
     pullPolicy: Always # Until we release and start pinning versions
     tag: "main"
 
