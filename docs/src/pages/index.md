@@ -22,14 +22,23 @@ Learn how to get Netchecks set up in your own Kubernetes cluster. {% .lead %}
 ---
 ## Quick start
 
+The Netchecks operator is a Kubernetes operator that helps users verify network policies and connectivity within their clusters. By creating NetworkAssertions, users can automate and schedule network tests, making it easier to ensure the network is operating as expected.
+
+
+### Prerequisites
+
+Before installing the Netchecks operator, ensure you have the following:
+
+- A Kubernetes cluster up and running
+- Kubectl installed and configured to communicate with your cluster
+
 ### Installation
 
-Install the `NetworkAssertion` and `PolicyReport` CRDs and the `Netchecks` operator with:
+Install the `Netchecks` operator with:
 
 ```shell
-kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
 kubectl create namespace netchecks
-kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/deploy.yaml
+kubectl apply -f https://github.com/hardbyte/netchecks/raw/main/operator/manifests/deploy.yaml
 ```
 
 Wait until the netchecks namespace is running a Deployment with a ready Pod:
@@ -43,7 +52,6 @@ kubectl wait Deployment -n netchecks -l app=netcheck-operator --for condition=Av
 Create and apply your `NetworkAssertions` as any other Kubernetes resource.
 
 For example a `NetworkAssertion` with a single rule that checks HTTP requests to the Kubernetes API should succeed:
-
 
 ```yaml
 apiVersion: netchecks.io/v1
@@ -77,7 +85,7 @@ same namespace to schedule the test. After the first test has run Netchecks crea
 
 ---
 
-## Example
+## Advanced Usage
 
 Assume we have a Kubernetes cluster using Cilium as a CNI plugin. We can use Netchecks to verify that the network policies are being enforced.
 

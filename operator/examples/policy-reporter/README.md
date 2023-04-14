@@ -50,3 +50,6 @@ For example show the results by status:
 
 ## Alert Manager
 
+
+
+![slack-alert.png](slack-alert.png)
