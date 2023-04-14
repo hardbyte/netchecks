@@ -1,4 +1,4 @@
-name: Continuous Integration Workflow
+name: Command Line Tool CI
 
 on:
   release:
@@ -48,7 +48,7 @@ jobs:
       - name: Run Tests
         run: |
           source $VENV
-          poetry run pytest --cov netcheck --cov-report=lcov --cov-report=term
+          poetry run pytest tests --cov netcheck --cov-report=lcov --cov-report=term
         timeout-minutes: 10
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master

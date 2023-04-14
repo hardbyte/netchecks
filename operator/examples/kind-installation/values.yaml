@@ -1,0 +1,24 @@
+
+operator:
+  image:
+    tag: main
+
+probeConfig:
+  image:
+    tag: main
+
+
+policy-reporter:
+  enabled: true
+
+  metrics:
+    enabled: true
+
+  ui:
+    enabled: true
+
+  livenessProbe: null
+  readinessProbe: null
+
+crds:
+  install: true

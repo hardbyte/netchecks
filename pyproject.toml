@@ -10,9 +10,9 @@ packages = [{include = "netcheck"}]
 python = "^3.10"
 dnspython = "^2.2"
 requests = "^2.28"
-typer = {extras = ["all"], version = "^0.7"}
+typer = "^0.7"
 pydantic = "^1.10"
-rich = "^12.6"
+rich = ">=10.11.0,<14.0.0"
 cel-python = "^0.1.5"
 
 

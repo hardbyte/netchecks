@@ -1,0 +1,45 @@
+alertmanagerFiles:
+  alertmanager.yml:
+    global:
+      slack_api_url: ''
+
+    route:
+      receiver: 'slack-notifications'
+
+    receivers:
+      - name: 'slack-notifications'
+        slack_configs:
+          - channel: '#test-notifications'
+            send_resolved: true
+            title: |-
+             Policy Failing [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }} for {{ .CommonLabels.namespace }}
+            text: >-
+             {{ range .Alerts -}}
+             *Alert:* {{ .Annotations.title }}{{ if .Labels.severity }} - `{{ .Labels.severity }}`{{ end }}
+        
+             *Description:* {{ .Annotations.description }}
+        
+             *Details:*
+               {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+               {{ end }}
+             {{ end }}
+
+## Prometheus server ConfigMap entries
+##
+serverFiles:
+  ## Alerts configuration
+  ## Ref: https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/
+  ## Ref: https://awesome-prometheus-alerts.grep.to/rules.html
+  alerting_rules.yml:
+    groups:
+
+    - name: Netcheck
+      rules:
+        - alert: FailingPolicy
+          expr: policy_report_summary{status='Fail'} != 0
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: Policy is failing (instance {{ $labels.instance }})
+            description: "Policy {{ $labels.name }} is Failing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

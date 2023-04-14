@@ -1,0 +1,198 @@
+name: Operator CI
+
+on:
+  release:
+    types: [published]
+  pull_request:
+  push:
+    branches: [ main ]
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  KIND_VERSION: v0.17.0
+  KIND_CONFIG: .github/kind-config.yaml
+  TIMEOUT: 2m
+  LOG_TIME: 30m
+  cilium_version: v1.12.2
+  cilium_cli_version: v0.12.9
+  kubectl_version: v1.23.6
+
+jobs:
+  docker:
+    name: Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # needed for signing the images with GitHub OIDC Token
+    env:
+      IMAGE_NAME: operator
+      IMAGE_REGISTRY: ghcr.io
+      IMAGE_REPOSITORY: netchecks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+      - name: Sign the images with GitHub OIDC Token
+        run: cosign sign --yes ${TAGS}
+        if: github.event_name != 'pull_request'
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+
+
+  k8s:
+    name: Kubernetes Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+
+      - name: Install kubectl
+        run: |
+          curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
+          curl -sLO "https://dl.k8s.io/${{ env.kubectl_version }}/bin/linux/amd64/kubectl.sha256"
+          echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Install cilium CLI binary
+        run: |
+          curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${{ env.cilium_cli_version }}/cilium-linux-amd64.tar.gz{,.sha256sum}
+          sha256sum --check cilium-linux-amd64.tar.gz.sha256sum
+          sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.4.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+
+      - name: Get Cluster Info
+        run: |
+          kubectl cluster-info
+          export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
+
+      - name: Install PolicyReport CRD
+        run: |
+          kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
+
+      - name: Install Netcheck Operator via Helm
+        run: |
+          helm dependency build operator/charts/netchecks
+          helm upgrade \
+            --install netchecks-operator \
+            operator/charts/netchecks/ \
+            -f .github/chart-values-override.yaml \
+            -n netchecks \
+            --create-namespace \
+            --wait --timeout 5m
+          sleep 10
+          kubectl describe -n netchecks deployment.apps/netchecks-operator
+      - name: List CRDs
+        run: |
+          kubectl get crd -A
+
+      - name: Wait for Netcheck Operator to be ready
+        run: |    
+          kubectl wait -n netchecks --for=condition=Ready --all pod --timeout=5m
+
+
+      # Handy for debugging
+      #- name: Explain NetworkAssertion CRD
+      #  run: |
+      #    kubectl explain networkassertion
+
+      ## Check we can get NetcheckAssertions
+      #- name: Describe Operator
+      #  run: |
+      #    kubectl describe -n netcheck deployment/netcheck-operator
+
+      - name: Create a Network Assertion
+        run: |
+          kubectl apply -f operator/examples/default-k8s/dns.yaml
+
+      # Check we can get the assertion
+      - name: Get NetcheckAssertions
+        run: |
+          kubectl get networkassertions
+
+      # Check a Job/Pod was created
+      - name: See if the operator created a Job/Pod
+        run: |
+          sleep 60
+          echo "Listing CronJobs"
+          kubectl get CronJob
+          echo "Listing Jobs"
+          kubectl get Job
+          echo "Listing pods"
+          kubectl get pod
+
+      # Check a Job/Pod was created
+      - name: Operator logs
+        if: ${{ always() }}
+        run: |
+          kubectl logs -n netchecks deployment/netchecks-operator
+
+      # Install Cilium with HostPort support for extended connectivity test.
+      - name: Install Cilium
+        run: |
+          cilium install \
+            --version=${{ env.cilium_version }} \
+            --wait=false \
+            --config monitor-aggregation=none \
+            --helm-set cni.chainingMode=portmap
+      - name: Enable Hubble Relay
+        run: |
+          cilium hubble enable --ui
+
+      - name: Relay Port Forward
+        run: |
+          cilium hubble port-forward&
+          sleep 10s
+          [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
+
+#      - name: Cilium Connectivity Test
+#        run: |
+#          # Run the connectivity test
+#          cilium connectivity test --test dns-only,to-cidr-1111
+
+      - name: Remove a Network Assertion
+        run: |
+          kubectl delete -f operator/examples/default-k8s/dns.yaml
+
+      - name: Uninstall Netchecks
+        if: ${{ always() }}
+        run: |
+          helm uninstall netchecks-operator -n netchecks
+
+      - name: Cleanup
+        if: ${{ always() }}
+        run: |
+          cilium status
+          kubectl get pods --all-namespaces -o wide
+        shell: bash {0} # Disable default fail-fast behaviour so that all commands run independently

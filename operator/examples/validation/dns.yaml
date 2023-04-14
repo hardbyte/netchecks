@@ -1,0 +1,20 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: dns-should-work
+  namespace: default
+  annotations:
+    description: Cluster should be able to lookup using public dns servers from default namespace.
+spec:
+  # https://crontab.guru
+  #schedule: "*/5 * * * *"
+  #schedule: "@hourly"
+  rules:
+    - name: github-expected-ip
+      type: dns
+      server: 1.1.1.1
+      host: github.com
+      expected: pass
+      validate:
+        message: DNS requests to cloudflare's 1.1.1.1 should contain a specific IP address.
+        pattern: "data['A'].contains('20.248.137.48')"

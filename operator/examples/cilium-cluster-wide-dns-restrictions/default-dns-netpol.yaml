@@ -1,0 +1,20 @@
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: intercept-dns
+spec:
+  endpointSelector: {}
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        "k8s:io.kubernetes.pod.namespace": kube-system
+        "k8s:k8s-app": kube-dns
+    toPorts:
+      - ports:
+          - port: "53"
+            protocol: ANY
+        rules:
+          dns:
+            # https://docs.cilium.io/en/v1.12/policy/language/#dns-based
+            # Allow the DNS request for any URL:
+            - matchPattern: "*"
