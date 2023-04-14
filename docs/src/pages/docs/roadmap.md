@@ -3,8 +3,6 @@ title: Roadmap
 description: Where is netchecks heading?
 ---
 
-
-
 {% callout type="note" title="Unstable" %}
 
 The project roadmap is still being defined. The following is a list of features that are likely to be considered for implementation in the near future.
