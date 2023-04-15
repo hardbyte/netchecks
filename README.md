@@ -10,22 +10,15 @@
 **Netchecks** is a set of tools for testing network conditions and asserting that they are as expected.
 
 There are two main components:
-- **Netchecks Operator** - Kubernetes Operator that runs network checks and reports results as `PolicyReport` resources.
-- **Netchecks CLI** - Command line tool for running network checks and asserting that they are as expected.
+- **Netchecks Operator** - Kubernetes Operator that runs network checks and reports results as `PolicyReport` resources. See the [operator README](operator/README.md) for more details and the full documentation can be found at [https://docs.netchecks.io](https://docs.netchecks.io)
+- **Netcheck CLI and Python Library** - Command line tool for running network checks and asserting that they are as expected. Keep reading for the quickstart.
 
 
-Documentation can be found at [https://docs.netchecks.io](https://docs.netchecks.io)
+# Netcheck Command Line Tool Quickstart
 
-# Python Library and Command Line Tool
+`netcheck` is a configurable command line application that can be used to test network conditions are as expected.
 
-Configurable command line application that can be used to test network conditions are as expected.
-
-
-## Quickstart
-
-
-
-### Installation
+## Installation
 
 Install the Python package:
 
@@ -113,7 +106,7 @@ Note the resulting status will show **pass** if the check fails as expected, and
 netcheck has built in default validation for each check type. For example, the `dns` check will pass if the DNS response code is `NOERROR`, there is at least one `A` record, and resolver responds in under 10 seconds. Custom validation is also possible, see the [Custom Validation](#custom-validation) section below.
 
 
-### Custom Validation
+## Custom Validation
 
 Custom validation can be added to checks by providing a `validation-rule` option on the command line, or a `validation` key in the rules of a test spec when configuring via json. 
 
@@ -127,7 +120,7 @@ The validation rule is a CEL expression that is evaluated with the `data` return
 
 
 
-### http checks
+## http checks
 
 `http` checks are also available:
 
@@ -159,7 +152,7 @@ $ netcheck http --method=post --url=https://s3.ap-southeast-2.amazonaws.com --sh
 ```
 
 
-### Configuration via file
+## Configuration via file
 
 The main way to run `netcheck` is passing in a list of assertions. 
 A json file can be provided with a list of assertions to be checked:
