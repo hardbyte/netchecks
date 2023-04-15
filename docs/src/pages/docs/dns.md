@@ -1,71 +1,177 @@
 ---
-title: Compile-time caching
-description: Quidem magni aut exercitationem maxime rerum eos.
+title: DNS NetworkAssertions
+description: Writing and running DNS NetworkAssertions
 ---
 
-Quasi sapiente voluptates aut minima non doloribus similique quisquam. In quo expedita ipsum nostrum corrupti incidunt. Et aut eligendi ea perferendis.
+This example shows how to write and run a `NetworkAssertion` that checks DNS requests are
+being appropriately restricted by a `CiliumNetworkPolicy`.
 
----
 
-## Quis vel iste dicta
+## DNS Policy
 
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur.
+Many firewalls, proxies and network appliances can be used to restrict DNS requests. In this example we
+will use Cilium's DNS proxy to restrict DNS requests to specific domains. To follow along you will need a
+Kubernetes cluster using Cilium as a CNI plugin.
 
-### Et pariatur ab quas
+Cilium allows you to restrict DNS access to specific domains. For example, the following 
+CiliumNetworkPolicy only allows access to the Kubernetes API and github.com, denying all
+other DNS requests:
 
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur quaerat exercitationem. Consequatur et cum atque mollitia qui quia necessitatibus.
-
-```js
-/** @type {import('@tailwindlabs/lorem').ipsum} */
-export default {
-  lorem: 'ipsum',
-  dolor: ['sit', 'amet', 'consectetur'],
-  adipiscing: {
-    elit: true,
-  },
-}
+```yaml
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: intercept-dns
+spec:
+  endpointSelector: {}
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        "k8s:io.kubernetes.pod.namespace": kube-system
+        "k8s:k8s-app": kube-dns
+    toPorts:
+      - ports:
+          - port: "53"
+            protocol: ANY
+        rules:
+          dns:
+            # https://docs.cilium.io/en/v1.12/policy/language/#dns-based
+            - matchPattern: "*.github.com"
+            - matchName: "github.com"
+            - matchPattern: "*.svc.cluster.local"
+            - matchPattern: "*.*.svc.cluster.local"
+            - matchPattern: "*.*.*.svc.cluster.local"
+            - matchPattern: "*.*.*.*.svc.cluster.local"
+            - matchPattern: "*.cluster.local"
+            - matchPattern: "*.*.cluster.local"
+            - matchPattern: "*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.*.*.*.*.*.cluster.local"
+            - matchPattern: "*.*.localdomain"
+            - matchPattern: "*.*.*.localdomain"
+            - matchPattern: "*.*.*.*.localdomain"
+            - matchPattern: "*.*.*.*.*.localdomain"
 ```
 
-Possimus saepe veritatis sint nobis et quam eos. Architecto consequatur odit perferendis fuga eveniet possimus rerum cumque. Ea deleniti voluptatum deserunt voluptatibus ut non iste. Provident nam asperiores vel laboriosam omnis ducimus enim nesciunt quaerat. Minus tempora cupiditate est quod.
+### Network Assertion
 
-### Natus aspernatur iste
+Next create a `NetworkAssertion` to verify that the DNS restrictions
+are working every 10 minutes as expected:
 
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur quaerat exercitationem. Consequatur et cum atque mollitia qui quia necessitatibus.
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: dns-restrictions-should-work
+  namespace: default
+  annotations:
+    description: Check cluster dns restrictions are working
+spec:
+  schedule: "*/10 * * * *"
+  rules:
+    - name: external-dns-lookup-should-fail
+      type: dns
+      server: 1.1.1.1
+      host: hardbyte.nz
+      expected: fail
+      validate:
+        message: DNS requests using an external DNS provider such as cloudflare should fail.
+    - name: external-dns-host-lookup-should-fail
+      type: dns
+      host: hardbyte.nz
+      expected: fail
+      validate:
+        message: DNS requests to a non-approved host should fail.
+    - name: approved-dns-host-lookup-should-work
+      type: dns
+      host: github.com
+      expected: pass
+      validate:
+        message: DNS requests to an approved host.
+    - name: approved-dns-host-subdomain-lookup-should-work
+      type: dns
+      host: status.github.com
+      expected: pass
+      validate:
+        message: DNS requests for a subdomain of an approved host.
+    - name: internal-k8s-service-dns-lookup-should-work
+      type: dns
+      host: kubernetes
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
+    - name: k8s-svc-dns-lookup-should-work
+      type: dns
+      host: kubernetes.default
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service with namespace should work.
+    - name: k8s-svc-dns-lookup-should-work
+      type: dns
+      host: kubernetes.default.svc
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
+    - name: k8s-svc-with-cluster-domain-lookup-should-work
+      type: dns
+      host: kubernetes.default.svc.cluster.local
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
 
-Voluptas beatae omnis omnis voluptas. Cum architecto ab sit ad eaque quas quia distinctio. Molestiae aperiam qui quis deleniti soluta quia qui. Dolores nostrum blanditiis libero optio id. Mollitia ad et asperiores quas saepe alias.
+```
 
----
 
-## Quos porro ut molestiae
+Optionally you may want to verify that DNS that is expected to work continues to work too:
 
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur.
-
-### Voluptatem quas possimus
-
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur quaerat exercitationem. Consequatur et cum atque mollitia qui quia necessitatibus.
-
-Possimus saepe veritatis sint nobis et quam eos. Architecto consequatur odit perferendis fuga eveniet possimus rerum cumque. Ea deleniti voluptatum deserunt voluptatibus ut non iste. Provident nam asperiores vel laboriosam omnis ducimus enim nesciunt quaerat. Minus tempora cupiditate est quod.
-
-### Id vitae minima
-
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur quaerat exercitationem. Consequatur et cum atque mollitia qui quia necessitatibus.
-
-Voluptas beatae omnis omnis voluptas. Cum architecto ab sit ad eaque quas quia distinctio. Molestiae aperiam qui quis deleniti soluta quia qui. Dolores nostrum blanditiis libero optio id. Mollitia ad et asperiores quas saepe alias.
-
----
-
-## Vitae laborum maiores
-
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur.
-
-### Corporis exercitationem
-
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur quaerat exercitationem. Consequatur et cum atque mollitia qui quia necessitatibus.
-
-Possimus saepe veritatis sint nobis et quam eos. Architecto consequatur odit perferendis fuga eveniet possimus rerum cumque. Ea deleniti voluptatum deserunt voluptatibus ut non iste. Provident nam asperiores vel laboriosam omnis ducimus enim nesciunt quaerat. Minus tempora cupiditate est quod.
-
-### Reprehenderit magni
-
-Sit commodi iste iure molestias qui amet voluptatem sed quaerat. Nostrum aut pariatur. Sint ipsa praesentium dolor error cumque velit tenetur quaerat exercitationem. Consequatur et cum atque mollitia qui quia necessitatibus.
-
-Voluptas beatae omnis omnis voluptas. Cum architecto ab sit ad eaque quas quia distinctio. Molestiae aperiam qui quis deleniti soluta quia qui. Dolores nostrum blanditiis libero optio id. Mollitia ad et asperiores quas saepe alias.
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: cluster-dns-should-work
+  namespace: default
+  annotations:
+    description: Check cluster dns behaviour
+spec:
+  # Every 20 minutes
+  schedule: "*/20 * * * *"
+  rules:
+    - name: external-dns-host-lookup-should-work
+      type: dns
+      host: github.com
+      expected: pass
+      validate:
+        message: DNS lookup of an external host using default nameserver.
+    - name: approved-dns-host-subdomain-lookup-should-work
+      type: dns
+      host: status.github.com
+      expected: pass
+      validate:
+        message: DNS requests for a subdomain of an external host.
+    - name: internal-k8s-service-dns-lookup-should-work
+      type: dns
+      host: kubernetes
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
+    - name: k8s-svc-dns-lookup-should-work
+      type: dns
+      host: kubernetes.default.svc
+      expected: pass
+      validate:
+        message: DNS lookup of the kubernetes service should work.
+    - name: k8s-svc-with-cluster-domain-lookup-should-work
+      type: dns
+      host: kubernetes.default.svc.cluster.local
+      expected: pass
+      validate:
+        message: DNS lookup of the fqdn kubernetes service should work.
+    - name: missing-svc-dns-lookup-should-fail
+      type: dns
+      host: unlikely-a-real-service.default.svc.cluster.local
+      expected: fail
+      validate:
+        message: DNS lookup of the missing service should fail.
+```

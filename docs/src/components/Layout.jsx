@@ -27,9 +27,16 @@ const navigation = [
                 href: '/docs/continuous-assurance'
             },
             {title: 'Writing Network Assertions', href: '/docs/writing-network-assertions'},
-            {title: 'Integration with Policy Reporter', href: '/docs/alerting'},
             {title: 'Metrics and Alerting', href: '/docs/alerting'},
 
+        ],
+    },
+    {
+        title: 'User Guide',
+        links: [
+            {title: 'Validating HTTP Controls', href: '/docs/http'},
+            {title: 'Validating DNS Controls', href: '/docs/dns'},
+            {title: 'Integration with Policy Reporter', href: '/docs/alerting'},
 
         ],
     },
@@ -39,6 +46,7 @@ const navigation = [
 
         ],
     },
+
     {
         title: 'Contributor Guide',
         links: [
