@@ -3,7 +3,6 @@ title: Alerting
 description: Alerting with Netchecks and Kyverno Policy Reporter
 ---
 
-Alerting is a crucial aspect of maintaining a reliable and secure Kubernetes environment. With Netchecks and the Kyverno Policy Reporter, you can set up alerting based on the results of your NetworkAssertions and the generated PolicyReports. This enables you to get notified about potential network issues, policy violations, or other anomalies, ensuring timely response and remediation.
 
 In this documentation, we'll cover how to set up alerting using Netchecks, Kyverno Policy Reporter, Prometheus, and Grafana.
 

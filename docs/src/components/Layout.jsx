@@ -16,36 +16,26 @@ const navigation = [
         title: 'Introduction',
         links: [
             {title: 'Getting started', href: '/'},
-            {title: 'Installation', href: '/docs/installation'},
-        ],
-    },
-    {
-        title: 'Core concepts',
-        links: [
-            {
-                title: 'Continuous Assurance',
-                href: '/docs/continuous-assurance'
-            },
-            {title: 'Writing Network Assertions', href: '/docs/writing-network-assertions'},
-            {title: 'Metrics and Alerting', href: '/docs/alerting'},
 
+            {title: 'Core concepts', href: '/docs/core-concepts'}
         ],
     },
     {
         title: 'User Guide',
         links: [
+            {title: 'Installation', href: '/docs/installation'},
             {title: 'Validating HTTP Controls', href: '/docs/http'},
             {title: 'Validating DNS Controls', href: '/docs/dns'},
             {title: 'Integration with Policy Reporter', href: '/docs/alerting'},
 
         ],
     },
-    {
-        title: 'Examples',
-        links: [
-
-        ],
-    },
+    // {
+    //     title: 'Examples',
+    //     links: [
+    //
+    //     ],
+    // },
 
     {
         title: 'Contributor Guide',
