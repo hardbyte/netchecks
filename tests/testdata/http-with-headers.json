@@ -2,7 +2,9 @@
   "assertions": [
     {"name":  "get-with-header", "rules": [
       {"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Test-Header":  "value"}},
-      {"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Header":  "secret"}, "validation": "parse_json(data.body).headers['X-Header'] == 'secret'" }
-    ]}
+      {"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Header":  "secret"},
+        "validation": "parse_json(data.body).headers['X-Header'] == 'secret'" }
+    ]
+    }
   ]
 }

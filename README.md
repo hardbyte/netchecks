@@ -36,7 +36,7 @@ pip install netcheck
 Or run with Docker:
 
 ```shell
-docker run -it ghcr.io/netchecks/netchecks:latest
+docker run -it ghcr.io/hardbyte/netchecks:main
 ```
 
 ### Individual Assertions
@@ -227,22 +227,22 @@ to each rule such as headers and custom validation:
   "assertions": [
     {"name":  "get-with-header", "rules": [
       {"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Test-Header":  "value"}},
-      {"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Header":  "secret"}, "validation": "parse_json(data.body).headers['X-Header'] == 'secret'" }
+      {"type": "http", "url": "https://pie.dev/headers", "headers": {"X-Header": "secret"}, "validation": "parse_json(data.body).headers['X-Header'] == 'secret'" }
     ]}
   ]
 }
 ```
-
-## Coming Soon
-
-- JSON Schema for config file and outputs
-- More checks
 
 ## Development
 
 Update version in pyproject.toml, push to `main` and create a release on GitHub. Pypi release will be carried
 out by GitHub actions. 
 
+Install dev dependencies with Poetry:
+
+```
+poetry install --with dev
+```
 
 ### Manual Release 
 To release manually, use Poetry:
