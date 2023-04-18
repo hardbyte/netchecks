@@ -49,6 +49,7 @@ spec:
           readinessProbe:
             initialDelaySeconds: 1
             periodSeconds: 2
+            timeoutSeconds: 5
             failureThreshold: 10
             httpGet:
               path: /healthz
