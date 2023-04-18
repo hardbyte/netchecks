@@ -46,6 +46,13 @@ spec:
             timeoutSeconds: 10
             successThreshold: 1
             failureThreshold: 10
+          readinessProbe:
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            failureThreshold: 10
+            httpGet:
+              path: /healthz
+              port: http
           resources:
             {{- toYaml .Values.operator.resources | nindent 12 }}
           env:
