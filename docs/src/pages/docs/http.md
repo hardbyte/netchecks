@@ -43,12 +43,6 @@ spec:
         message: Http request to Kubernetes API should succeed.
 ```
 
-Apply the `NetworkAssertion` to your cluster:
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/hardbyte/netchecks/main/operator/examples/default-k8s/http.yaml
-```
-
 ## Policy Report
 
 After the `NetworkAssertion` has been applied, a `CronJob` will be created in the `defalt` namespace to run the test every 10 minutes. The `CronJob` will create a `Pod` that runs the test and then a `PolicyReport` resource with the same name as the `NetworkAssertion` will be created in the same namespace. An example `PolicyReport` created by Netchecks is shown below:
