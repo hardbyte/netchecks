@@ -18,9 +18,9 @@ ENV PATH="${PATH}:${POETRY_VENV}/bin"
 WORKDIR /app
 
 # Install dependencies
-COPY poetry.lock* pyproject.toml ./
+COPY poetry.lock* pyproject.toml README.md ./
 RUN poetry install --no-root --no-cache
 
-COPY . /app
+COPY ./netchecks_operator/ /app/netchecks_operator/
 RUN poetry install --no-cache
 CMD ["poetry", "run", "kopf", "run", "/app/netchecks_operator/main.py", "--liveness=http://0.0.0.0:8080/healthz"]
