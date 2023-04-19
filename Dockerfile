@@ -18,10 +18,10 @@ ENV PATH="${PATH}:${POETRY_VENV}/bin"
 WORKDIR /app
 
 # Install dependencies
-COPY poetry.lock* pyproject.toml ./
+COPY poetry.lock* pyproject.toml README.md ./
 RUN poetry install --no-root --no-cache
 
-COPY . /app
+COPY ./netcheck/ /app/netcheck/
 RUN poetry install
 ENTRYPOINT ["poetry", "run", "netcheck"]
 CMD ["http", "-v"]
