@@ -26,7 +26,7 @@ const navigation = [
             {title: 'Installation', href: '/docs/installation'},
             {title: 'Validating HTTP Controls', href: '/docs/http'},
             {title: 'Validating DNS Controls', href: '/docs/dns'},
-            {title: 'Integration with Policy Reporter', href: '/docs/alerting'},
+            {title: 'Alerting', href: '/docs/alerting'},
 
         ],
     },

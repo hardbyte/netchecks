@@ -7,12 +7,8 @@ See https://kyverno.github.io/policy-reporter/ for detailed configuration of Pol
 ## Install the Policy Reporter
 
 ```shell
-kubectl apply -f examples/policy-reporter/policy-reporter-install.yaml
-```
-
-Or once https://github.com/kyverno/policy-reporter/pull/237 is merged:
-
-```shell
+# Create the policy-reporter namespace if it doesn't exist
+kubectl create namespace policy-reporter
 kubectl apply -f https://github.com/kyverno/policy-reporter/raw/main/manifest/policy-reporter/install.yaml
 ```
 
@@ -28,8 +24,10 @@ helm repo update
 
 ### Install Prometheus
 
+From the root directory of this repository
+
 ```shell
-helm upgrade --install prometheus prometheus-community/prometheus --values examples/policy-reporter/prometheus-values.yaml
+helm upgrade --install prometheus operator/prometheus-community/prometheus --values examples/policy-reporter/prometheus-values.yaml
 ```
 
 ### Access Prometheus UI
@@ -49,7 +47,5 @@ For example show the results by status:
 
 
 ## Alert Manager
-
-
 
 ![slack-alert.png](slack-alert.png)
