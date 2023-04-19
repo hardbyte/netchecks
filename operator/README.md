@@ -93,7 +93,7 @@ The helm chart is not **yet** available in a public helm repository. To install 
 clone the git repo and run:
 
 ```shell
-helm upgrade --install netchecks-operator  charts/netchecks/ -n netchecks --create-namespace
+helm upgrade --install netchecks-operator charts/netchecks/ -n netchecks --create-namespace
 ```
 
 
