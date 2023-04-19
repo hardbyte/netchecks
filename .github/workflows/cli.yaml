@@ -161,9 +161,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@main
-      - name: Sign the images with GitHub OIDC Token
-        run: cosign sign --yes ${TAGS}
-        env:
-          TAGS: ${{ steps.meta.outputs.tags }}
+#      - name: Install Cosign
+#        uses: sigstore/cosign-installer@main
+#      - name: Sign the images with GitHub OIDC Token
+#        run: cosign sign --yes ${TAGS}
+#        env:
+#          TAGS: ${{ steps.meta.outputs.tags }}
