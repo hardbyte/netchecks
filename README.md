@@ -1,3 +1,9 @@
+# Netchecks
+
+<p align="center">
+  <img alt="Netchecks Logo" src=".github/logo.png" width="150" />
+</p>
+
 <div align="center">
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck)
@@ -5,13 +11,6 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/netcheck)
 
 </div>
-
-
-# Netchecks 
-
-<p align="center">
-  <img alt="Netchecks Logo" src=".github/logo.png" width="150" />
-</p>
 
 **Netchecks** is a set of tools for testing network conditions and asserting that they are as expected.
 
