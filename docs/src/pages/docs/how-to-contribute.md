@@ -20,7 +20,7 @@ The code is available under the [netchecks](https://github.com/hardbyte/netcheck
 
 ### Docs
 
-Ddocumentation is available in the folder [netchecks/docs](https://github.com/hardbyte/netchecks/tree/main/docs).
+Documentation is available in the folder [netchecks/docs](https://github.com/hardbyte/netchecks/tree/main/docs).
 
 
 ### Netcheck Probe
