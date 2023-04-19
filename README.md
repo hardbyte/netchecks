@@ -1,11 +1,16 @@
-
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck) [![Coverage Status](https://coveralls.io/repos/github/hardbyte/netcheck/badge.svg?branch=main)](https://coveralls.io/github/hardbyte/netcheck?branch=main) ![PyPI - Downloads](https://img.shields.io/pypi/dm/netcheck)
-
-# Netchecks 
+# Netchecks
 
 <p align="center">
   <img alt="Netchecks Logo" src=".github/logo.png" width="150" />
 </p>
+
+<div align="center">
+
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck)
+[![Coverage Status](https://coveralls.io/repos/github/hardbyte/netcheck/badge.svg?branch=main)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/netcheck)
+
+</div>
 
 **Netchecks** is a set of tools for testing network conditions and asserting that they are as expected.
 
@@ -233,7 +238,7 @@ out by GitHub actions.
 
 Install dev dependencies with Poetry:
 
-```
+```shell
 poetry install --with dev
 ```
 
