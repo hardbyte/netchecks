@@ -44,7 +44,7 @@ kubectl apply -f https://github.com/hardbyte/netchecks/raw/main/operator/manifes
 Wait until the netchecks namespace is running a Deployment with a ready Pod:
 
 ```shell
-kubectl wait Deployment -n netchecks -l app=netcheck-operator --for condition=Available --timeout=90s
+kubectl wait Deployment -n netchecks -l app.kubernetes.io/instance=netchecks-operator --for condition=Available --timeout=90s
 ```
 
 ### Basic Usage
