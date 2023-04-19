@@ -162,8 +162,8 @@ jobs:
       # Check if networkassertions passed and failed as expected
       - name: NetworkAssertions pass/fail check
         run: |
+          [ "$(kubectl get policyreports http-k8s-api-should-pass-ci -o jsonpath='{.summary.pass}')" == "1" ] || exit 1;
           [ "$(kubectl get policyreports http-k8s-api-should-fail-ci -o jsonpath='{.summary.fail}')" == "1" ] || exit 1;
-          [ "$(kubectl get policyreports http-k8s-api-should-pass-ci -o jsonpath='{.summary.fail}')" == "1" ] || exit 1;
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium
