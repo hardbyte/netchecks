@@ -1,0 +1,16 @@
+name: Lint
+
+on: [push]
+
+jobs:
+  check-linters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: reviewdog/action-shellcheck@v1
+        with:
+          filter_mode: file
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          recursive: true
