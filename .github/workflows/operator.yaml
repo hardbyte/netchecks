@@ -188,11 +188,9 @@ jobs:
 #          # Run the connectivity test
 #          cilium connectivity test --test dns-only,to-cidr-1111
 
-      - name: Remove a Network Assertion
+      - name: Remove Network Assertions
         run: |
-          kubectl delete -f operator/examples/default-k8s/dns.yaml
-          kubectl delete -f .github/workflows/manifests/should-pass.yaml
-          kubectl delete -f .github/workflows/manifests/should-fail.yaml
+          kubectl delete networkassertions --all-namespaces --all
 
       - name: Uninstall Netchecks
         if: ${{ always() }}
