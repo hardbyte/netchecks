@@ -28,10 +28,6 @@ if __name__ == "__main__":
     operator_toml = read_toml(operator_toml_path)
     operator_chart_yaml = read_yaml(operator_chart_path)
 
-    cli_toml = read_toml(cli_toml_path)
-    operator_toml = read_toml(operator_toml_path)
-    operator_chart_yaml = read_yaml(operator_chart_path)
-
     cli_version = cli_toml["tool"]["poetry"]["version"]
     operator_version = operator_toml["tool"]["poetry"]["version"]
     operator_chart_version = operator_chart_yaml["appVersion"]
