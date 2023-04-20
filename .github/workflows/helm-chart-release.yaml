@@ -5,9 +5,9 @@ on:
     branches:
       - main
       - helm-release
-    paths:
-      - 'charts/**'
-      - 'manifests/**'
+ #  paths:
+ #    - h'charts/**'
+ #    - h'manifests/**'
 
 jobs:
   release:
