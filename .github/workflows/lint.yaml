@@ -1,4 +1,4 @@
-name: Lint
+name: CI
 
 on: [push]
 
@@ -14,3 +14,10 @@ jobs:
         with:
           dockerfile: Dockerfile
           recursive: true
+
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check if project versions match
+        run: python ./scripts/check_versions.py

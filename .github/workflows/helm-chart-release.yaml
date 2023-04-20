@@ -2,12 +2,8 @@ name: Release Helm Charts
 
 on:
   push:
-    branches:
-      - main
-      - helm-release
- #  paths:
- #    - h'charts/**'
- #    - h'manifests/**'
+    tags:
+      - 'v*'
 
 jobs:
   release:
