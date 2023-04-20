@@ -23,5 +23,5 @@ jobs:
        with:
          python-version: '3.11'
      - run: |
-       python -m pip install pyyaml
-       python ./scripts/check_versions.py
+         python -m pip install pyyaml
+         python ./scripts/check_versions.py
