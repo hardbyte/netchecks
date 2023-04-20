@@ -1,0 +1,20 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-k8s-api-should-fail-ci
+  namespace: default
+  annotations:
+    description: Assert pod can connect to k8s API
+spec:
+  template:
+    metadata:
+      labels:
+        optional-label: applied-to-test-pod
+  rules:
+    - name: kubernetes-version
+      type: http
+      url: https://kubernetes/devnull
+      verify-tls-cert: false
+      expected: pass
+      validate:
+        message: Http request to Kubernetes API should succeed.
