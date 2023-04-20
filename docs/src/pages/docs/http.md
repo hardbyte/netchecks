@@ -45,7 +45,7 @@ spec:
 
 ## Policy Report
 
-After the `NetworkAssertion` has been applied, a `CronJob` will be created in the `defalt` namespace to run the test every 10 minutes. The `CronJob` will create a `Pod` that runs the test and then a `PolicyReport` resource with the same name as the `NetworkAssertion` will be created in the same namespace. An example `PolicyReport` created by Netchecks is shown below:
+After the `NetworkAssertion` has been applied, a `CronJob` will be created in the `default` namespace to run the test every 10 minutes. The `CronJob` will create a `Pod` that runs the test and then a `PolicyReport` resource with the same name as the `NetworkAssertion` will be created in the same namespace. An example `PolicyReport` created by Netchecks is shown below:
 
 ```yaml
 apiVersion: wgpolicyk8s.io/v1alpha2
