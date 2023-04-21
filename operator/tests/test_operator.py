@@ -3,9 +3,8 @@ import subprocess
 from kopf.testing import KopfRunner
 
 
-def test_operator(k8s_namespace, test_file_path):
-
-    with KopfRunner(['run', '-A', '--verbose', 'main.py']) as runner:
+def test_operator(netchecks_crds, k8s_namespace, test_file_path):
+    with KopfRunner(['run', '-A', 'netchecks_operator/main.py']) as runner:
         # do something while the operator is running.
 
         subprocess.run(f"kubectl apply -f {test_file_path('http-job.yaml')} -n {k8s_namespace}",
