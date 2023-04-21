@@ -11,37 +11,6 @@ entries:
       artifacthub.io/operator: "true"
       artifacthub.io/prerelease: "true"
     apiVersion: v2
-    appVersion: 0.1.1
-    created: "2023-04-20T02:22:49.386993293Z"
-    dependencies:
-    - condition: policy-reporter.enabled
-      name: policy-reporter
-      repository: https://kyverno.github.io/policy-reporter
-      version: 2.14.1
-    description: Netchecks proactively verifies whether your security controls are
-      working as intended.
-    digest: 8453fb139ce2ce864496fcaaeab058780643f02ed7d4b432a73836eb71129ce7
-    icon: https://raw.githubusercontent.com/netchecks/netchecks/main/.github/logo.png
-    maintainers:
-    - email: brian@hardbyte.nz
-      name: Brian Thorne
-    name: netchecks
-    sources:
-    - https://github.com/netchecks/operator
-    type: application
-    urls:
-    - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.3/netchecks-0.1.3.tgz
-    version: 0.1.3
-  - annotations:
-      artifacthub.io/changes: |
-        - kind: added
-          description: A helm chart for netchecks operator
-      artifacthub.io/links: |
-        - name: Documentation
-          url: https://docs.netchecks.io
-      artifacthub.io/operator: "true"
-      artifacthub.io/prerelease: "true"
-    apiVersion: v2
     appVersion: 0.3.0
     created: "2023-04-21T05:14:20.380469281Z"
     dependencies:
