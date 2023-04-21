@@ -5,7 +5,7 @@ from kubernetes import client
 
 
 
-def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file_path):
+def test_dns_check_with_installed_operator(netchecks, k8s_namespace, test_file_path):
     # netchecks should be installed (via helm)
     # Confirm netchecks is running
     manifest = test_file_path('cluster-dns.yaml')
