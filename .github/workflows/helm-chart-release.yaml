@@ -2,11 +2,8 @@ name: Release Helm Charts
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
-      - 'manifests/**'
+    tags:
+      - 'v*'
 
 jobs:
   release:
@@ -27,5 +24,8 @@ jobs:
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
+        with:
+          charts_dir: operator/charts/
+          mark_as_latest: false
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

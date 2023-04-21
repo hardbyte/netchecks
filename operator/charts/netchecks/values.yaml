@@ -73,7 +73,8 @@ probeConfig:
   image:
     repository: ghcr.io/hardbyte/netchecks
     pullPolicy: Always # Until we release and start pinning versions
-    tag: "main"
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
 
   imagePullSecrets: []
 
