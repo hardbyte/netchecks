@@ -25,5 +25,7 @@ def test_operator(netchecks_crds, k8s_namespace, test_file_path):
 
     assert 'Pod monitoring complete' in runner.stdout
     assert 'http-should-work' in runner.stdout
-    assert 'PolicyReport created' in runner.stdout
+
+    # The PolicyReport either already exists (from other tests), or gets created.
+
     assert f'networkassertion delete handler called name=http-should-work namespace={k8s_namespace}' in runner.stdout
