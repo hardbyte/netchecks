@@ -133,59 +133,6 @@ jobs:
           cd operator
           poetry run pytest
         timeout-minutes: 10
-#      - name: Install Netcheck Operator via Helm
-#        run: |
-#          helm dependency build operator/charts/netchecks
-#          helm upgrade \
-#            --install netchecks-operator \
-#            operator/charts/netchecks/ \
-#            -f .github/chart-values-override.yaml \
-#            -n netchecks \
-#            --create-namespace \
-#            --wait --timeout 5m
-#          sleep 10
-#          kubectl describe -n netchecks deployment.apps/netchecks-operator
-#      - name: List CRDs
-#        run: |
-#          kubectl get crd -A
-#
-#      - name: Wait for Netcheck Operator to be ready
-#        run: |
-#          kubectl wait -n netchecks --for=condition=Ready --all pod --timeout=5m
-#
-#      - name: Create Network Assertions
-#        run: |
-#          kubectl apply -f operator/examples/default-k8s/dns.yaml
-#          kubectl apply -f .github/workflows/manifests/should-pass.yaml
-#          kubectl apply -f .github/workflows/manifests/should-fail.yaml
-#
-#      # Check we can get the assertion
-#      - name: Get NetcheckAssertions
-#        run: |
-#          kubectl get networkassertions
-#
-#      # Check a Job/Pod was created
-#      - name: See if the operator created a Job/Pod
-#        run: |
-#          sleep 60
-#          echo "Listing CronJobs"
-#          kubectl get CronJob
-#          echo "Listing Jobs"
-#          kubectl get Job
-#          echo "Listing pods"
-#          kubectl get pod
-#
-#      # Check a Job/Pod was created
-#      - name: Operator logs
-#        if: ${{ always() }}
-#        run: |
-#          kubectl logs -n netchecks deployment/netchecks-operator
-#
-#      # Check if networkassertions passed and failed as expected
-#      - name: NetworkAssertions pass/fail check
-#        run: |
-#          [ "$(kubectl get policyreports http-k8s-api-should-pass-ci -o jsonpath='{.summary.pass}')" == "1" ] || exit 1;
-#          [ "$(kubectl get policyreports http-k8s-api-should-fail-ci -o jsonpath='{.summary.fail}')" == "1" ] || exit 1;
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium
@@ -195,6 +142,7 @@ jobs:
             --wait=false \
             --config monitor-aggregation=none \
             --helm-set cni.chainingMode=portmap
+
       - name: Enable Hubble Relay
         run: |
           cilium hubble enable --ui
@@ -205,19 +153,12 @@ jobs:
           sleep 10s
           [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
 
-#      - name: Cilium Connectivity Test
-#        run: |
-#          # Run the connectivity test
-#          cilium connectivity test --test dns-only,to-cidr-1111
-
-      - name: Remove Network Assertions
+      - name: Run Integration Tests (with Cilium)
         run: |
-          kubectl delete networkassertions --all-namespaces --all
+          cd operator
+          INCLUDE_CILIUM_TESTS=1 poetry run pytest
 
-      - name: Uninstall Netchecks
-        if: ${{ always() }}
-        run: |
-          helm uninstall netchecks-operator -n netchecks
+        timeout-minutes: 10
 
       - name: Cleanup
         if: ${{ always() }}
