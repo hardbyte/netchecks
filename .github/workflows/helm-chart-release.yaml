@@ -2,11 +2,8 @@ name: Release Helm Charts
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
-      - 'manifests/**'
+    tags:
+      - 'v*'
 
 jobs:
   release:
@@ -15,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Configure Git
@@ -26,6 +23,9 @@ jobs:
         uses: azure/setup-helm@v3
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.5.0
+        uses: hardbyte/chart-releaser-action@main
+        with:
+          charts_dir: operator/charts
+          mark_as_latest: false
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

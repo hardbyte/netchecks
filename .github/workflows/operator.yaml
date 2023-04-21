@@ -6,6 +6,8 @@ on:
   pull_request:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'
 
 defaults:
   run:
@@ -41,6 +43,11 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -71,7 +78,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+        uses: actions/checkout@v3
 
       - name: Install kubectl
         run: |
@@ -118,9 +125,8 @@ jobs:
           kubectl get crd -A
 
       - name: Wait for Netcheck Operator to be ready
-        run: |    
+        run: |
           kubectl wait -n netchecks --for=condition=Ready --all pod --timeout=5m
-
 
       # Handy for debugging
       #- name: Explain NetworkAssertion CRD
@@ -132,9 +138,11 @@ jobs:
       #  run: |
       #    kubectl describe -n netcheck deployment/netcheck-operator
 
-      - name: Create a Network Assertion
+      - name: Create Network Assertions
         run: |
           kubectl apply -f operator/examples/default-k8s/dns.yaml
+          kubectl apply -f .github/workflows/manifests/should-pass.yaml
+          kubectl apply -f .github/workflows/manifests/should-fail.yaml
 
       # Check we can get the assertion
       - name: Get NetcheckAssertions
@@ -157,6 +165,12 @@ jobs:
         if: ${{ always() }}
         run: |
           kubectl logs -n netchecks deployment/netchecks-operator
+
+      # Check if networkassertions passed and failed as expected
+      - name: NetworkAssertions pass/fail check
+        run: |
+          [ "$(kubectl get policyreports http-k8s-api-should-pass-ci -o jsonpath='{.summary.pass}')" == "1" ] || exit 1;
+          [ "$(kubectl get policyreports http-k8s-api-should-fail-ci -o jsonpath='{.summary.fail}')" == "1" ] || exit 1;
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium
@@ -181,9 +195,9 @@ jobs:
 #          # Run the connectivity test
 #          cilium connectivity test --test dns-only,to-cidr-1111
 
-      - name: Remove a Network Assertion
+      - name: Remove Network Assertions
         run: |
-          kubectl delete -f operator/examples/default-k8s/dns.yaml
+          kubectl delete networkassertions --all-namespaces --all
 
       - name: Uninstall Netchecks
         if: ${{ always() }}
