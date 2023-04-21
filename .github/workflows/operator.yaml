@@ -126,7 +126,6 @@ jobs:
 
       - name: Run Integration Tests (no Cilium)
         run: |
-          source $VENV
           cd operator
           poetry run pytest
         timeout-minutes: 10
