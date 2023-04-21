@@ -14,7 +14,7 @@ spec:
       expected: fail
       validate:
         message: DNS requests using an external DNS provider such as cloudflare should fail.
-    - name: external-dns-host-lookup-should-fail
+    - name: default-dns-external-host-lookup-should-fail
       type: dns
       host: hardbyte.nz
       expected: fail

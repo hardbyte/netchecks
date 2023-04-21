@@ -14,6 +14,9 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, example_d
     dns_restrictions_dir = example_dir_path('cilium-dns-restrictions')
 
     # Apply the example DNS restrictions and network assertions
+    subprocess.run(f"kubectl apply -n {k8s_namespace} -f {dns_restrictions_dir}/dns-netpol.yaml", shell=True, check=True)
+    time.sleep(5)
+
     subprocess.run(f"kubectl apply -n {k8s_namespace} -f {dns_restrictions_dir}", shell=True, check=True)
 
     # Assert that a CronJob gets created in the same namespace
