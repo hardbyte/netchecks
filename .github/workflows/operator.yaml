@@ -124,6 +124,10 @@ jobs:
           kubectl cluster-info
           export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
 
+      - name: Install Netcheck Operator via Helm
+        run: |
+          helm dependency build operator/charts/netchecks
+
       - name: Run Integration Tests (no Cilium)
         run: |
           cd operator
