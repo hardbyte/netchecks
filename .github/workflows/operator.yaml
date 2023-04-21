@@ -99,7 +99,7 @@ jobs:
       - name: Install Python Dependencies
         run: |
           cd operator
-          poetry install --no-interaction
+          poetry install --no-interaction --with dev
       - name: Install kubectl
         run: |
           curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
@@ -127,7 +127,7 @@ jobs:
       - name: Run Integration Tests (no Cilium)
         run: |
           source $VENV
-          pwd
+          cd operator
           poetry run pytest
         timeout-minutes: 10
 #      - name: Install Netcheck Operator via Helm
