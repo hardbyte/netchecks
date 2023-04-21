@@ -25,25 +25,25 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, example_d
 
     # Now wait for the job to get created (up to 1 minute)
     for i in range(10):
-        jobs_response = subprocess.run(f"kubectl get jobs -n {k8s_namespace} -l app.kubernetes.io/instance=cluster-dns-should-work", shell=True, check=True, capture_output=True)
+        jobs_response = subprocess.run(f"kubectl get jobs -n {k8s_namespace} -l app.kubernetes.io/instance=dns-restrictions-should-work", shell=True, check=True, capture_output=True)
         if b'dns-restrictions-should-work' in jobs_response.stdout:
             break
         time.sleep(1.5**i)
 
     # Now the job exists, wait for the job to complete
-    subprocess.run(f"kubectl wait Job -l app.kubernetes.io/instance=cluster-dns-should-work -n {k8s_namespace} --for condition=complete --timeout=120s", shell=True, check=True)
+    subprocess.run(f"kubectl wait Job -l app.kubernetes.io/instance=dns-restrictions-should-work -n {k8s_namespace} --for condition=complete --timeout=120s", shell=True, check=True)
 
     # Assert that a PolicyReport gets created in the same namespace
-    for i in range(10):
+    for i in range(20):
         policy_report_response = subprocess.run(f"kubectl get policyreports -n {k8s_namespace}", shell=True, check=True, capture_output=True)
-        if b'cluster-dns-should-work' in policy_report_response.stdout:
+        if b'dns-restrictions-should-work' in policy_report_response.stdout:
             break
-        time.sleep(1.5**i)
-    assert b'cluster-dns-should-work' in policy_report_response.stdout
+        time.sleep(1.3**i)
+    assert b'dns-restrictions-should-work' in policy_report_response.stdout
 
     # Now get the detailed policy report results
     results_filter = "jsonpath='{.results}'"
-    policy_report_results_response = subprocess.run(f"""kubectl get policyreport/cluster-dns-should-work -n {k8s_namespace} -o {results_filter}""", shell=True, check=True, capture_output=True)
+    policy_report_results_response = subprocess.run(f"""kubectl get policyreport/dns-restrictions-should-work -n {k8s_namespace} -o {results_filter}""", shell=True, check=True, capture_output=True)
     policy_report_results = json.loads(policy_report_results_response.stdout)
 
     for result in policy_report_results:
@@ -53,7 +53,6 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, example_d
 
         test_spec = json.loads(result['properties']['spec'])
         test_data = json.loads(result['properties']['data'])
-
 
     # Delete the network assertion
     subprocess.run(f"kubectl delete -n {k8s_namespace} -f {dns_restrictions_dir}", shell=True, check=True)

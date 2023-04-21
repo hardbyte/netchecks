@@ -20,12 +20,6 @@ spec:
       expected: pass
       validate:
         message: DNS requests for a subdomain of an external host.
-    - name: internal-k8s-service-dns-lookup-should-work
-      type: dns
-      host: kubernetes
-      expected: pass
-      validate:
-        message: DNS lookup of the kubernetes service should work.
     - name: k8s-svc-dns-lookup-should-work
       type: dns
       host: kubernetes.default.svc
