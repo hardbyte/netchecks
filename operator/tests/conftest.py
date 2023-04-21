@@ -61,8 +61,9 @@ def netchecks_crds():
 
 @fixture(scope="session")
 def netchecks(k8s_namespace):
+
     try:
-        subprocess.run(f'helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} -n {k8s_namespace} --set operator.image.tag=latest', shell=True, check=True)
+        subprocess.run(f'helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} -n {k8s_namespace} --set operator.image.tag=main --set probeConfig.image.tag=main', shell=True, check=True)
         subprocess.run(f"kubectl wait Deployment -n {k8s_namespace} -l app.kubernetes.io/instance=netchecks-operator --for condition=Available --timeout=30s", shell=True, check=True)
 
         yield None
