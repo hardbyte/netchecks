@@ -6,9 +6,11 @@
 
 <div align="center">
 
+[![PyPI](https://img.shields.io/pypi/v/netcheck.svg)](https://pypi.org/project/netcheck/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck)
 [![Coverage Status](https://coveralls.io/repos/github/hardbyte/netcheck/badge.svg?branch=main)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/netcheck)
+[![CI status](https://github.com/hardbyte/netchecks/workflows/CI/badge.svg?branch=main)](https://github.com/hardbyte/netchecks/actions?query=branch%3Amain)
+[![PyPI Downloads](https://static.pepy.tech/badge/netcheck)](https://pypi.org/project/netcheck/)
 
 </div>
 
