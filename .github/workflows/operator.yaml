@@ -14,13 +14,13 @@ defaults:
     shell: bash
 
 env:
-  KIND_VERSION: v0.17.0
+  KIND_VERSION: v0.18.0
   KIND_CONFIG: .github/kind-config.yaml
   TIMEOUT: 2m
   LOG_TIME: 30m
-  cilium_version: v1.12.2
-  cilium_cli_version: v0.12.9
-  kubectl_version: v1.23.6
+  cilium_version: v1.13.2
+  cilium_cli_version: v0.13.2
+  kubectl_version: v1.25.2
 
 jobs:
   docker:
@@ -156,7 +156,7 @@ jobs:
       - name: Run Integration Tests (with Cilium)
         run: |
           cd operator
-          INCLUDE_CILIUM_TESTS=1 poetry run pytest
+          INCLUDE_CILIUM_TESTS=1 poetry run pytest -x
 
         timeout-minutes: 10
 

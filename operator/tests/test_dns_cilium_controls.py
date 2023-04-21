@@ -45,10 +45,10 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, example_d
     results_filter = "jsonpath='{.results}'"
     policy_report_results_response = subprocess.run(f"""kubectl get policyreport/dns-restrictions-should-work -n {k8s_namespace} -o {results_filter}""", shell=True, check=True, capture_output=True)
     policy_report_results = json.loads(policy_report_results_response.stdout)
-
+    assert len(policy_report_results) > 1
     for result in policy_report_results:
         assert result['category'] == 'dns'
-        assert result['result'] == 'pass'
+        assert result['result'] == 'pass', str(result)
         assert result['source'] == 'netchecks'
 
         test_spec = json.loads(result['properties']['spec'])
