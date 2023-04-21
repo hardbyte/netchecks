@@ -79,7 +79,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install Python Dependencies
+        run: |
+          cd operator
+          poetry install --no-interaction
       - name: Install kubectl
         run: |
           curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
@@ -104,73 +124,65 @@ jobs:
           kubectl cluster-info
           export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
 
-      - name: Install PolicyReport CRD
+      - name: Run Integration Tests (no Cilium)
         run: |
-          kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
-
-      - name: Install Netcheck Operator via Helm
-        run: |
-          helm dependency build operator/charts/netchecks
-          helm upgrade \
-            --install netchecks-operator \
-            operator/charts/netchecks/ \
-            -f .github/chart-values-override.yaml \
-            -n netchecks \
-            --create-namespace \
-            --wait --timeout 5m
-          sleep 10
-          kubectl describe -n netchecks deployment.apps/netchecks-operator
-      - name: List CRDs
-        run: |
-          kubectl get crd -A
-
-      - name: Wait for Netcheck Operator to be ready
-        run: |
-          kubectl wait -n netchecks --for=condition=Ready --all pod --timeout=5m
-
-      # Handy for debugging
-      #- name: Explain NetworkAssertion CRD
-      #  run: |
-      #    kubectl explain networkassertion
-
-      ## Check we can get NetcheckAssertions
-      #- name: Describe Operator
-      #  run: |
-      #    kubectl describe -n netcheck deployment/netcheck-operator
-
-      - name: Create Network Assertions
-        run: |
-          kubectl apply -f operator/examples/default-k8s/dns.yaml
-          kubectl apply -f .github/workflows/manifests/should-pass.yaml
-          kubectl apply -f .github/workflows/manifests/should-fail.yaml
-
-      # Check we can get the assertion
-      - name: Get NetcheckAssertions
-        run: |
-          kubectl get networkassertions
-
-      # Check a Job/Pod was created
-      - name: See if the operator created a Job/Pod
-        run: |
-          sleep 60
-          echo "Listing CronJobs"
-          kubectl get CronJob
-          echo "Listing Jobs"
-          kubectl get Job
-          echo "Listing pods"
-          kubectl get pod
-
-      # Check a Job/Pod was created
-      - name: Operator logs
-        if: ${{ always() }}
-        run: |
-          kubectl logs -n netchecks deployment/netchecks-operator
-
-      # Check if networkassertions passed and failed as expected
-      - name: NetworkAssertions pass/fail check
-        run: |
-          [ "$(kubectl get policyreports http-k8s-api-should-pass-ci -o jsonpath='{.summary.pass}')" == "1" ] || exit 1;
-          [ "$(kubectl get policyreports http-k8s-api-should-fail-ci -o jsonpath='{.summary.fail}')" == "1" ] || exit 1;
+          source $VENV
+          pwd
+          poetry run pytest
+        timeout-minutes: 10
+#      - name: Install Netcheck Operator via Helm
+#        run: |
+#          helm dependency build operator/charts/netchecks
+#          helm upgrade \
+#            --install netchecks-operator \
+#            operator/charts/netchecks/ \
+#            -f .github/chart-values-override.yaml \
+#            -n netchecks \
+#            --create-namespace \
+#            --wait --timeout 5m
+#          sleep 10
+#          kubectl describe -n netchecks deployment.apps/netchecks-operator
+#      - name: List CRDs
+#        run: |
+#          kubectl get crd -A
+#
+#      - name: Wait for Netcheck Operator to be ready
+#        run: |
+#          kubectl wait -n netchecks --for=condition=Ready --all pod --timeout=5m
+#
+#      - name: Create Network Assertions
+#        run: |
+#          kubectl apply -f operator/examples/default-k8s/dns.yaml
+#          kubectl apply -f .github/workflows/manifests/should-pass.yaml
+#          kubectl apply -f .github/workflows/manifests/should-fail.yaml
+#
+#      # Check we can get the assertion
+#      - name: Get NetcheckAssertions
+#        run: |
+#          kubectl get networkassertions
+#
+#      # Check a Job/Pod was created
+#      - name: See if the operator created a Job/Pod
+#        run: |
+#          sleep 60
+#          echo "Listing CronJobs"
+#          kubectl get CronJob
+#          echo "Listing Jobs"
+#          kubectl get Job
+#          echo "Listing pods"
+#          kubectl get pod
+#
+#      # Check a Job/Pod was created
+#      - name: Operator logs
+#        if: ${{ always() }}
+#        run: |
+#          kubectl logs -n netchecks deployment/netchecks-operator
+#
+#      # Check if networkassertions passed and failed as expected
+#      - name: NetworkAssertions pass/fail check
+#        run: |
+#          [ "$(kubectl get policyreports http-k8s-api-should-pass-ci -o jsonpath='{.summary.pass}')" == "1" ] || exit 1;
+#          [ "$(kubectl get policyreports http-k8s-api-should-fail-ci -o jsonpath='{.summary.fail}')" == "1" ] || exit 1;
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium
