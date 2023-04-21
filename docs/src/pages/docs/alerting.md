@@ -12,10 +12,10 @@ In this documentation, we'll cover how to set up alerting using Netchecks, Kyver
 
 Before proceeding, make sure you have installed the following components:
 
-* Netchecks operator
+* [Netchecks operator](installation)
 * [Kyverno Policy Reporter](https://kyverno.github.io/policy-reporter/) (optionally installed alongside Netchecks)
-* Prometheus
-* Grafana
+* [Prometheus](https://prometheus.io/)
+* [Grafana](https://grafana.com/)
 
 
 ## Configure Alerting Rules in Prometheus
