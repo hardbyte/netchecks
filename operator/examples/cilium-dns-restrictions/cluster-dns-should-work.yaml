@@ -2,7 +2,6 @@ apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: cluster-dns-should-work
-  namespace: default
   annotations:
     description: Check cluster dns behaviour
 spec:

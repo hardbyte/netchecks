@@ -42,14 +42,6 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file
     policy_report_results_response = subprocess.run(f"""kubectl get policyreport/http-should-work -n {k8s_namespace} -o {results_filter}""", shell=True, check=True, capture_output=True)
     policy_report_results = json.loads(policy_report_results_response.stdout)
 
-    """
-    results:
-      - category: http
-        message: Rule from kubernetes-version
-        policy: kubernetes-version
-        properties:
-          data: >-
-    """
     for result in policy_report_results:
         assert result['category'] == 'http'
         assert result['policy'] == 'kubernetes-version'

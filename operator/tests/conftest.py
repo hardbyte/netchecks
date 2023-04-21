@@ -15,6 +15,14 @@ NETCHECKS_CHART_DIR = os.path.realpath(
     )
 )
 
+NETCHECKS_EXAMPLES_DIR = os.path.realpath(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        os.path.pardir,
+        'examples',
+    )
+)
+
 TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'testdata',
@@ -31,6 +39,11 @@ def test_file_path():
         return os.path.join(TEST_DATA_DIR, filename)
     return get_test_file
 
+@fixture()
+def example_dir_path():
+    def get_example_file(example_name):
+        return os.path.join(NETCHECKS_EXAMPLES_DIR, example_name)
+    return get_example_file
 
 @fixture(scope="session")
 def netchecks_crds():
