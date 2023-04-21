@@ -39,6 +39,7 @@ def test_file_path():
         return os.path.join(TEST_DATA_DIR, filename)
     return get_test_file
 
+
 @fixture()
 def example_dir_path():
     def get_example_file(example_name):
