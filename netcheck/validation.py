@@ -18,7 +18,7 @@ def validate_probe_result(result: Dict, validation_rule: str):
         ast = env.compile(validation_rule)
     except CELParseError as e:
         print("Invalid CEL expression. Treating as error.")
-        raise
+        raise ValueError("Invalid CEL expression")
 
     # create the CEL program
     functions = {

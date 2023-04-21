@@ -46,8 +46,7 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
         result['response-code'] = "NXDOMAIN"
     except dns.exception.DNSException as e:
         result['response-code'] = "DNSERROR"
-        result['exception-name'] = e.__class__.__name__
-        result['exception-type'] = type(e)
+        result['exception-type'] = e.__class__.__name__
         result['exception'] = str(e)
 
     return result

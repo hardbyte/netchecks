@@ -45,6 +45,19 @@ def test_dns_check_with_custom_validation():
     assert data['status'] == 'pass'
 
 
+def test_failing_dns_check_with_custom_validation():
+    result = runner.invoke(app, [
+        "dns",
+        "--validation-rule",
+        "data.canonical_name == 'github.com.' && size(data.A)==0"
+    ])
+    assert result.exit_code == 0
+    print(result.stdout)
+    data = json.loads(result.stdout)
+
+    assert data['status'] == 'fail'
+
+
 
 def test_default_http_check():
     result = runner.invoke(app, ["http"])
