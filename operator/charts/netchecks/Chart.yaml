@@ -2,7 +2,7 @@ apiVersion: v2
 name: netchecks
 description: Netchecks proactively verifies whether your security controls are working as intended.
 type: application
-icon: https://raw.githubusercontent.com/netchecks/netchecks/main/.github/logo.png
+icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
@@ -14,7 +14,7 @@ version: 0.1.2
 # It is recommended to use it with quotes.
 appVersion: "0.3.0"
 sources:
-  - https://github.com/netchecks/operator
+  - https://github.com/hardbyte/netchecks
 maintainers:
   - name: Brian Thorne
     email: brian@hardbyte.nz

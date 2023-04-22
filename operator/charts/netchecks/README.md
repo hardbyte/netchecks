@@ -12,7 +12,7 @@ Netchecks proactively verifies whether your security controls are working as int
 
 ## Source Code
 
-* <https://github.com/netchecks/operator>
+* <https://github.com/hardbyte/netchecks>
 
 ## Requirements
 

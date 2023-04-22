@@ -105,7 +105,7 @@ helm upgrade --install netchecks-operator charts/netchecks/ -n netchecks --creat
 Alternatively, install the NetworkAssertion and PolicyReport CRDs and the Netchecks operator with:
 
 ```shell
-kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/deploy.yaml
+kubectl apply -f https://github.com/hardbyte/netchecks/raw/main/operator/manifests/deploy.yaml
 ```
 
 Then apply your `NetworkAssertions` as any other resource.
