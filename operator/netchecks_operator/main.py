@@ -487,7 +487,7 @@ def create_job_spec(name, cm: V1ConfigMap, settings: Config, template_overides: 
     # Container template first
     container = client.V1Container(
         name="netcheck",
-        # e.g "ghcr.io/netchecks/netchecks:main"
+        # e.g "ghcr.io/hardbyte/netchecks:main"
         image=f"{settings.probe.image.repository}:{settings.probe.image.tag}",
         image_pull_policy=settings.probe.image.pullPolicy,
         command=["poetry", "run", "netcheck", "run", "--config", "/netcheck/rules.json"],
