@@ -44,7 +44,6 @@ const navigation = [
             {title: 'How to contribute', href: '/docs/how-to-contribute'},
             {title: 'Development', href: '/docs/development',},
             {title: 'Architecture guide', href: '/docs/architecture-guide'},
-            {title: 'Kubernetes Operator', href: '/docs/operator'},
             {title: 'Testing', href: '/docs/testing'},
             {title: 'Design principles', href: '/docs/design-principles'},
             {title: 'Release Guide', href: '/docs/releasing'},
@@ -110,7 +109,7 @@ function Header({navigation}) {
             </div>
             <div className="relative flex basis-0 justify-end gap-6 sm:gap-8 md:flex-grow">
                 <ThemeSelector className="relative z-10"/>
-                <Link href="https://github.com/netchecks/" className="group" aria-label="GitHub">
+                <Link href="https://github.com/hardbyte/netchecks" className="group" aria-label="GitHub">
                     <GitHubIcon
                         className="h-6 w-6 fill-slate-400 group-hover:fill-slate-500 dark:group-hover:fill-slate-300"/>
                 </Link>

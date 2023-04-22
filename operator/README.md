@@ -1,13 +1,14 @@
+# Netchecks Operator
+
 The **Netchecks Operator** provides a cloud native way to dynamically declare a set of statements about 
 the network (what should work and what shouldn't).
 
 
 ## High Level Diagram
 
-![High Level Diagram](doc/High-Level-Diagram.png)
+![Netchecks Operator High Level Diagram](doc/High-Level-Diagram.png)
 
 ## Example
-
 
 
 ```yaml
@@ -77,6 +78,8 @@ summary:
   pass: 1
 ```
 
+For more examples see the [examples folder](examples/)
+
 
 ## Installation
 
@@ -102,7 +105,7 @@ helm upgrade --install netchecks-operator charts/netchecks/ -n netchecks --creat
 Alternatively, install the NetworkAssertion and PolicyReport CRDs and the Netchecks operator with:
 
 ```shell
-kubectl apply -f https://github.com/netchecks/operator/raw/main/manifests/deploy.yaml
+kubectl apply -f https://github.com/hardbyte/netchecks/raw/main/operator/manifests/deploy.yaml
 ```
 
 Then apply your `NetworkAssertions` as any other resource.
@@ -114,7 +117,8 @@ Then apply your `NetworkAssertions` as any other resource.
 You will need to install [cosign](https://docs.sigstore.dev/cosign/installation/).
 
 Verify Signed Container Images
-```
+
+```shell
 $ COSIGN_EXPERIMENTAL=1 cosign verify --certificate-github-workflow-repository netchecks/operator --certificate-oidc-issuer https://token.actions.githubusercontent.com ghcr.io/netchecks/operator:main | jq
 ```
 
@@ -124,7 +128,9 @@ $ COSIGN_EXPERIMENTAL=1 cosign verify --certificate-github-workflow-repository n
 
 To verify that an image was created for a specific release add the following to the cosign command:
 
+```shell
 --certificate-github-workflow-ref refs/tags/[RELEASE TAG] ghcr.io/netchecks/operator:[VERSION] | jq
+```
 
 ## Development
 
