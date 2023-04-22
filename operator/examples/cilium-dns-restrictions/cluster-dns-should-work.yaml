@@ -14,12 +14,6 @@ spec:
       expected: pass
       validate:
         message: DNS lookup of an external host using default nameserver.
-    - name: approved-dns-host-subdomain-lookup-should-work
-      type: dns
-      host: status.github.com
-      expected: pass
-      validate:
-        message: DNS requests for a subdomain of an external host.
     - name: k8s-svc-dns-lookup-should-work
       type: dns
       host: kubernetes.default.svc

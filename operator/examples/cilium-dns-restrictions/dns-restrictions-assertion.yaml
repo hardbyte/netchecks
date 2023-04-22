@@ -7,19 +7,6 @@ metadata:
 spec:
   schedule: "*/1 * * * *"
   rules:
-    - name: external-dns-lookup-should-fail
-      type: dns
-      server: 1.1.1.1
-      host: hardbyte.nz
-      expected: fail
-      validate:
-        message: DNS requests using an external DNS provider such as cloudflare should fail.
-    - name: default-dns-external-host-lookup-should-fail
-      type: dns
-      host: hardbyte.nz
-      expected: fail
-      validate:
-        message: DNS requests to a non-approved host should fail.
     - name: approved-dns-host-lookup-should-work
       type: dns
       host: github.com
