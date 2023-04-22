@@ -148,6 +148,12 @@ kind create cluster
 kubectl config use-context kind-kind
 ```
 
+Either manually apply the CRDs, or install then uninstall via HELM:
+
+Manual CRD installation:
+```shell
+kubectl apply -f charts/netchecks/crds
+```
 
 ### Start the operator outside of Kubernetes
 
