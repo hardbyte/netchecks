@@ -1,7 +1,7 @@
 
-This example deploys a cilium network policy that intercepts and filters all DNS queries.
+This example deploys a cilium network policy that intercepts all DNS queries.
 
-Only cluster queries, and github.com subdomains should be allowed.
+Only cluster queries, and github.com should be allowed.
 
 The NetworkAssertion checks that is the case.
 

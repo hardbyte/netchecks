@@ -133,6 +133,9 @@ jobs:
           cd operator
           poetry run pytest
         timeout-minutes: 10
+      - name: Debug resolve
+        run: |
+          cat /etc/resolv.conf
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium

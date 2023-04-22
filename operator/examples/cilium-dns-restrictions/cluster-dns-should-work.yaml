@@ -38,3 +38,9 @@ spec:
       expected: fail
       validate:
         message: DNS lookup of the missing service should fail.
+    - name: github-status-should-work
+      type: http
+      url: https://github.com/status
+      validate:
+        message: Http request to github status API should succeed.
+        pattern: "data.body.contains('GitHub lives!') && data['status-code'] in [200, 201]"
