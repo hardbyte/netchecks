@@ -12,6 +12,7 @@ size(data['A']) >= 1 &&
 (timestamp(data['endTimestamp']) - timestamp(data['startTimestamp']) < duration('10s'))
 """
 
+
 def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
     # We always reset the default dns resolver
     dns.resolver.reset_default_resolver()

@@ -15,21 +15,9 @@ spec:
             protocol: ANY
         rules:
           dns:
-            # https://docs.cilium.io/en/v1.12/policy/language/#dns-based
-            - matchPattern: "*.github.com"
-            - matchName: "github.com"
-            - matchPattern: "*.svc.cluster.local"
-            - matchPattern: "*.*.svc.cluster.local"
-            - matchPattern: "*.*.*.svc.cluster.local"
-            - matchPattern: "*.*.*.*.svc.cluster.local"
-            - matchPattern: "*.cluster.local"
-            - matchPattern: "*.*.cluster.local"
-            - matchPattern: "*.*.*.cluster.local"
-            - matchPattern: "*.*.*.*.cluster.local"
-            - matchPattern: "*.*.*.*.*.cluster.local"
-            - matchPattern: "*.*.*.*.*.*.cluster.local"
-            - matchPattern: "*.*.*.*.*.*.*.cluster.local"
-            - matchPattern: "*.*.localdomain"
-            - matchPattern: "*.*.*.localdomain"
-            - matchPattern: "*.*.*.*.localdomain"
-            - matchPattern: "*.*.*.*.*.localdomain"
+            # https://docs.cilium.io/en/stable/security/policy/language/#dns-based
+            - matchPattern: "*"
+  - toFQDNs:
+      # allows L3 connections to github.com
+      - matchName: "github.com"
+      - matchPattern: "*.github.com"

@@ -2,7 +2,6 @@ apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: cluster-dns-should-work
-  namespace: default
   annotations:
     description: Check cluster dns behaviour
 spec:
@@ -15,18 +14,6 @@ spec:
       expected: pass
       validate:
         message: DNS lookup of an external host using default nameserver.
-    - name: approved-dns-host-subdomain-lookup-should-work
-      type: dns
-      host: status.github.com
-      expected: pass
-      validate:
-        message: DNS requests for a subdomain of an external host.
-    - name: internal-k8s-service-dns-lookup-should-work
-      type: dns
-      host: kubernetes
-      expected: pass
-      validate:
-        message: DNS lookup of the kubernetes service should work.
     - name: k8s-svc-dns-lookup-should-work
       type: dns
       host: kubernetes.default.svc
@@ -45,3 +32,9 @@ spec:
       expected: fail
       validate:
         message: DNS lookup of the missing service should fail.
+    - name: github-status-should-work
+      type: http
+      url: https://github.com/status
+      validate:
+        message: Http request to github status API should succeed.
+        pattern: "data.body.contains('GitHub lives!') && data['status-code'] in [200, 201]"
