@@ -18,6 +18,7 @@ sources:
 maintainers:
   - name: Brian Thorne
     email: brian@hardbyte.nz
+    url: hardbyte.nz
 annotations:
   artifacthub.io/operator: "true"
   artifacthub.io/prerelease: "true"
