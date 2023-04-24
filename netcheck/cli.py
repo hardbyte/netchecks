@@ -76,7 +76,6 @@ def run(
 def http(
         url: str = typer.Option('https://github.com/status', help="URL to request", rich_help_panel="http test"),
         method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get,
-                                                  "--method",
                                                   help="HTTP method",
                                                   rich_help_panel='http test',
                                                   case_sensitive=False),
