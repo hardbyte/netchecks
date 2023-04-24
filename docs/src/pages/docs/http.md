@@ -43,6 +43,34 @@ spec:
         message: Http request to Kubernetes API should succeed.
 ```
 
+## Headers and Response Validation
+
+The following example shows how to pass a header, and shows how to validate a custom condition.
+The validation pattern ensures that the body is valid JSON, containing a `headers` key. The
+`headers` key should contain a `X-Netcheck-Header` header with the "secret" value:
+
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-header-example
+  namespace: default
+  annotations:
+    description: Assert header returned from pie.dev service
+spec:
+  schedule: "*/10 * * * *"
+  rules:
+    - name: pie-dev-headers-and-validation
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "secret"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == 'secret'"
+```
+
 ## Policy Report
 
 After the `NetworkAssertion` has been applied, a `CronJob` will be created in the `default` namespace to run the test every 10 minutes. The `CronJob` will create a `Pod` that runs the test and then a `PolicyReport` resource with the same name as the `NetworkAssertion` will be created in the same namespace. An example `PolicyReport` created by Netchecks is shown below:
