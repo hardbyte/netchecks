@@ -16,7 +16,7 @@ from .runner import run_from_config, check_individual_assertion
 
 
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 logger = logging.getLogger("netcheck")
 #logging.basicConfig(level=logging.INFO)
 logging.captureWarnings(True)
@@ -48,13 +48,13 @@ def common(
 
 @app.command()
 def run(
-        config: Path = typer.Option(..., exists=True, file_okay=True,
+        config: Path = typer.Option(..., "--config", "-c", exists=True, file_okay=True,
                                     help='Config file with netcheck assertions'),
         output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json,
                                                             '-o',
                                                             '--output',
                                                             help="Output format"),
-        verbose: bool = typer.Option(False, '-v')
+        verbose: bool = typer.Option(False, '-v', '--verbose')
         ):
     """Carry out all network assertions in given config file.
     """
@@ -77,7 +77,8 @@ def http(
         url: str = typer.Option('https://github.com/status', help="URL to request", rich_help_panel="http test"),
         method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get,
                                                   help="HTTP method",
-                                                  rich_help_panel='http test'),
+                                                  rich_help_panel='http test',
+                                                  case_sensitive=False),
         timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
         validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
@@ -130,7 +131,7 @@ def output_result(result, should_fail, verbose):
 
 @app.command()
 def dns(
-        server: str = typer.Option(None, help="DNS server to use for dns tests.", rich_help_panel="dns test"),
+        server: str = typer.Option(None, "--server", "-s", help="DNS server to use for dns tests.", rich_help_panel="dns test"),
         host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
         should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
         validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),

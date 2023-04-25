@@ -63,7 +63,7 @@ def check_individual_assertion(test_type: str, test_config, err_console, validat
                 err_console.print(f"http check with url '{test_config['url']}'")
             test_detail = http_request_check(
                 test_config['url'],
-                test_config.get('method', 'get'),
+                test_config.get('method', 'get').lower(),
                 headers=test_config.get('headers'),
                 timeout=test_config.get('timeout'),
                 verify=test_config.get('verify-tls-cert', True),
