@@ -1,5 +1,5 @@
 # Artifact Hub repository metadata file
-repositoryID: The ID of the Artifact Hub repository where the packages will be published to (optional, but it enables verified publisher)
+repositoryID: dad484b6-478f-4353-8420-3537a1bc11bd
 owners:
   - name: Brian Thorne
     email: brian@hardbyte.nz
