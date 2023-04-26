@@ -49,7 +49,6 @@ def check_individual_assertion(
     test_type: str, test_config, err_console, validation_rule=None, verbose=False
 ):
     match test_type:
-
         case "dns":
             if verbose:
                 err_console.print(f"DNS check looking up host '{test_config['host']}'")

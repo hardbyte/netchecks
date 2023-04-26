@@ -115,7 +115,6 @@ def http(
     }
 
     if verbose:
-
         err_console.print(f"Netcheck http configuration:")
         err_console.print_json(data=test_config)
 

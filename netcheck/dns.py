@@ -55,7 +55,6 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
 
 
 def dns_lookup_check(host, server, timeout=10):
-
     test_spec = {
         "type": "dns",
         "nameserver": server,

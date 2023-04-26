@@ -64,7 +64,6 @@ def netchecks_crds():
 
 @fixture(scope="session")
 def netchecks(k8s_namespace):
-
     try:
         subprocess.run(
             f"helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} -n {k8s_namespace} --set operator.image.tag=main --set probeConfig.image.tag=main",
