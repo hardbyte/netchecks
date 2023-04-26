@@ -24,6 +24,7 @@ annotations:
   artifacthub.io/operator: "true"
   artifacthub.io/prerelease: "true"
   artifacthub.io/operatorCapabilities: Deep Insights
+  artifacthub.io/license: Apache-2.0
   artifacthub.io/links: |
     - name: Documentation
       url: https://docs.netchecks.io
