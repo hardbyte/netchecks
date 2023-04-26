@@ -7,6 +7,7 @@ from celpy import CELParseError, CELEvalError, json_to_cel
 
 logger = logging.getLogger("netcheck.validation")
 
+
 def validate_probe_result(result: Dict, validation_rule: str):
     logger.info(f"Validating probe result with rule: {validation_rule}")
     logger.info(f"Probe result: {result}")
