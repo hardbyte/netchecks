@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "netcheck"
-version = "0.3.0"
+version = "0.3.1"
 description = "Netchecks is a cloud native tool for specifying and regularly checking assertions about network conditions. Use netchecks to proactively verify whether security controls are working as intended, alerting on misconfiguration."
 authors = ["Brian Thorne <brian@hardbyte.nz>"]
 readme = "README.md"
