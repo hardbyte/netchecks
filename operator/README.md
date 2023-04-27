@@ -92,11 +92,11 @@ kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/mas
 
 ### Helm
 
-The helm chart is not **yet** available in a public helm repository. To install the operator, 
-clone the git repo and run:
+The helm chart is available on [Artifact Hub](https://artifacthub.io/packages/helm/netchecks/netchecks/). To install the operator
 
 ```shell
-helm upgrade --install netchecks-operator charts/netchecks/ -n netchecks --create-namespace
+helm repo add netchecks https://hardbyte.github.io/netchecks
+helm upgrade --install netchecks netchecks/netchecks -n netchecks --create-namespace
 ```
 
 
@@ -110,27 +110,6 @@ kubectl apply -f https://github.com/hardbyte/netchecks/raw/main/operator/manifes
 
 Then apply your `NetworkAssertions` as any other resource.
 
-## Image Verification
-
-### Prerequisites
-
-You will need to install [cosign](https://docs.sigstore.dev/cosign/installation/).
-
-Verify Signed Container Images
-
-```shell
-$ COSIGN_EXPERIMENTAL=1 cosign verify --certificate-github-workflow-repository netchecks/operator --certificate-oidc-issuer https://token.actions.githubusercontent.com ghcr.io/netchecks/operator:main | jq
-```
-
-### Note
-
-`COSIGN_EXPERIMENTAL=1` is used to allow verification of images signed in KEYLESS mode. To learn more about keyless signing, please refer to [Keyless Signatures](https://github.com/sigstore/cosign/blob/main/KEYLESS.md#keyless-signatures).
-
-To verify that an image was created for a specific release add the following to the cosign command:
-
-```shell
---certificate-github-workflow-ref refs/tags/[RELEASE TAG] ghcr.io/netchecks/operator:[VERSION] | jq
-```
 
 ## Development
 
@@ -143,6 +122,8 @@ To verify that an image was created for a specific release add the following to 
 
 ### Start a test cluster
 
+If using [kind](https://kind.sigs.k8s.io/)
+
 ```shell
 kind create cluster
 kubectl config use-context kind-kind
@@ -151,6 +132,7 @@ kubectl config use-context kind-kind
 Either manually apply the CRDs, or install then uninstall via HELM:
 
 Manual CRD installation:
+
 ```shell
 kubectl apply -f charts/netchecks/crds
 ```

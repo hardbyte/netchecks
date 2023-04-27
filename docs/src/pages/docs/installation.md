@@ -17,11 +17,11 @@ Netchecks should work on any Kubernetes cluster version `1.21` or later. Helm 3 
 
 ### Helm
 
-The helm chart is not **yet** available in a public helm repository. To install the operator, 
-clone the git repo and run:
+The helm chart is available on [Artifact Hub](https://artifacthub.io/packages/helm/netchecks/netchecks/). To install the operator
 
 ```shell
-helm upgrade --install netchecks-operator operator/charts/netchecks/ -n netchecks --create-namespace
+helm repo add netchecks https://hardbyte.github.io/netchecks
+helm upgrade --install netchecks netchecks/netchecks -n netchecks --create-namespace
 ```
 
 
@@ -36,5 +36,5 @@ kubectl apply -f https://github.com/hardbyte/netchecks/raw/main/operator/manifes
 
 ## Software Supply Chain Integrity
 
-Netchecks docker images are all built by GitHub actions, cryptographically signed using SigStore `cosign` 
-and hosted in GHCR.
+Netchecks docker images are all built by GitHub actions, cryptographically signed using [SigStore cosign](https://github.com/sigstore/cosign)
+and hosted on GitHub Container Registry (GHCR).

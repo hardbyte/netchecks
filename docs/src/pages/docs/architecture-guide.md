@@ -1,6 +1,6 @@
 ---
 title: Architecture guide
-description: Quidem magni aut exercitationem maxime rerum eos.
+description: Netchecks architecture overview.
 ---
 
 Netchecks runs in Kubernetes as an [operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/). The 

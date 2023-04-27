@@ -27,7 +27,7 @@ const navigation = [
             {title: 'Validating HTTP Controls', href: '/docs/http'},
             {title: 'Validating DNS Controls', href: '/docs/dns'},
             {title: 'Custom Validation Rules', href: '/docs/custom-validation-rules'},
-            {title: 'Integration with Policy Reporter', href: '/docs/alerting'},
+            {title: 'Alerting', href: '/docs/alerting'},
 
         ],
     },
