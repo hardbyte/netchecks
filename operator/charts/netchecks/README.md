@@ -26,12 +26,6 @@ helm upgrade --install netchecks netchecks/netchecks -n netchecks --create-names
 
 ```
 
-## Requirements
-
-| Repository | Name | Version |
-|------------|------|---------|
-| https://kyverno.github.io/policy-reporter | policy-reporter | 2.14.1 |
-
 ## Source Code
 
 <https://github.com/hardbyte/netchecks>
