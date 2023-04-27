@@ -2,17 +2,13 @@
 
 ![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.3.0](https://img.shields.io/badge/AppVersion-0.3.0-informational?style=flat-square)
 
-Netchecks proactively verifies whether your security controls are working as intended.
+Proactively verifies whether your security controls are working as intended with a policy as code approach, making no assumptions about how your security controls are implemented. Learn more at [netchecks.io](https://netchecks.io).
 
-## Maintainers
-
-| Name | Email | Url |
-| ---- | ------ | --- |
-| Brian Thorne | <brian@hardbyte.nz> |  |
+Netchecks is written and maintained by Brian Thorne [@hardbyte](https://github.com/hardbyte).
 
 ## Source Code
 
-* <https://github.com/netchecks/operator>
+* <https://github.com/hardbyte/netchecks>
 
 ## Requirements
 

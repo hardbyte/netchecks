@@ -14,23 +14,22 @@ from .http import NetcheckHttpMethod, DEFAULT_HTTP_VALIDATION_RULE
 from .runner import run_from_config, check_individual_assertion
 
 
-
-
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 logger = logging.getLogger("netcheck")
-#logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 logging.captureWarnings(True)
 
 err_console = Console(stderr=True)
 
 
 class NetcheckOutputType(str, Enum):
-    json = 'json'
+    json = "json"
 
 
 class NetcheckTestType(str, Enum):
     dns = "dns"
-    http = 'http'
+    http = "http"
+
 
 def show_version(value: bool = True):
     """Print netcheck version"""
@@ -38,26 +37,33 @@ def show_version(value: bool = True):
         typer.echo(f"Netcheck version {NETCHECK_VERSION}")
         raise typer.Exit()
 
+
 @app.callback()
 def common(
     ctx: typer.Context,
-    version: bool = typer.Option(None, "--version", callback=show_version, is_eager=True),
+    version: bool = typer.Option(
+        None, "--version", callback=show_version, is_eager=True
+    ),
 ):
     pass
 
 
 @app.command()
 def run(
-        config: Path = typer.Option(..., exists=True, file_okay=True,
-                                    help='Config file with netcheck assertions'),
-        output: Optional[NetcheckOutputType] = typer.Option(NetcheckOutputType.json,
-                                                            '-o',
-                                                            '--output',
-                                                            help="Output format"),
-        verbose: bool = typer.Option(False, '-v')
-        ):
-    """Carry out all network assertions in given config file.
-    """
+    config: Path = typer.Option(
+        ...,
+        "--config",
+        "-c",
+        exists=True,
+        file_okay=True,
+        help="Config file with netcheck assertions",
+    ),
+    output: Optional[NetcheckOutputType] = typer.Option(
+        NetcheckOutputType.json, "-o", "--output", help="Output format"
+    ),
+    verbose: bool = typer.Option(False, "-v", "--verbose"),
+):
+    """Carry out all network assertions in given config file."""
     if verbose:
         err_console.print(f"Loading assertions from {config}")
     with config.open() as f:
@@ -74,68 +80,79 @@ def run(
 
 @app.command()
 def http(
-        url: str = typer.Option('https://github.com/status', help="URL to request", rich_help_panel="http test"),
-        method: NetcheckHttpMethod = typer.Option(NetcheckHttpMethod.get,
-                                                  help="HTTP method",
-                                                  rich_help_panel='http test'),
-        timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
-        should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
-        validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
-        headers: Optional[List[str]] = typer.Option(
-            None,
-            '-h',
-            '--header',
-            help="Headers to send with request. Format: 'key:value'"),
-        verbose: bool = typer.Option(False, '-v', '--verbose')
+    url: str = typer.Option(
+        "https://github.com/status", help="URL to request", rich_help_panel="http test"
+    ),
+    method: NetcheckHttpMethod = typer.Option(
+        NetcheckHttpMethod.get,
+        help="HTTP method",
+        rich_help_panel="http test",
+        case_sensitive=False,
+    ),
+    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Timeout in seconds"),
+    should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+    validation_rule: str = typer.Option(
+        None, "--validation-rule", help="Validation rule in CEL to apply to result"
+    ),
+    headers: Optional[List[str]] = typer.Option(
+        None, "-h", "--header", help="Headers to send with request. Format: 'key:value'"
+    ),
+    verbose: bool = typer.Option(False, "-v", "--verbose"),
 ):
     """Carry out a http network check"""
     parsed_headers = {}
     for h in headers:
         if ":" in h:
-            key, value = h.split(':')
+            key, value = h.split(":")
             parsed_headers[key.strip()] = value.strip()
 
     test_config = {
         "url": url,
-        'method': method,
-        'timeout': timeout,
-        'headers': parsed_headers,
-        'expected': "fail" if should_fail else None
+        "method": method,
+        "timeout": timeout,
+        "headers": parsed_headers,
+        "expected": "fail" if should_fail else None,
     }
 
     if verbose:
-
         err_console.print(f"Netcheck http configuration:")
         err_console.print_json(data=test_config)
-
-
 
     result = check_individual_assertion(
         NetcheckTestType.http,
         test_config,
         err_console,
         validation_rule,
-        verbose=verbose
+        verbose=verbose,
     )
-
 
     output_result(result, should_fail, verbose)
 
 
 def output_result(result, should_fail, verbose):
-    failed = result['status'] == 'fail'
+    failed = result["status"] == "fail"
     notify_for_unexpected_test_result(failed, should_fail, verbose=verbose)
     print_json(data=result)
 
 
 @app.command()
 def dns(
-        server: str = typer.Option(None, help="DNS server to use for dns tests.", rich_help_panel="dns test"),
-        host: str = typer.Option('github.com', help='Host to search for', rich_help_panel="dns test"),
-        should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
-        validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
-        timeout: float = typer.Option(30.0, '-t', '--timeout', help='Timeout in seconds'),
-        verbose: bool = typer.Option(False, '-v', '--verbose')
+    server: str = typer.Option(
+        None,
+        "--server",
+        "-s",
+        help="DNS server to use for dns tests.",
+        rich_help_panel="dns test",
+    ),
+    host: str = typer.Option(
+        "github.com", help="Host to search for", rich_help_panel="dns test"
+    ),
+    should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+    validation_rule: str = typer.Option(
+        None, "--validation-rule", help="Validation rule in CEL to apply to result"
+    ),
+    timeout: float = typer.Option(30.0, "-t", "--timeout", help="Timeout in seconds"),
+    verbose: bool = typer.Option(False, "-v", "--verbose"),
 ):
     """Carry out a dns check"""
 
@@ -143,7 +160,7 @@ def dns(
         "server": server,
         "host": host,
         "timeout": timeout,
-        'expected': "fail" if should_fail else None
+        "expected": "fail" if should_fail else None,
     }
     if verbose:
         err_console.print(f"netcheck dns")
@@ -161,9 +178,8 @@ def dns(
         test_config,
         err_console,
         validation_rule=validation_rule,
-        verbose=verbose
+        verbose=verbose,
     )
-
 
     output_result(result, should_fail, verbose)
 
@@ -179,8 +195,10 @@ def notify_for_unexpected_test_result(failed, should_fail, verbose=False):
             if not should_fail:
                 err_console.print("[green]✔ Passed (as expected)[/]")
             else:
-                err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
+                err_console.print(
+                    "[bold red]:bomb: The network test worked but was expected to fail![/]"
+                )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app()

@@ -35,8 +35,8 @@ class MetricsConfig(BaseModel):
 
 
 class ImageConfig(BaseModel):
-    repository: str = 'ghcr.io/netchecks/netchecks'
-    pullPolicy: str = 'IfNotPresent'
+    repository: str = "ghcr.io/hardbyte/netchecks"
+    pullPolicy: str = "IfNotPresent"
     tag: str = "main"
 
 
