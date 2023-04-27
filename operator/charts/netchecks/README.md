@@ -17,7 +17,7 @@ The full documentation can be found at [docs.netchecks.io](https://docs.netcheck
 ## Installing the Chart
 
 Full installation instructions can be found in the [documentation installation page](https://docs.netchecks.io/docs/installation).
-G
+
 To install the chart
 
 ```bash
