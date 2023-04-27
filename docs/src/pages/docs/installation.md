@@ -22,7 +22,7 @@ clone the git repo and run:
 
 ```shell
 helm repo add netchecks https://hardbyte.github.io/netchecks
-helm install my-netchecks netchecks/netchecks -n netchecks --create-namespace
+helm upgrade --install netchecks netchecks/netchecks -n netchecks --create-namespace
 ```
 
 
