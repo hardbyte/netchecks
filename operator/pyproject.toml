@@ -8,13 +8,13 @@ packages = [{include = "netchecks_operator"}]
 
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 kopf = "^1.36.0"
 kubernetes = "^26.1"
 rich = "^13.3"
 structlog = "^23.1.0"
 prometheus-client = "^0.16.0"
-pydantic = "^1.10.4"
+pydantic = "^1.10.7"
 
 
 [tool.poetry.group.dev.dependencies]
