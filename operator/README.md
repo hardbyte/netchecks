@@ -148,3 +148,9 @@ kopf run main.py --liveness=http://0.0.0.0:8080/healthz
 ```shell
 kubectl apply -f examples/default-k8s/http.yaml
 ```
+
+### Run integration tests
+
+```shell
+pytest
+```
