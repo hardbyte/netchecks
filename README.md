@@ -1,7 +1,7 @@
 # Netchecks
 
 <p align="center">
-  <img alt="Netchecks Logo" src=".github/logo.png" width="150" />
+  <img alt="Netchecks Logo" src="https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png" width="150" />
 </p>
 
 <div align="center">
@@ -18,23 +18,27 @@
 **Netchecks** is a set of tools for testing network conditions and asserting that they are as expected.
 
 There are two main components:
-- **Netchecks Operator** - Kubernetes Operator that runs network checks and reports results as `PolicyReport` resources. See the [operator README](operator/README.md) for more details and the full documentation can be found at [https://docs.netchecks.io](https://docs.netchecks.io)
+- **Netchecks Operator** - Kubernetes Operator that runs network checks and reports results as `PolicyReport` resources. See the [operator README](https://github.com/hardbyte/netchecks/blob/main/operator/README.md) for more details and the full documentation can be found at [https://docs.netchecks.io](https://docs.netchecks.io)
 - **Netcheck CLI and Python Library** - Command line tool for running network checks and asserting that they are as expected. Keep reading for the quickstart.
 
 
-# Netcheck Command Line Tool Quickstart
+# Netcheck Command Line Tool
 
-`netcheck` is a configurable command line application that can be used to test network conditions are as expected.
+`netcheck` is a configurable command line application for testing network conditions are as expected. It can be used to validate DNS and HTTP connectivity and can be configured to assert that the results are as expected, for example:
+
+```shell
+netcheck http --url=https://github.com/status --validation-rule "data.body.contains('GitHub lives!') && data['status-code'] in [200, 201]"
+```
 
 ## Installation
 
-Install the Python package:
+Install the Python package from PyPi:
 
 ```
 pip install netcheck
 ```
 
-Or run with Docker:
+The cli can also be run via Docker:
 
 ```shell
 docker run -it ghcr.io/hardbyte/netchecks:main
@@ -87,18 +91,19 @@ netcheck dns --server 1.1.1.1 --host hardbyte.nz --should-pass
     "type": "dns",
     "nameserver": "1.1.1.1",
     "host": "hardbyte.nz",
-    "timeout": 30.0
+    "timeout": 30.0,
+    "pattern": "\ndata['response-code'] == 'NOERROR' &&\nsize(data['A']) >= 1 && \n(timestamp(data['endTimestamp']) - timestamp(data['startTimestamp']) < duration('10s'))\n"
   },
   "data": {
     "canonical_name": "hardbyte.nz.",
-    "expiration": 1675827006.4370346,
-    "response": "id 23453\nopcode QUERY\nrcode NOERROR\nflags QR RD RA\nedns 0\npayload 1232\noption EDE 10: for DNSKEY nz., id = 13646\n;QUESTION\nhardbyte.nz. IN A\n;ANSWER\nhardbyte.nz. 985 IN A 209.58.165.79\n;AUTHORITY\n;ADDITIONAL",
+    "expiration": 1683241225.5542665,
+    "response": "id 53196\nopcode QUERY\nrcode NOERROR\nflags QR RD RA\n;QUESTION\nhardbyte.nz. IN A\n;ANSWER\nhardbyte.nz. 3600 IN A 209.58.165.79\n;AUTHORITY\n;ADDITIONAL",
     "A": [
       "209.58.165.79"
     ],
     "response-code": "NOERROR",
-    "startTimestamp": "2023-02-08T03:13:41.402313",
-    "endTimestamp": "2023-02-08T03:13:41.437115"
+    "startTimestamp": "2023-05-04T22:00:24.491750",
+    "endTimestamp": "2023-05-04T22:00:25.554344"
   },
   "status": "pass"
 }
