@@ -5,6 +5,43 @@ entries:
       artifacthub.io/category: security
       artifacthub.io/changes: |
         - kind: added
+          description: Updated documentation, support multiple architectures.
+        - kind: added
+          description: A helm chart for netchecks operator
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://docs.netchecks.io
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Deep Insights
+      artifacthub.io/prerelease: "true"
+    apiVersion: v2
+    appVersion: 0.3.3
+    created: "2023-05-04T21:40:56.236525728Z"
+    dependencies:
+    - condition: policy-reporter.enabled
+      name: policy-reporter
+      repository: https://kyverno.github.io/policy-reporter
+      version: 2.19.0
+    description: Netchecks proactively verifies whether your security controls are
+      working as intended.
+    digest: 56433bc611ca8c3e1970de1b3048122356768fde5d5b8689b606f87df4a3fcf3
+    icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
+    maintainers:
+    - email: brian@hardbyte.nz
+      name: Brian Thorne
+      url: hardbyte.nz
+    name: netchecks
+    sources:
+    - https://github.com/hardbyte/netchecks
+    type: application
+    urls:
+    - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.5/netchecks-0.1.5.tgz
+    version: 0.1.5
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
           description: A helm chart for netchecks operator
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
@@ -102,4 +139,4 @@ entries:
     urls:
     - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.2/netchecks-0.1.2.tgz
     version: 0.1.2
-generated: "2023-04-27T08:18:53.22029717Z"
+generated: "2023-05-04T21:40:56.236545529Z"
