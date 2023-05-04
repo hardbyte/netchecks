@@ -1,7 +1,6 @@
 import json
 import time
 import subprocess
-from kubernetes import client
 
 
 def test_dns_check_with_installed_operator(netchecks, k8s_namespace, test_file_path):

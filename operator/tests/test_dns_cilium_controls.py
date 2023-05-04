@@ -4,7 +4,7 @@ import time
 import subprocess
 
 import pytest
-from kubernetes import client
+
 
 INCLUDE_CILIUM_TESTS = os.getenv("INCLUDE_CILIUM_TESTS")
 
