@@ -140,7 +140,8 @@ kubectl apply -f charts/netchecks/crds
 ### Start the operator outside of Kubernetes
 
 ```shell
-kopf run main.py --liveness=http://0.0.0.0:8080/healthz
+poetry install
+poetry run kopf run netchecks_operator/main.py --liveness=http://0.0.0.0:8080/healthz
 ```
 
 ### Create a NetworkAssertion
