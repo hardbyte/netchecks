@@ -19,7 +19,7 @@ from rich import print
 import kopf
 from kubernetes import client
 
-from netchecks_operator.config import Config
+from .config import Config
 
 
 logger = get_logger()
@@ -132,7 +132,7 @@ def creation(body, spec, name, namespace, **kwargs):
         }
 
 
-def apply_context_to_rule(rule, context):
+def transform_rule_for_config_file(rule):
     # Move the 'validate->pattern' key to 'validation'
     if "validate" in rule and "pattern" in rule["validate"]:
         validation_pattern = rule["validate"]["pattern"]
@@ -145,22 +145,21 @@ def apply_context_to_rule(rule, context):
 def create_network_assertions_config_map(name, rules, namespace, logger):
     core_api = client.CoreV1Api()
 
-    context = {}
-
     # This will inherit the name of the network assertion
     config_map = V1ConfigMap(
         metadata=V1ObjectMeta(labels=get_common_labels(name)),
         data={
-            # This gets mounted at /netcheck/rules.json
+            # This gets mounted at /netcheck/config.json
             # For now we create one "Assertion", with all the rules
             # from the NetworkAssertion. Templated context variables will
             # come later.
-            "rules.json": json.dumps(
+            "config.json": json.dumps(
                 {
+                    "contexts": [],
                     "assertions": [
                         {
                             "name": r["name"],
-                            "rules": [apply_context_to_rule(r, context)],
+                            "rules": [transform_rule_for_config_file(r)],
                         }
                         for r in rules
                     ]
@@ -541,7 +540,7 @@ def create_job_spec(
             "netcheck",
             "run",
             "--config",
-            "/netcheck/rules.json",
+            "/netcheck/config.json",
         ],
         volume_mounts=[V1VolumeMount(name="netcheck-rules", mount_path="/netcheck")],
         env=[
