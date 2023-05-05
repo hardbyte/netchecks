@@ -75,7 +75,6 @@ def creation(body, spec, name, namespace, **kwargs):
         context_definitions = spec.get("context", [])
         logger.info("Contexts loaded from NetworkAssertion", contexts=context_definitions)
 
-
         # Grab any template overrides (metadata, spec->serviceAccountName)
         job_template = spec.get("template")
 
@@ -85,7 +84,7 @@ def creation(body, spec, name, namespace, **kwargs):
 
         # Create a job spec
         job_spec = create_job_spec(
-            name, cm_response, settings, template_overides=job_template
+            name, cm_response, context_definitions, settings, template_overides=job_template
         )
         logger.debug("Job spec created", job_spec=job_spec)
         job = create_job_object(name, job_spec)
@@ -554,9 +553,38 @@ def get_common_labels(name):
 
 
 def create_job_spec(
-    name, cm: V1ConfigMap, settings: Config, template_overides: dict = None
+    name, cm: V1ConfigMap, context_definitions: List, settings: Config, template_overides: dict = None
 ):
-    # Container template first
+    volumes = [
+        V1Volume(
+            name="netcheck-rules",
+            config_map=V1ConfigMapVolumeSource(name=cm.metadata.name),
+        )
+    ]
+    volume_mounts = [
+        V1VolumeMount(name="netcheck-rules", mount_path="/netcheck")
+    ]
+
+    # create a volume + mount for each context definition
+    for context_definition in context_definitions:
+        context_name = context_definition["name"]
+
+        # Would be great to use Kubernetes client to generate/validate this
+        # For now we assume ConfigMap, later support Secret here too
+        volumes.append(
+            V1Volume(
+                name=context_name,
+                # context_definition["configMap"]["name"]
+                config_map=V1ConfigMapVolumeSource(**context_definition["configMap"]),
+            )
+        )
+        volume_mounts.append(
+            V1VolumeMount(
+                name=context_name,
+                mount_path=f"/mnt/{context_name}",
+            )
+        )
+
     container = client.V1Container(
         name="netcheck",
         # e.g "ghcr.io/hardbyte/netchecks:main"
@@ -570,7 +598,7 @@ def create_job_spec(
             "--config",
             "/netcheck/config.json",
         ],
-        volume_mounts=[V1VolumeMount(name="netcheck-rules", mount_path="/netcheck")],
+        volume_mounts=volume_mounts,
         env=[
             # V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
         ],
@@ -585,12 +613,7 @@ def create_job_spec(
         spec=client.V1PodSpec(
             restart_policy="Never",
             containers=[container],
-            volumes=[
-                V1Volume(
-                    name="netcheck-rules",
-                    config_map=V1ConfigMapVolumeSource(name=cm.metadata.name),
-                )
-            ],
+            volumes=volumes,
         ),
     )
 
