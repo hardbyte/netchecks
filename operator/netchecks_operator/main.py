@@ -3,6 +3,8 @@ import json
 from collections import defaultdict
 from json import JSONDecodeError
 from time import sleep
+from typing import List
+
 import prometheus_client as prometheus
 
 from kubernetes.client import (
@@ -19,7 +21,7 @@ from rich import print
 import kopf
 from kubernetes import client
 
-from .config import Config
+from netchecks_operator.config import Config
 
 
 logger = get_logger()
@@ -70,11 +72,15 @@ def creation(body, spec, name, namespace, **kwargs):
         if not rules:
             raise kopf.PermanentError(f"Rules must be set.")
 
+        context_definitions = spec.get("context", [])
+        logger.info("Contexts loaded from NetworkAssertion", contexts=context_definitions)
+
+
         # Grab any template overrides (metadata, spec->serviceAccountName)
         job_template = spec.get("template")
 
         cm_response = create_network_assertions_config_map(
-            name, rules, namespace, logger
+            name, rules, context_definitions, namespace, logger
         )
 
         # Create a job spec
@@ -141,10 +147,32 @@ def transform_rule_for_config_file(rule):
 
     return rule
 
+def transform_context_for_config_file(context):
+    """"""
+    name = context["name"]
+    type = "directory"
 
-def create_network_assertions_config_map(name, rules, namespace, logger):
+    # if 'configMap' in context:
+    #     cm = context['configMap']
+    # if 'items' in cm:
+    #     # We are mapping individual files from a configmap
+    #     type = "file"
+    # else:
+
+    return {
+        "name": name,
+        "type": type,
+        "path": f"/mnt/{name}",
+    }
+
+
+def create_network_assertions_config_map(name, rules, contexts: List, namespace, logger):
     core_api = client.CoreV1Api()
 
+    # Transform the provided contexts into netcheck cli format
+    cli_contexts = [transform_context_for_config_file(c) for c in contexts]
+
+    logger.info("transformed contexts", transformed=cli_contexts)
     # This will inherit the name of the network assertion
     config_map = V1ConfigMap(
         metadata=V1ObjectMeta(labels=get_common_labels(name)),
@@ -155,7 +183,7 @@ def create_network_assertions_config_map(name, rules, namespace, logger):
             # come later.
             "config.json": json.dumps(
                 {
-                    "contexts": [],
+                    "contexts": cli_contexts,
                     "assertions": [
                         {
                             "name": r["name"],
