@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: some-config-map
+data:
+  API_TOKEN: some-secret
+---
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-with-external-data
+  namespace: default
+  annotations:
+    description: Assert probe can access configmap data
+spec:
+  context:
+    - name: somecontext
+      configMap:
+        name: some-config-map
+  rules:
+    - name: pie-dev-headers-and-validation
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "secret"
+        "X-Netcheck-Configmap": "{{ context.API_TOKEN }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == 'secret'"
