@@ -62,7 +62,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: operator
-          push: ${{ github.event_name != 'pull_request' }}
+          #push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -127,9 +127,17 @@ jobs:
           kubectl cluster-info
           export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
 
-      - name: Install Netcheck Operator via Helm
+      - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
+
+      - name: Install Netchecks Operator (helm chart)
+        run: |
+          helm upgrade --install netchecks-operator operator/charts/netchecks -n netchecks --create-namespace
+
+      - name: Uninstall Netchecks Operator
+        run: |
+          helm uninstall netchecks-operator -n netchecks
 
       - name: Run Integration Tests (no Cilium)
         run: |
