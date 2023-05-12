@@ -9,7 +9,6 @@ apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: http-with-external-data
-  namespace: default
   annotations:
     description: Assert probe can access configmap data
 spec:
