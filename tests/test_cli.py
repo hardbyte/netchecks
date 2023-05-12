@@ -255,6 +255,39 @@ def test_run_test_with_external_file_context(data_filename):
             assert result["status"] == "pass"
 
 
+def test_run_test_with_external_dir_context(data_dir_path):
+
+    # create a temp named file with this json config data:
+    test_config = {
+      "contexts": [
+        {"name": "data", "type": "directory", "path": data_dir_path}
+      ],
+      "assertions": [
+        {"name":  "header-with-context-works", "rules": [
+           { "type": "http",
+             "url": "https://pie.dev/headers",
+             "headers": {"X-Header": "{{ data.API_TOKEN }}"},
+             "validation": "parse_json(data.body).headers['X-Header'] == 'api-secret-data'"}
+        ]}
+      ]
+    }
+
+    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+        f.write(json.dumps(test_config))
+        test_config_filename = f.name
+
+    result = runner.invoke(
+        app, ["run", "--config", test_config_filename]
+    )
+    assert result.exit_code == 0, result.stdout
+    data = json.loads(result.stdout)
+
+    for assertion in data["assertions"]:
+        for result in assertion["results"]:
+            assert "status" in result
+            assert result["status"] == "pass", result
+
+
 def test_run_http_config_with_headers(http_headers_config_filename):
     result = runner.invoke(app, ["run", "--config", http_headers_config_filename])
     assert result.exit_code == 0, result.stderr

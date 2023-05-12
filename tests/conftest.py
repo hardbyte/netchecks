@@ -31,6 +31,12 @@ def config_with_context_filename():
 def data_filename():
     return os.path.join(TEST_DATA_DIR, "data.json")
 
+
+@fixture()
+def data_dir_path():
+    return os.path.join(TEST_DATA_DIR, "dir-of-data")
+
+
 @fixture()
 def invalid_config_filename():
     return os.path.join(TEST_DATA_DIR, "invalid-config-unknown-check.json")
