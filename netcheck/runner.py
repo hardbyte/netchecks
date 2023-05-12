@@ -1,13 +1,16 @@
 import datetime
+import json
 import logging
 from typing import Dict
 
-from netcheck.validation import validate_probe_result
+
+from netcheck.validation import evaluate_cel_with_context
 from netcheck.version import OUTPUT_JSON_VERSION
 
 from netcheck.version import NETCHECK_VERSION
 from netcheck.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
 from netcheck.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
+from netcheck.context import replace_template
 
 logger = logging.getLogger("netcheck.runner")
 
@@ -24,12 +27,31 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
         },
         "assertions": [],
     }
+
+    # Load optional external contexts from the config
+    context = {}
+    external_contexts = netchecks_config.get("contexts", [])
+    for c in external_contexts:
+        # If type is "directory", load the file at "path", parse it as JSON,
+        # then add it to the context using its "name" as the key
+        if c["type"] == "file":
+            with open(c["path"], "r") as f:
+                context[c["name"]] = json.load(f)
+        elif c["type"] == "inline":
+            context[c["name"]] = c["data"]
+        else:
+            logger.warning(f"Unknown context type '{c['type']}'")
+
+    # Replace any template strings in the config
+    netchecks_config = replace_template(netchecks_config, context)
+
     # Run each test
     for assertion in netchecks_config["assertions"]:
         assertion_results = []
         if verbose:
             err_console.print(f"Running tests for assertion '{assertion['name']}'")
         for rule in assertion["rules"]:
+
             result = check_individual_assertion(
                 rule["type"],
                 rule,
@@ -82,7 +104,11 @@ def check_individual_assertion(
         err_console.print("Using custom validation rule")
 
     test_detail["spec"]["pattern"] = validation_rule
-    passed = validate_probe_result(test_detail, validation_rule)
+
+    logger.info(f"Validating probe result with rule: {validation_rule}")
+    logger.info(f"Probe result: {test_detail}")
+
+    passed = evaluate_cel_with_context(test_detail, validation_rule)
 
     # Add the pass/status to the individual result. We also support an "expected": "fail" option
     # which will cause the test to fail if the validation passes.

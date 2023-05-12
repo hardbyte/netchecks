@@ -8,7 +8,7 @@ import typer
 from typing import List, Optional
 
 from netcheck.dns import DEFAULT_DNS_VALIDATION_RULE
-from .validation import validate_probe_result
+from .validation import evaluate_cel_with_context
 from .version import NETCHECK_VERSION
 from .http import NetcheckHttpMethod, DEFAULT_HTTP_VALIDATION_RULE
 from .runner import run_from_config, check_individual_assertion
