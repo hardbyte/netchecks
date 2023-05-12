@@ -20,6 +20,17 @@ maintainers:
     email: brian@hardbyte.nz
     url: hardbyte.nz
 annotations:
+  # https://artifacthub.io/docs/topics/annotations/helm/
+  artifacthub.io/changes: |
+    - kind: added
+      description: Support for injecting context from configmaps.
+      links:
+        - name: GitHub Issue
+          url: https://github.com/hardbyte/netchecks/issues/33
+        - name: GitHub PR
+          url: https://github.com/hardbyte/netchecks/pull/34
+    - kind: added
+      description: Updated documentation, support multiple architectures.
   artifacthub.io/category: security
   artifacthub.io/operator: "true"
   artifacthub.io/prerelease: "false"
@@ -28,12 +39,34 @@ annotations:
   artifacthub.io/links: |
     - name: Documentation
       url: https://docs.netchecks.io
-  # valid kinds are: added, changed, deprecated, removed, fixed and security
-  artifacthub.io/changes: |
-    - kind: added
-      description: Updated documentation, support multiple architectures.
-    - kind: added
-      description: A helm chart for netchecks operator
+  artifacthub.io/crds: |
+    - kind: NetworkAssertion
+      version: v1
+      name: networkassertions.netchecks.io
+      displayName: Network Assertion
+      description: NetworkAssertion is the Schema for the networkassertions API
+  artifacthub.io/crdsExamples: |
+    - apiVersion: netchecks.io/v1
+      kind: NetworkAssertion
+      metadata:
+        name: http-should-work
+        annotations:
+          description: Assert pod can connect to k8s API
+      spec:
+        template:
+          metadata:
+            labels:
+              optional-label: applied-to-test-pod
+            annotations:
+              my: override-annotation
+        rules:
+          - name: kubernetes-version
+            type: http
+            url: https://kubernetes.default.svc/version
+            verify-tls-cert: false
+            expected: pass
+            validate:
+              message: Http request to Kubernetes API should succeed.
 dependencies:
   - name: policy-reporter
     version: 2.19.0
