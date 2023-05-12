@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Dict
 import logging
@@ -72,3 +73,30 @@ def replace_template(original: Dict, evaluation_context: Dict):
         result[k] = v
 
     return result
+
+
+class LazyFileLoadingDict(dict):
+
+    def __init__(self, directory, *args, **kwargs):
+        self.directory = directory
+        super().__init__(*args, **kwargs)
+        # Pre-populate the dictionary with keys for each file in the directory
+        for filename in os.listdir(directory):
+            # We'll use None as a placeholder for the file contents
+            # We could strip filename extensions, but I think it is clearer not to
+            # os.path.splitext(filename)[0]
+            self[filename] = None
+
+    def __getitem__(self, key):
+        filepath = os.path.join(self.directory, key)
+        if super().__getitem__(key) is None and os.path.isfile(filepath):
+            # If the value is None (our placeholder), replace it with the actual file contents
+            with open(filepath, "rt") as f:
+                self[key] = f.read()
+        return super().__getitem__(key)
+
+    def items(self):
+        # Override items() to call __getitem__ for each key
+        # Required because CEL calls items() when converting to CEL Map type.
+        return [(key, self[key]) for key in self]
+
