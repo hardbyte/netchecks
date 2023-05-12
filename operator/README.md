@@ -144,6 +144,13 @@ poetry install
 poetry run kopf run netchecks_operator/main.py --liveness=http://0.0.0.0:8080/healthz
 ```
 
+### Building and loading a local probe Docker container
+
+```shell
+
+kind load docker-image ghcr.io/hardbyte/netchecks:local
+```
+
 ### Create a NetworkAssertion
 
 ```shell

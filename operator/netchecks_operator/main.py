@@ -585,19 +585,25 @@ def create_job_spec(
             )
         )
 
+    command = [
+        "poetry",
+        "run",
+        "netcheck",
+        "run",
+        "--config",
+        "/netcheck/config.json",
+    ]
+
+    if settings.probe.verbose:
+        command.append('--verbose')
+
+    logger.info("Probe command", command=command)
     container = client.V1Container(
         name="netcheck",
         # e.g "ghcr.io/hardbyte/netchecks:main"
         image=f"{settings.probe.image.repository}:{settings.probe.image.tag}",
         image_pull_policy=settings.probe.image.pullPolicy,
-        command=[
-            "poetry",
-            "run",
-            "netcheck",
-            "run",
-            "--config",
-            "/netcheck/config.json",
-        ],
+        command=command,
         volume_mounts=volume_mounts,
         env=[
             # V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
