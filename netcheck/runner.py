@@ -10,7 +10,7 @@ from netcheck.version import OUTPUT_JSON_VERSION
 from netcheck.version import NETCHECK_VERSION
 from netcheck.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
 from netcheck.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
-from netcheck.context import replace_template
+from netcheck.context import replace_template, LazyFileLoadingDict
 
 logger = logging.getLogger("netcheck.runner")
 
@@ -39,6 +39,10 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
                 context[c["name"]] = json.load(f)
         elif c["type"] == "inline":
             context[c["name"]] = c["data"]
+        elif c['type'] == 'directory':
+            # Return a Dict like object that lazy loads individual files
+            # from the directory (with caching) and add them to the context
+            context[c["name"]] = LazyFileLoadingDict(c["path"])
         else:
             logger.warning(f"Unknown context type '{c['type']}'")
 
