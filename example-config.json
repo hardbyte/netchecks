@@ -1,9 +1,20 @@
 {
   "assertions": [
     {
-      "name":  "deny-cloudflare-dns",
+      "name": "example-assertion",
       "rules": [
-        {"type": "dns", "server":  "1.1.1.1", "host": "github.com", "expected": "pass"}]
+        {
+          "type": "http",
+          "url": "{{customdata.url}}",
+          "headers": {"{{customdata.header}}": "{{ b64decode(token) }}"},
+          "validation": "parse_json(data.body).headers['X-Header'] == 'secret'"
+        }
+      ]
     }
+  ],
+  "contexts": [
+    {"name": "customdata", "type": "inline", "data": {"url": "https://pie.dev/headers", "header": "X-Header"}},
+    {"name": "token", "type": "inline", "data": "c2VjcmV0=="},
+    {"name": "selfref", "type": "file", "path": "example-config.json"}
   ]
 }

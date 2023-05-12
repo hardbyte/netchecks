@@ -190,43 +190,10 @@ And the `run` command can be called:
 $ netcheck run --config tests/testdata/dns-config.json
 ```
 
-```json
-{
-  "type": "netcheck-output",
-  "outputVersion": "dev",
-  "metadata": {
-    "creationTimestamp": "2022-12-27T22:16:43.438696",
-    "version": "0.1.7"
-  },
-  "assertions": [
-    {
-      "name": "default-dns",
-      "results": [
-        {
-          "status": "pass",
-          "spec": {
-            "type": "dns",
-            "shouldFail": false,
-            "nameserver": null,
-            "host": "github.com",
-            "timeout": null
-          },
-          "data": {
-            "startTimestamp": "2022-12-27T22:16:43.438704",
-            "A": [
-              "20.248.137.48"
-            ],
-            "endTimestamp": "2022-12-27T22:16:43.455657"
-          }
-        }
-      ]
-    }
-  ]
-}
-```
+The output should be valid JSON containing results for each assertion.
 
-Multiple assertions with multiple rules can be specified in the config file, configuration can be provided
-to each rule such as headers and custom validation:
+Multiple assertions with multiple rules can be specified in the config file,
+configuration can be provided to each rule such as headers and custom validation:
 
 ```json
 {
@@ -238,6 +205,39 @@ to each rule such as headers and custom validation:
   ]
 }
 ```
+
+## External Data
+
+Finally, external context can be referenced to inject data. The following example is a valid config file, if a bit contrived:
+
+```json
+{
+  "assertions": [
+    {
+      "name": "example-assertion",
+      "rules": [
+        {
+          "type": "http",
+          "url": "{{customdata.url}}",
+          "headers": {"{{customdata.header}}": "{{ b64decode(token) }}"},
+          "validation": "parse_json(data.body).headers['X-Header'] == 'secret'"
+        }
+      ]
+    }
+  ],
+  "contexts": [
+    {"name": "customdata", "type": "inline", "data": {"url": "https://pie.dev/headers", "header": "X-Header"}},
+    {"name": "token", "type": "inline", "data": "c2VjcmV0=="},
+    {"name": "selfref", "type": "file", "path": "example-config.json"}
+  ]
+}
+```
+
+In the above example the `customdata` and `token` contexts are injected into the rule.
+The `customdata.url` is used as the URL for the request, `customdata.header` is used as the name of the header.
+The `token` is base64 decoded and used as the value of the header.
+The `selfref` context is unused but shows how to load data an external JSON file which is used extensively by the
+Kubernetes operator to inject data.
 
 ## Development
 

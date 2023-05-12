@@ -1,4 +1,5 @@
 import json
+import tempfile
 
 import pytest
 from typer.testing import CliRunner
@@ -200,6 +201,50 @@ def test_run_valid_dns_config(dns_config_filename):
 def test_run_valid_dns_custom_config(dns_config_with_validation_filename):
     result = runner.invoke(
         app, ["run", "--config", dns_config_with_validation_filename]
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+
+    for assertion in data["assertions"]:
+        for result in assertion["results"]:
+            assert "status" in result
+            assert result["status"] == "pass"
+
+def test_run_test_with_context(config_with_context_filename):
+    result = runner.invoke(
+        app, ["run", "--config", config_with_context_filename, '--verbose']
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+
+    for assertion in data["assertions"]:
+        for result in assertion["results"]:
+            assert "status" in result
+            assert result["status"] == "pass"
+
+
+def test_run_test_with_external_file_context(data_filename):
+
+    # create a temp named file with this json config data:
+    test_config = {
+      "contexts": [
+        {"name": "data", "type": "file", "path": data_filename}
+      ],
+      "assertions": [
+        {"name":  "header-with-context-works", "rules": [
+           { "type": "http",
+             "url": "https://pie.dev/headers",
+             "headers": {"X-Header": "{{ data.token }}"},
+             "validation": "parse_json(data.body).headers['X-Header'] == 'very secret value'"}
+        ]}
+      ]
+    }
+    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+        f.write(json.dumps(test_config))
+        test_config_filename = f.name
+
+    result = runner.invoke(
+        app, ["run", "--config", test_config_filename, '--verbose']
     )
     assert result.exit_code == 0
     data = json.loads(result.stdout)

@@ -22,6 +22,14 @@ def dns_config_filename():
 def dns_config_with_validation_filename():
     return os.path.join(TEST_DATA_DIR, "dns-config-custom-validation.json")
 
+@fixture()
+def config_with_context_filename():
+    return os.path.join(TEST_DATA_DIR, "config-with-context.json")
+
+
+@fixture()
+def data_filename():
+    return os.path.join(TEST_DATA_DIR, "data.json")
 
 @fixture()
 def invalid_config_filename():

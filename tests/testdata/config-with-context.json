@@ -1,0 +1,13 @@
+{
+  "contexts": [
+    {"name": "somecontext", "type": "inline", "data": {"key": "secret"}}
+  ],
+  "assertions": [
+    {"name":  "header-with-context-works", "rules": [
+       { "type": "http",
+         "url": "https://pie.dev/headers",
+         "headers": {"X-Header": "{{ somecontext.key }}"},
+         "validation": "parse_json(data.body).headers['X-Header'] == 'secret'"}
+    ]}
+  ]
+}
