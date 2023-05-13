@@ -315,15 +315,17 @@ jobs:
           sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
 
       - name: Create kind cluster
-        uses: helm/kind-action@v1.4.0
+        uses: helm/kind-action@v1.5
         with:
           version: ${{ env.KIND_VERSION }}
+          cluster_name: kind
 
       - name: Get Cluster Info
         run: |
           kubectl cluster-info
           export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
-
+          kind get nodes
+          
       - name: Load Netchecks Images into Kind
         run: |
           kind load docker-image ghcr.io/hardbyte/netchecks:edge
