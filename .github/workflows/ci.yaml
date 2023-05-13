@@ -148,6 +148,7 @@ jobs:
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
           tags: |
+            type=edge
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
@@ -202,6 +203,7 @@ jobs:
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
           tags: |
+            type=edge
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
@@ -222,6 +224,7 @@ jobs:
           context: operator
           load: true
           push: ${{ github.event_name != 'pull_request' }}
+          # See https://github.com/cdalvaro/docker-salt-master/blob/c556e06e5527cc2dc95966039858671f5f16cebe/.github/workflows/build-and-test.yml
           #platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -292,8 +295,7 @@ jobs:
         with:
           name: netchecks_operator_image
           path: /tmp
-      -
-        name: Load netchecks image
+      - name: Load netchecks image
         run: |
           docker load --input /tmp/netchecks_operator_image.tar
           docker load --input /tmp/netchecks_probe_image.tar
@@ -322,6 +324,10 @@ jobs:
           kubectl cluster-info
           export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
 
+      - name: Load Netchecks Images into Kind
+        run: |
+          kind load docker-image ghcr.io/hardbyte/netchecks:edge
+          kind load docker-image ghcr.io/hardbyte/netchecks-operator:edge
       - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
