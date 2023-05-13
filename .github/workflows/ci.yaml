@@ -167,6 +167,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          load: true
           push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
@@ -219,6 +220,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: operator
+          load: true
           push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
