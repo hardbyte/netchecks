@@ -5,6 +5,76 @@ entries:
       artifacthub.io/category: security
       artifacthub.io/changes: |
         - kind: added
+          description: Support for injecting context from configmaps.
+          links:
+            - name: GitHub Issue
+              url: https://github.com/hardbyte/netchecks/issues/33
+            - name: GitHub PR
+              url: https://github.com/hardbyte/netchecks/pull/34
+        - kind: added
+          description: Updated documentation, support multiple architectures.
+      artifacthub.io/crds: |
+        - kind: NetworkAssertion
+          version: v1
+          name: networkassertions.netchecks.io
+          displayName: Network Assertion
+          description: NetworkAssertion is the Schema for the networkassertions API
+      artifacthub.io/crdsExamples: |
+        - apiVersion: netchecks.io/v1
+          kind: NetworkAssertion
+          metadata:
+            name: http-should-work
+            annotations:
+              description: Assert pod can connect to k8s API
+          spec:
+            template:
+              metadata:
+                labels:
+                  optional-label: applied-to-test-pod
+                annotations:
+                  my: override-annotation
+            rules:
+              - name: kubernetes-version
+                type: http
+                url: https://kubernetes.default.svc/version
+                verify-tls-cert: false
+                expected: pass
+                validate:
+                  message: Http request to Kubernetes API should succeed.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://docs.netchecks.io
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Deep Insights
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.4.0
+    created: "2023-05-15T09:52:52.580226373Z"
+    dependencies:
+    - condition: policy-reporter.enabled
+      name: policy-reporter
+      repository: https://kyverno.github.io/policy-reporter
+      version: 2.19.0
+    description: Netchecks proactively verifies whether your security controls are
+      working as intended.
+    digest: 96ec487f83f334e5d4ba8dd2b1aea2d24d5721be03130b935d686e0d157989cb
+    icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
+    maintainers:
+    - email: brian@hardbyte.nz
+      name: Brian Thorne
+      url: hardbyte.nz
+    name: netchecks
+    sources:
+    - https://github.com/hardbyte/netchecks
+    type: application
+    urls:
+    - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.8/netchecks-0.1.8.tgz
+    version: 0.1.8
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
           description: Updated documentation, support multiple architectures.
         - kind: added
           description: A helm chart for netchecks operator
@@ -139,4 +209,4 @@ entries:
     urls:
     - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.2/netchecks-0.1.2.tgz
     version: 0.1.2
-generated: "2023-05-04T21:40:56.236545529Z"
+generated: "2023-05-15T09:52:52.580251173Z"
