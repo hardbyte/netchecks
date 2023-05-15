@@ -1,0 +1,10 @@
+.github
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache
+.ruff_cache
+.hypothesis
