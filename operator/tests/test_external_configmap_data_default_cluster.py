@@ -13,7 +13,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
         shell=True,
         check=True,
     )
-    assertion_name = 'http-with-external-data'
+    assertion_name = "http-with-external-data"
     # Assert that a Job gets created in the same namespace
     for i in range(10):
         jobs_response = subprocess.run(
@@ -83,7 +83,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
         # Test data should be a string containing JSON returned by the server which should include the header
         # we injected from the configmap
         data = json.loads(test_data["body"])
-        assert data['headers']['X-Netcheck-Header'] == 'some-data-from-a-configmap'
+        assert data["headers"]["X-Netcheck-Header"] == "some-data-from-a-configmap"
 
     # Delete the network assertion
     subprocess.run(
