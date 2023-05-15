@@ -1,0 +1,388 @@
+name: CI
+
+on:
+  release:
+    types: [ published ]
+  pull_request:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+
+defaults:
+  run:
+    shell: bash
+
+
+jobs:
+  probe_tests:
+    name: Unit tests / ${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macOS-latest]
+        python: [ "3.10", "3.11"]
+      fail-fast: true
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python }}
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction
+      - name: Run Tests
+        run: |
+          source $VENV
+          poetry run pytest tests --cov netcheck --cov-report=lcov --cov-report=term
+        timeout-minutes: 10
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          flag-name: Unittests-${{ matrix.os }}-${{ matrix.python-version }}
+          parallel: true
+          path-to-lcov: ./coverage.lcov
+
+  probe_coverage:
+    name: Probe Code Coverage
+    needs: probe_tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        parallel-finished: true
+
+  probe_package:
+    name: Probe Library Packaging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      # install dependencies if cache does not exist
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: |
+          poetry install --no-interaction --no-root
+      - name: Artifact creation
+        run: |
+          source $VENV
+          poetry build
+      - name: Save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: ./dist
+
+  upload_pypi:
+    name: Release to PyPi
+    needs: [probe_package]
+    runs-on: ubuntu-latest
+
+    # upload to PyPI only on release
+    if: github.event.release && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  probe_docker:
+    name: Build Probe Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # needed for signing the images with GitHub OIDC Token
+    env:
+      IMAGE_NAME: netchecks
+      IMAGE_REGISTRY: ghcr.io
+      IMAGE_REPOSITORY: hardbyte
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
+          tags: |
+            edge
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          load: true
+          push: ${{ github.event_name != 'pull_request' }}
+          #platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Export Docker Image
+        run: |
+          docker save ghcr.io/hardbyte/netchecks:edge -o /tmp/netchecks_probe_image.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: netchecks_probe_image
+          path: /tmp/netchecks_probe_image.tar
+
+  operator_docker:
+    name: Build Operator Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # needed for signing the images with GitHub OIDC Token
+    env:
+      IMAGE_NAME: netchecks-operator
+      IMAGE_REGISTRY: ghcr.io
+      IMAGE_REPOSITORY: hardbyte
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
+          tags: |
+            edge
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: operator
+          load: true
+          push: ${{ github.event_name != 'pull_request' }}
+          # See https://github.com/cdalvaro/docker-salt-master/blob/c556e06e5527cc2dc95966039858671f5f16cebe/.github/workflows/build-and-test.yml
+          #platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Export Docker Image
+        run: |
+          docker save ghcr.io/hardbyte/netchecks-operator:edge -o /tmp/netchecks_operator_image.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: netchecks_operator_image
+          path: /tmp/netchecks_operator_image.tar
+
+  #      - name: Install Cosign
+#        uses: sigstore/cosign-installer@main
+#      - name: Sign the images with GitHub OIDC Token
+#        run: cosign sign --yes ${TAGS}
+#        if: github.event_name != 'pull_request'
+#        env:
+#          TAGS: ${{ steps.meta.outputs.tags }}
+
+
+  k8s:
+    name: Kubernetes Integration Tests
+    needs: [probe_docker, operator_docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      KIND_VERSION: v0.18.0
+      KIND_CONFIG: .github/kind-config.yaml
+      TIMEOUT: 2m
+      LOG_TIME: 30m
+      cilium_version: v1.13.2
+      cilium_cli_version: v0.13.2
+      kubectl_version: v1.25.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install Python Dependencies
+        run: |
+          cd operator
+          poetry install --no-interaction --with dev
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Download probe image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: netchecks_probe_image
+          path: /tmp
+      - name: Download operator image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: netchecks_operator_image
+          path: /tmp
+      - name: Load netchecks image
+        run: |
+          docker load --input /tmp/netchecks_operator_image.tar
+          docker load --input /tmp/netchecks_probe_image.tar
+          docker image ls -a
+      - name: Install kubectl
+        run: |
+          curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
+          curl -sLO "https://dl.k8s.io/${{ env.kubectl_version }}/bin/linux/amd64/kubectl.sha256"
+          echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Install cilium CLI binary
+        run: |
+          curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${{ env.cilium_cli_version }}/cilium-linux-amd64.tar.gz{,.sha256sum}
+          sha256sum --check cilium-linux-amd64.tar.gz.sha256sum
+          sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.5.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          cluster_name: kind
+
+      - name: Get Cluster Info
+        run: |
+          kubectl cluster-info
+          export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
+          kind get nodes
+          
+      - name: Load Netchecks Images into Kind
+        run: |
+          kind load docker-image ghcr.io/hardbyte/netchecks:edge
+          kind load docker-image ghcr.io/hardbyte/netchecks-operator:edge
+      - name: Prepare Netchecks Operator Helm Chart
+        run: |
+          helm dependency build operator/charts/netchecks
+
+      - name: Install Netchecks Operator (helm chart)
+        run: |
+          helm upgrade --install netchecks-operator operator/charts/netchecks -n netchecks --create-namespace
+
+      - name: Uninstall Netchecks Operator
+        run: |
+          helm uninstall netchecks-operator -n netchecks
+
+      - name: Run Integration Tests (no Cilium)
+        run: |
+          cd operator
+          export NETCHECKS_IMAGE_TAG=edge
+          poetry run pytest
+        timeout-minutes: 10
+      - name: Debug resolve
+        run: |
+          cat /etc/resolv.conf
+
+      # Install Cilium with HostPort support for extended connectivity test.
+      - name: Install Cilium
+        run: |
+          cilium install \
+            --version=${{ env.cilium_version }} \
+            --wait=false \
+            --config monitor-aggregation=none \
+            --helm-set cni.chainingMode=portmap
+
+      - name: Enable Hubble Relay
+        run: |
+          cilium hubble enable --ui
+
+      - name: Relay Port Forward
+        run: |
+          cilium hubble port-forward&
+          sleep 10s
+          [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
+
+      - name: Run Integration Tests (with Cilium)
+        run: |
+          cd operator
+          export NETCHECKS_IMAGE_TAG=edge
+          export INCLUDE_CILIUM_TESTS=1
+          poetry run pytest -x
+
+        timeout-minutes: 10
+
+      - name: Cleanup
+        if: ${{ always() }}
+        run: |
+          cilium status
+          kubectl get pods --all-namespaces -o wide
+        shell: bash {0} # Disable default fail-fast behaviour so that all commands run independently

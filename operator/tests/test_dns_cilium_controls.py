@@ -91,7 +91,7 @@ def test_k8s_version_with_installed_operator(
         test_spec = json.loads(result["properties"]["spec"])
         test_data = json.loads(result["properties"]["data"])
 
-    # Delete the network assertion
+    # Delete the network assertion and Cilium network policies
     subprocess.run(
         f"kubectl delete -n {k8s_namespace} -f {dns_restrictions_dir}",
         shell=True,

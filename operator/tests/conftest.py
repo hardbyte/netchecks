@@ -2,6 +2,7 @@ import os
 import subprocess
 import random
 import string
+import time
 from typing import Optional
 
 from pytest import fixture
@@ -31,6 +32,9 @@ TEST_DATA_DIR = os.path.join(
 
 def random_lower_string(length: Optional[int] = 32) -> str:
     return "".join(random.choices(string.ascii_lowercase, k=length))
+
+
+IMAGE_TAG = os.environ.get("NETCHECKS_IMAGE_TAG", "main")
 
 
 @fixture()
@@ -66,7 +70,11 @@ def netchecks_crds():
 def netchecks(k8s_namespace):
     try:
         subprocess.run(
-            f"helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} -n {k8s_namespace} --set operator.image.tag=main --set probeConfig.image.tag=main",
+            f"""helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} \
+                -n {k8s_namespace} \
+                --set operator.image.tag={IMAGE_TAG} \
+                --set probeConfig.image.tag={IMAGE_TAG}
+            """,
             shell=True,
             check=True,
         )
@@ -84,6 +92,7 @@ def netchecks(k8s_namespace):
             subprocess.run(
                 f"kubectl delete -A NetworkAssertions --all", shell=True, check=True
             )
+            time.sleep(5)
             subprocess.run(
                 f"helm uninstall netchecks-operator -n {k8s_namespace}",
                 shell=True,
