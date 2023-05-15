@@ -112,6 +112,8 @@ def check_individual_assertion(
     logger.info(f"Validating probe result with rule: {validation_rule}")
     logger.info(f"Probe result: {test_detail}")
     if validation_context is not None:
+        if 'data' in validation_context or 'spec' in validation_context:
+            raise ValueError("validation_context cannot contain a 'data' or 'spec' key")
         test_detail.update(validation_context)
 
     passed = evaluate_cel_with_context(test_detail, validation_rule)
