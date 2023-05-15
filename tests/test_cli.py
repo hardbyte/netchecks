@@ -210,9 +210,10 @@ def test_run_valid_dns_custom_config(dns_config_with_validation_filename):
             assert "status" in result
             assert result["status"] == "pass"
 
+
 def test_run_test_with_context(config_with_context_filename):
     result = runner.invoke(
-        app, ["run", "--config", config_with_context_filename, '--verbose']
+        app, ["run", "--config", config_with_context_filename, "--verbose"]
     )
     assert result.exit_code == 0
     data = json.loads(result.stdout)
@@ -224,28 +225,28 @@ def test_run_test_with_context(config_with_context_filename):
 
 
 def test_run_test_with_external_file_context(data_filename):
-
     # create a temp named file with this json config data:
     test_config = {
-      "contexts": [
-        {"name": "data", "type": "file", "path": data_filename}
-      ],
-      "assertions": [
-        {"name":  "header-with-context-works", "rules": [
-           { "type": "http",
-             "url": "https://pie.dev/headers",
-             "headers": {"X-Header": "{{ data.token }}"},
-             "validation": "parse_json(data.body).headers['X-Header'] == 'very secret value'"}
-        ]}
-      ]
+        "contexts": [{"name": "data", "type": "file", "path": data_filename}],
+        "assertions": [
+            {
+                "name": "header-with-context-works",
+                "rules": [
+                    {
+                        "type": "http",
+                        "url": "https://pie.dev/headers",
+                        "headers": {"X-Header": "{{ data.token }}"},
+                        "validation": "parse_json(data.body).headers['X-Header'] == 'very secret value'",
+                    }
+                ],
+            }
+        ],
     }
-    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", delete=False) as f:
         f.write(json.dumps(test_config))
         test_config_filename = f.name
 
-    result = runner.invoke(
-        app, ["run", "--config", test_config_filename, '--verbose']
-    )
+    result = runner.invoke(app, ["run", "--config", test_config_filename, "--verbose"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
 
@@ -256,29 +257,29 @@ def test_run_test_with_external_file_context(data_filename):
 
 
 def test_run_test_with_external_dir_context(data_dir_path):
-
     # create a temp named file with this json config data:
     test_config = {
-      "contexts": [
-        {"name": "data", "type": "directory", "path": data_dir_path}
-      ],
-      "assertions": [
-        {"name":  "header-with-context-works", "rules": [
-           { "type": "http",
-             "url": "https://pie.dev/headers",
-             "headers": {"X-Header": "{{ data.API_TOKEN }}"},
-             "validation": "parse_json(data.body).headers['X-Header'] == 'api-secret-data'"}
-        ]}
-      ]
+        "contexts": [{"name": "data", "type": "directory", "path": data_dir_path}],
+        "assertions": [
+            {
+                "name": "header-with-context-works",
+                "rules": [
+                    {
+                        "type": "http",
+                        "url": "https://pie.dev/headers",
+                        "headers": {"X-Header": "{{ data.API_TOKEN }}"},
+                        "validation": "parse_json(data.body).headers['X-Header'] == 'api-secret-data'",
+                    }
+                ],
+            }
+        ],
     }
 
-    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", delete=False) as f:
         f.write(json.dumps(test_config))
         test_config_filename = f.name
 
-    result = runner.invoke(
-        app, ["run", "--config", test_config_filename]
-    )
+    result = runner.invoke(app, ["run", "--config", test_config_filename])
     assert result.exit_code == 0, result.stdout
     data = json.loads(result.stdout)
 
