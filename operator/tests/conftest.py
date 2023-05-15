@@ -2,6 +2,7 @@ import os
 import subprocess
 import random
 import string
+import time
 from typing import Optional
 
 from pytest import fixture
@@ -91,6 +92,7 @@ def netchecks(k8s_namespace):
             subprocess.run(
                 f"kubectl delete -A NetworkAssertions --all", shell=True, check=True
             )
+            time.sleep(5)
             subprocess.run(
                 f"helm uninstall netchecks-operator -n {k8s_namespace}",
                 shell=True,
