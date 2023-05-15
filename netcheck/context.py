@@ -8,7 +8,7 @@ from netcheck.validation import evaluate_cel_with_context
 logger = logging.getLogger("netcheck.context")
 
 # Regular expression to match and capture the content inside '{{' and '}}'
-TEMPLATE_REGEX = re.compile(r'\{\{(.*?)\}\}')
+TEMPLATE_REGEX = re.compile(r"\{\{(.*?)\}\}")
 
 
 def evaluate_template(template: str, context: Dict) -> str:
@@ -39,7 +39,9 @@ def replace_template_in_string(s: str, evaluation_context: Dict) -> str:
 
     """
     # Extract the group from the regex match and pass to `evaluate_template`.
-    return TEMPLATE_REGEX.sub(lambda m: evaluate_template(m.group(1).strip(), evaluation_context), s)
+    return TEMPLATE_REGEX.sub(
+        lambda m: evaluate_template(m.group(1).strip(), evaluation_context), s
+    )
 
 
 def replace_template(original: Dict, evaluation_context: Dict):
@@ -76,7 +78,6 @@ def replace_template(original: Dict, evaluation_context: Dict):
 
 
 class LazyFileLoadingDict(dict):
-
     def __init__(self, directory, *args, **kwargs):
         self.directory = directory
         super().__init__(*args, **kwargs)
@@ -99,4 +100,3 @@ class LazyFileLoadingDict(dict):
         # Override items() to call __getitem__ for each key
         # Required because CEL calls items() when converting to CEL Map type.
         return [(key, self[key]) for key in self]
-
