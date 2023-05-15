@@ -17,6 +17,13 @@ The validation pattern is defined using the _Common Expression Language_ (CEL) a
 
 In Netchecks, the CEL expression is evaluated with the `data` returned by the check and `spec` objects in scope.
 
+In addition to the [built-in functions](https://github.com/google/cel-spec/blob/master/doc/langdef.md#list-of-standard-definitions) 
+(`endsWith`, `contains`, `timestamp` etc), Netchecks also provides the following:
+
+- parse_json
+- b64decode
+- b64encode
+
 
 ## Examples
 
@@ -69,7 +76,8 @@ spec:
 
 ## Writing Custom Rules
 
-The easiest way to see the data and spec is by looking at the `properties` of a PolicyReport's `results`:
+The easiest way to see the `data` and `spec` that can be used in a custom validation rule is by looking
+at the `properties` of a PolicyReport's `results`:
 
 ```yaml
 results:
