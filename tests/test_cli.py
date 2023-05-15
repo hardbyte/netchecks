@@ -227,7 +227,7 @@ def test_run_test_with_context(config_with_context_filename):
 def test_run_test_with_external_file_context(data_filename):
     # create a temp named file with this json config data:
     test_config = {
-        "contexts": [{"name": "data", "type": "file", "path": data_filename}],
+        "contexts": [{"name": "balrog", "type": "file", "path": data_filename}],
         "assertions": [
             {
                 "name": "header-with-context-works",
@@ -235,8 +235,8 @@ def test_run_test_with_external_file_context(data_filename):
                     {
                         "type": "http",
                         "url": "https://pie.dev/headers",
-                        "headers": {"X-Header": "{{ data.token }}"},
-                        "validation": "parse_json(data.body).headers['X-Header'] == 'very secret value'",
+                        "headers": {"X-Header": "{{ balrog.token }}"},
+                        "validation": "parse_json(data.body).headers['X-Header'] == balrog.token",
                     }
                 ],
             }
@@ -259,7 +259,7 @@ def test_run_test_with_external_file_context(data_filename):
 def test_run_test_with_external_dir_context(data_dir_path):
     # create a temp named file with this json config data:
     test_config = {
-        "contexts": [{"name": "data", "type": "directory", "path": data_dir_path}],
+        "contexts": [{"name": "context", "type": "directory", "path": data_dir_path}],
         "assertions": [
             {
                 "name": "header-with-context-works",
@@ -267,8 +267,8 @@ def test_run_test_with_external_dir_context(data_dir_path):
                     {
                         "type": "http",
                         "url": "https://pie.dev/headers",
-                        "headers": {"X-Header": "{{ data.API_TOKEN }}"},
-                        "validation": "parse_json(data.body).headers['X-Header'] == 'api-secret-data'",
+                        "headers": {"X-Header": "{{ context.API_TOKEN }}"},
+                        "validation": "parse_json(data.body).headers['X-Header'] == context.API_TOKEN",
                     }
                 ],
             }
