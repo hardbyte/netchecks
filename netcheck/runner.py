@@ -30,8 +30,7 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
 
     # Load optional external contexts from the config
     context = {}
-    external_contexts = netchecks_config.get("contexts", [])
-    for c in external_contexts:
+    for c in netchecks_config.get("contexts", []):
         # If type is "directory", load the file at "path", parse it as JSON,
         # then add it to the context using its "name" as the key
         if c["type"] == "file":
@@ -60,6 +59,7 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
                 rule,
                 err_console=err_console,
                 validation_rule=rule.get("validation"),
+                validation_context=context,
                 verbose=verbose,
             )
             assertion_results.append(result)
@@ -71,7 +71,8 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
 
 
 def check_individual_assertion(
-    test_type: str, test_config, err_console, validation_rule=None, verbose=False
+    test_type: str, test_config, err_console, validation_rule=None,
+    validation_context=None, verbose=False
 ):
     match test_type:
         case "dns":
@@ -110,6 +111,8 @@ def check_individual_assertion(
 
     logger.info(f"Validating probe result with rule: {validation_rule}")
     logger.info(f"Probe result: {test_detail}")
+    if validation_context is not None:
+        test_detail.update(validation_context)
 
     passed = evaluate_cel_with_context(test_detail, validation_rule)
 
