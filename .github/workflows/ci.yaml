@@ -15,7 +15,7 @@ defaults:
 
 
 jobs:
-  cli_unittest:
+  probe_tests:
     name: Unit tests / ${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -61,8 +61,9 @@ jobs:
           parallel: true
           path-to-lcov: ./coverage.lcov
 
-  coveralls:
-    needs: cli_unittest
+  probe_coverage:
+    name: Probe Code Coverage
+    needs: probe_tests
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
@@ -71,9 +72,8 @@ jobs:
         github-token: ${{ secrets.github_token }}
         parallel-finished: true
 
-
-  cli_package:
-    name: Python Packaging
+  probe_package:
+    name: Probe Library Packaging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -111,7 +111,7 @@ jobs:
 
   upload_pypi:
     name: Release to PyPi
-    needs: [cli_package]
+    needs: [probe_package]
     runs-on: ubuntu-latest
 
     # upload to PyPI only on release
@@ -247,7 +247,7 @@ jobs:
 
 
   k8s:
-    name: Kubernetes Tests
+    name: Kubernetes Integration Tests
     needs: [probe_docker, operator_docker]
     runs-on: ubuntu-latest
     timeout-minutes: 20

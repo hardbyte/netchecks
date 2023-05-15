@@ -69,7 +69,11 @@ def netchecks_crds():
 def netchecks(k8s_namespace):
     try:
         subprocess.run(
-            f"helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} -n {k8s_namespace} --set operator.image.tag={IMAGE_TAG} --set probeConfig.image.tag={IMAGE_TAG}",
+            f"""helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} \
+                -n {k8s_namespace} \
+                --set operator.image.tag={IMAGE_TAG} \
+                --set probeConfig.image.tag={IMAGE_TAG}
+            """,
             shell=True,
             check=True,
         )

@@ -70,7 +70,6 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
 
     for result in policy_report_results:
         assert result["category"] == "http"
-        assert result["policy"] == "kubernetes-version"
         assert result["result"] == "pass"
         assert result["source"] == "netchecks"
 
@@ -80,6 +79,11 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
 
         test_data = json.loads(result["properties"]["data"])
         assert test_data["status-code"] == 200
+
+        # Test data should be a string containing JSON returned by the server which should include the header
+        # we injected from the configmap
+        data = json.loads(test_data["body"])
+        assert data['headers']['X-Netcheck-Headers'] == 'some-data-from-a-configmap'
 
     # Delete the network assertion
     subprocess.run(
