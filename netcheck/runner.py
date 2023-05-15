@@ -71,8 +71,12 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
 
 
 def check_individual_assertion(
-    test_type: str, test_config, err_console, validation_rule=None,
-    validation_context=None, verbose=False
+    test_type: str,
+    test_config,
+    err_console,
+    validation_rule=None,
+    validation_context=None,
+    verbose=False,
 ):
     match test_type:
         case "dns":
@@ -112,7 +116,7 @@ def check_individual_assertion(
     logger.info(f"Validating probe result with rule: {validation_rule}")
     logger.info(f"Probe result: {test_detail}")
     if validation_context is not None:
-        if 'data' in validation_context or 'spec' in validation_context:
+        if "data" in validation_context or "spec" in validation_context:
             raise ValueError("validation_context cannot contain a 'data' or 'spec' key")
         test_detail.update(validation_context)
 
