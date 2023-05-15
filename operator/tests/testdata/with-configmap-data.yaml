@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: some-config-map
 data:
-  API_TOKEN: some-data-from-a-configmap
+  API_TOKEN: "some-data-from-a-configmap!"
 ---
 apiVersion: netchecks.io/v1
 kind: NetworkAssertion
@@ -25,4 +25,4 @@ spec:
       expected: pass
       validate:
         message: Http request with header to pie.dev service should reply with header value
-        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == 'some-data-from-a-configmap'"
+        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == somecontext.API_TOKEN"
