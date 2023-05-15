@@ -33,6 +33,9 @@ def random_lower_string(length: Optional[int] = 32) -> str:
     return "".join(random.choices(string.ascii_lowercase, k=length))
 
 
+IMAGE_TAG = os.environ.get("NETCHECKS_IMAGE_TAG", "main")
+
+
 @fixture()
 def test_file_path():
     def get_test_file(filename):
@@ -66,7 +69,7 @@ def netchecks_crds():
 def netchecks(k8s_namespace):
     try:
         subprocess.run(
-            f"helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} -n {k8s_namespace} --set operator.image.tag=main --set probeConfig.image.tag=main",
+            f"helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} -n {k8s_namespace} --set operator.image.tag={IMAGE_TAG} --set probeConfig.image.tag={IMAGE_TAG}",
             shell=True,
             check=True,
         )
