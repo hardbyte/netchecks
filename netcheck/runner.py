@@ -39,7 +39,7 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
                 context[c["name"]] = json.load(f)
         elif c["type"] == "inline":
             context[c["name"]] = c["data"]
-        elif c['type'] == 'directory':
+        elif c["type"] == "directory":
             # Return a Dict like object that lazy loads individual files
             # from the directory (with caching) and add them to the context
             context[c["name"]] = LazyFileLoadingDict(c["path"])
@@ -55,7 +55,6 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
         if verbose:
             err_console.print(f"Running tests for assertion '{assertion['name']}'")
         for rule in assertion["rules"]:
-
             result = check_individual_assertion(
                 rule["type"],
                 rule,

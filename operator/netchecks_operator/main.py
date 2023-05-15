@@ -73,7 +73,9 @@ def creation(body, spec, name, namespace, **kwargs):
             raise kopf.PermanentError(f"Rules must be set.")
 
         context_definitions = spec.get("context", [])
-        logger.info("Contexts loaded from NetworkAssertion", contexts=context_definitions)
+        logger.info(
+            "Contexts loaded from NetworkAssertion", contexts=context_definitions
+        )
 
         # Grab any template overrides (metadata, spec->serviceAccountName)
         job_template = spec.get("template")
@@ -84,7 +86,11 @@ def creation(body, spec, name, namespace, **kwargs):
 
         # Create a job spec
         job_spec = create_job_spec(
-            name, cm_response, context_definitions, settings, template_overides=job_template
+            name,
+            cm_response,
+            context_definitions,
+            settings,
+            template_overides=job_template,
         )
         logger.debug("Job spec created", job_spec=job_spec)
         job = create_job_object(name, job_spec)
@@ -146,6 +152,7 @@ def transform_rule_for_config_file(rule):
 
     return rule
 
+
 def transform_context_for_config_file(context):
     """"""
     name = context["name"]
@@ -165,7 +172,9 @@ def transform_context_for_config_file(context):
     }
 
 
-def create_network_assertions_config_map(name, rules, contexts: List, namespace, logger):
+def create_network_assertions_config_map(
+    name, rules, contexts: List, namespace, logger
+):
     core_api = client.CoreV1Api()
 
     # Transform the provided contexts into netcheck cli format
@@ -189,7 +198,7 @@ def create_network_assertions_config_map(name, rules, contexts: List, namespace,
                             "rules": [transform_rule_for_config_file(r)],
                         }
                         for r in rules
-                    ]
+                    ],
                 }
             )
         },
@@ -553,7 +562,11 @@ def get_common_labels(name):
 
 
 def create_job_spec(
-    name, cm: V1ConfigMap, context_definitions: List, settings: Config, template_overides: dict = None
+    name,
+    cm: V1ConfigMap,
+    context_definitions: List,
+    settings: Config,
+    template_overides: dict = None,
 ):
     volumes = [
         V1Volume(
@@ -561,9 +574,7 @@ def create_job_spec(
             config_map=V1ConfigMapVolumeSource(name=cm.metadata.name),
         )
     ]
-    volume_mounts = [
-        V1VolumeMount(name="netcheck-rules", mount_path="/netcheck")
-    ]
+    volume_mounts = [V1VolumeMount(name="netcheck-rules", mount_path="/netcheck")]
 
     # create a volume + mount for each context definition
     for context_definition in context_definitions:
@@ -595,7 +606,7 @@ def create_job_spec(
     ]
 
     if settings.probe.verbose:
-        command.append('--verbose')
+        command.append("--verbose")
 
     logger.info("Probe command", command=command)
     container = client.V1Container(

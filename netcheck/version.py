@@ -1,7 +1,7 @@
 from importlib import metadata
 
 try:
-    NETCHECK_VERSION =  metadata.version("netcheck")
+    NETCHECK_VERSION = metadata.version("netcheck")
 except metadata.PackageNotFoundError:
     NETCHECK_VERSION = "unknown"
 
