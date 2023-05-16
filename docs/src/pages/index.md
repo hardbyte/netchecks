@@ -79,8 +79,10 @@ spec:
 
 
 {% callout title="What happens next?" %}
-Once you have applied the `NetworkAssertion`, netchecks reacts by creating a `CronJob` in the
-same namespace to schedule the test. After the first test has run Netchecks creates a `PolicyReport` resource with the same name in the same namespace as the `NetworkAssertion`.
+Once you have applied the `NetworkAssertion`, Netchecks reacts by creating a `CronJob` in the
+same namespace to probe the network according to your schedule. After the first test has run 
+Netchecks creates a `PolicyReport` resource with the same name in the same namespace as the `NetworkAssertion`.
+The `PolicyReport` contains information about the test run and the results of the test.
 {% /callout %}
 
 
