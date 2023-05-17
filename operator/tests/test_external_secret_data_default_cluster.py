@@ -3,15 +3,16 @@ import time
 import subprocess
 
 
-def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
-    manifest = test_file_path("with-configmap-data.yaml")
+def test_use_external_secret_data(netchecks, k8s_namespace, test_file_path):
+    manifest = test_file_path("with-secret-data.yaml")
 
     subprocess.run(
         f"kubectl apply -n {k8s_namespace} -f {manifest}",
         shell=True,
         check=True,
     )
-    assertion_name = "http-with-external-data"
+    assertion_name = "http-with-external-secret-data"
+
     # Assert that a Job gets created in the same namespace
     for i in range(10):
         jobs_response = subprocess.run(
@@ -79,9 +80,9 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
         assert test_data["status-code"] == 200
 
         # Test data should be a string containing JSON returned by the server which should include the header
-        # we injected from the configmap
+        # we injected from the secret
         data = json.loads(test_data["body"])
-        assert data["headers"]["X-Netcheck-Header"] == "some-data-from-a-configmap!"
+        assert data["headers"]["X-Netcheck-Header"] == "kq4gihvszzgn1p0r"
 
     # Delete the network assertion
     subprocess.run(
