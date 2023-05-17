@@ -8,3 +8,5 @@ __pycache__
 .pytest_cache
 .ruff_cache
 .hypothesis
+operator
+docs
