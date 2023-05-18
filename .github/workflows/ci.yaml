@@ -286,16 +286,16 @@ jobs:
           poetry install --no-interaction --with dev
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Download probe image artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: netchecks_probe_image
-          path: /tmp
-      - name: Download operator image artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: netchecks_operator_image
-          path: /tmp
+          #      - name: Download probe image artifact
+          #        uses: actions/download-artifact@v3
+          #        with:
+          #          name: netchecks_probe_image
+          #          path: /tmp
+          #      - name: Download operator image artifact
+          #        uses: actions/download-artifact@v3
+          #        with:
+          #          name: netchecks_operator_image
+          #          path: /tmp
       - name: Load netchecks image
         run: |
           docker pull ${{ needs.operator_docker.outputs.image }}
@@ -328,8 +328,8 @@ jobs:
 
       - name: Load Netchecks Images into Kind
         run: |
-          kind load docker-image ghcr.io/hardbyte/netchecks:edge
-          kind load docker-image ghcr.io/hardbyte/netchecks-operator:edge
+          kind load docker-image ${{ needs.operator_docker.outputs.image }}
+          kind load docker-image ${{ needs.probe_docker.outputs.image }}
       - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
