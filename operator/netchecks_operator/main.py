@@ -14,7 +14,8 @@ from kubernetes.client import (
     V1Pod,
     V1ConfigMapVolumeSource,
     V1Volume,
-    V1VolumeMount, V1SecretVolumeSource,
+    V1VolumeMount,
+    V1SecretVolumeSource,
 )
 from structlog import get_logger
 from rich import print
@@ -582,11 +583,13 @@ def create_job_spec(
 
         # Would be great to use Kubernetes client to generate/validate this
         # For now we assume ConfigMap, later support Secret here too
-        if 'configMap' in context_definition:
+        if "configMap" in context_definition:
             volumes.append(
                 V1Volume(
                     name=context_name,
-                    config_map=V1ConfigMapVolumeSource(**context_definition["configMap"]),
+                    config_map=V1ConfigMapVolumeSource(
+                        **context_definition["configMap"]
+                    ),
                 )
             )
             volume_mounts.append(
@@ -595,9 +598,11 @@ def create_job_spec(
                     mount_path=f"/mnt/{context_name}",
                 )
             )
-        elif 'secret' in context_definition:
+        elif "secret" in context_definition:
             # Rename 'name' to 'secretName' for V1SecretVolumeSource
-            context_definition["secret"]["secret_name"] = context_definition["secret"].pop("name")
+            context_definition["secret"]["secret_name"] = context_definition[
+                "secret"
+            ].pop("name")
 
             volumes.append(
                 V1Volume(
@@ -632,7 +637,6 @@ def create_job_spec(
         image_pull_policy=settings.probe.image.pullPolicy,
         command=command,
         volume_mounts=volume_mounts,
-
         env=[
             # V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
         ],

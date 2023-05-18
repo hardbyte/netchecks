@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: a-config-map
+data:
+  yaml_data: |
+   key: "yaml-data"
+  json_data: |
+   {
+     "key": "json-data" 
+   }
+---
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-with-external-data-formats
+  annotations:
+    description: Assert probe can access configmap data that is in yaml or json format
+spec:
+  context:
+    - name: somecontext
+      configMap:
+        name: a-config-map
+  rules:
+    - name: json-parsing-test
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ parse_yaml(somecontext.json_data).key }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: parse_json(data.body).headers['X-Netcheck-Header'] == "json-data"
+    - name: yaml-parsing-test
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ parse_yaml(somecontext.yaml_data).key }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: parse_json(data.body).headers['X-Netcheck-Header'] == "yaml-data"
