@@ -174,7 +174,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
       - name: Export Docker Image
         run: |
-          docker save ghcr.io/hardbyte/netchecks:edge -o /tmp/netchecks_probe_image.tar
+          DOCKER_DEFAULT_PLATFORM=linux/amd64 docker save ghcr.io/hardbyte/netchecks:edge -o /tmp/netchecks_probe_image.tar
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
@@ -227,7 +227,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
       - name: Export Docker Image
         run: |
-          docker save ghcr.io/hardbyte/netchecks-operator:edge -o /tmp/netchecks_operator_image.tar
+          DOCKER_DEFAULT_PLATFORM=linux/amd64 docker save ghcr.io/hardbyte/netchecks-operator:edge -o /tmp/netchecks_operator_image.tar
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
