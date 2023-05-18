@@ -267,13 +267,12 @@ jobs:
         run: |
           cd operator
           poetry install --no-interaction --with dev
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Load netchecks image
+      - name: Pull netchecks probe image
+        run: |
+          docker pull ${{ needs.probe_docker.outputs.image_probe }}
+      - name: Pull netchecks operator image
         run: |
           docker pull ${{ needs.operator_docker.outputs.image_operator }}
-          docker pull ${{ needs.probe_docker.outputs.image_probe }}
-          docker image ls -a
       - name: Install kubectl
         run: |
           curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
