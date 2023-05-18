@@ -172,8 +172,8 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_probe.outputs.tags }}
+          labels: ${{ steps.meta_probe.outputs.labels }}
 
   operator_docker:
     name: Build Operator Image
@@ -219,8 +219,8 @@ jobs:
           context: operator
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_operator.outputs.tags }}
+          labels: ${{ steps.meta_operator.outputs.labels }}
             #      - name: Install Cosign
             #        uses: sigstore/cosign-installer@main
             #      - name: Sign the images with GitHub OIDC Token
