@@ -148,7 +148,7 @@ jobs:
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
           tags: |
-            edge
+            type=sha
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
@@ -194,7 +194,7 @@ jobs:
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
           tags: |
-            edge
+            type=sha
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
@@ -294,10 +294,10 @@ jobs:
 
       - name: Load Netchecks Images into Kind
         run: |
-          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:edge
-          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:edge
-          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:edge
-          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:edge
+          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:${{ github.sha }}
+          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:${{ github.sha }}
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:${{ github.sha }}
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:${{ github.sha }}
       - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
