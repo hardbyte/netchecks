@@ -130,8 +130,6 @@ jobs:
   probe_docker:
     name: Build Probe Image
     runs-on: ubuntu-latest
-    outputs:
-      image_probe: ${{ steps.meta_probe.outputs.tags }}
     permissions:
       contents: read
       packages: write
@@ -145,7 +143,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Docker meta
-        id: meta_probe
+        id: meta
         uses: docker/metadata-action@v4
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
@@ -172,14 +170,12 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta_probe.outputs.tags }}
-          labels: ${{ steps.meta_probe.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   operator_docker:
     name: Build Operator Image
     runs-on: ubuntu-latest
-    outputs:
-      image_operator: ${{ steps.meta_operator.outputs.tags }}
     permissions:
       contents: read
       packages: write
@@ -193,7 +189,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Docker meta
-        id: meta_operator
+        id: meta
         uses: docker/metadata-action@v4
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
@@ -219,8 +215,8 @@ jobs:
           context: operator
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta_operator.outputs.tags }}
-          labels: ${{ steps.meta_operator.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
             #      - name: Install Cosign
             #        uses: sigstore/cosign-installer@main
             #      - name: Sign the images with GitHub OIDC Token
@@ -243,6 +239,10 @@ jobs:
       cilium_version: v1.13.2
       cilium_cli_version: v0.13.2
       kubectl_version: v1.25.2
+      PROBE_IMAGE_NAME: netchecks
+      OPERATOR_IMAGE_NAME: netchecks-operator
+      IMAGE_REGISTRY: ghcr.io
+      IMAGE_REPOSITORY: hardbyte
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -294,10 +294,10 @@ jobs:
 
       - name: Load Netchecks Images into Kind
         run: |
-          docker pull --platform linux/amd64 ${{ needs.probe_docker.outputs.image_probe[1] }}
-          docker pull --platform linux/amd64 ${{ needs.operator_docker.outputs.image_operator[1] }}
-          kind load docker-image ${{ needs.probe_docker.outputs.image_probe[1] }}
-          kind load docker-image ${{ needs.operator_docker.outputs.image_operator[1] }}
+          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:edge
+          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:edge
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:edge
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:edge
       - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
