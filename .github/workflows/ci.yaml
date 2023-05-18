@@ -267,10 +267,6 @@ jobs:
         run: |
           cd operator
           poetry install --no-interaction --with dev
-      - name: Pull netchecks images
-        run: |
-          docker pull ${{ needs.probe_docker.outputs.image_probe }}
-          docker pull ${{ needs.operator_docker.outputs.image_operator }}
       - name: Install kubectl
         run: |
           curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
@@ -298,8 +294,10 @@ jobs:
 
       - name: Load Netchecks Images into Kind
         run: |
-          kind load docker-image ${{ needs.operator_docker.outputs.image }}
-          kind load docker-image ${{ needs.probe_docker.outputs.image }}
+          docker pull --platform linux/amd64 ${{ needs.probe_docker.outputs.image_probe }}
+          docker pull --platform linux/amd64 ${{ needs.operator_docker.outputs.image_operator }}
+          kind load docker-image ${{ needs.probe_docker.outputs.image_probe }}
+          kind load docker-image ${{ needs.operator_docker.outputs.image_operator }}
       - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
