@@ -131,7 +131,7 @@ jobs:
     name: Build Probe Image
     runs-on: ubuntu-latest
     outputs:
-      image: ${{ steps.meta.outputs.tags }}
+      image_probe_: ${{ steps.meta_probe.outputs.tags }}
     permissions:
       contents: read
       packages: write
@@ -145,7 +145,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Docker meta
-        id: meta
+        id: meta_probe
         uses: docker/metadata-action@v4
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
@@ -179,7 +179,7 @@ jobs:
     name: Build Operator Image
     runs-on: ubuntu-latest
     outputs:
-      image: ${{ steps.meta.outputs.tags }}
+      image_operator: ${{ steps.meta_operator.outputs.tags }}
     permissions:
       contents: read
       packages: write
@@ -193,7 +193,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Docker meta
-        id: meta
+        id: meta_operator
         uses: docker/metadata-action@v4
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
@@ -271,8 +271,8 @@ jobs:
         uses: docker/setup-buildx-action@v2
       - name: Load netchecks image
         run: |
-          docker pull ${{ needs.operator_docker.outputs.image }}
-          docker pull ${{ needs.probe_docker.outputs.image }}
+          docker pull ${{ needs.operator_docker.outputs.image_operator }}
+          docker pull ${{ needs.probe_docker.outputs.image_probe }}
           docker image ls -a
       - name: Install kubectl
         run: |
