@@ -174,14 +174,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-            #      - name: Export Docker Image
-            #        run: |
-            #          docker save ghcr.io/hardbyte/netchecks:edge -o /tmp/netchecks_probe_image.tar
-            #      - name: Upload artifact
-            #        uses: actions/upload-artifact@v3
-            #        with:
-            #          name: netchecks_probe_image
-            #          path: /tmp/netchecks_probe_image.tar
 
   operator_docker:
     name: Build Operator Image
@@ -229,22 +221,13 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-            #      - name: Export Docker Image
-            #        run: |
-            #          docker save ghcr.io/hardbyte/netchecks-operator:edge -o /tmp/netchecks_operator_image.tar
-            #      - name: Upload artifact
-            #        uses: actions/upload-artifact@v3
-            #        with:
-            #          name: netchecks_operator_image
-            #          path: /tmp/netchecks_operator_image.tar
-
-  #      - name: Install Cosign
-#        uses: sigstore/cosign-installer@main
-#      - name: Sign the images with GitHub OIDC Token
-#        run: cosign sign --yes ${TAGS}
-#        if: github.event_name != 'pull_request'
-#        env:
-#          TAGS: ${{ steps.meta.outputs.tags }}
+            #      - name: Install Cosign
+            #        uses: sigstore/cosign-installer@main
+            #      - name: Sign the images with GitHub OIDC Token
+            #        run: cosign sign --yes ${TAGS}
+            #        if: github.event_name != 'pull_request'
+            #        env:
+            #          TAGS: ${{ steps.meta.outputs.tags }}
 
 
   k8s:
@@ -286,16 +269,6 @@ jobs:
           poetry install --no-interaction --with dev
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-          #      - name: Download probe image artifact
-          #        uses: actions/download-artifact@v3
-          #        with:
-          #          name: netchecks_probe_image
-          #          path: /tmp
-          #      - name: Download operator image artifact
-          #        uses: actions/download-artifact@v3
-          #        with:
-          #          name: netchecks_operator_image
-          #          path: /tmp
       - name: Load netchecks image
         run: |
           docker pull ${{ needs.operator_docker.outputs.image }}
