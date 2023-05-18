@@ -294,10 +294,10 @@ jobs:
 
       - name: Load Netchecks Images into Kind
         run: |
-          docker pull --platform linux/amd64 ${{ needs.probe_docker.outputs.image_probe }}
-          docker pull --platform linux/amd64 ${{ needs.operator_docker.outputs.image_operator }}
-          kind load docker-image ${{ needs.probe_docker.outputs.image_probe }}
-          kind load docker-image ${{ needs.operator_docker.outputs.image_operator }}
+          docker pull --platform linux/amd64 ${{ needs.probe_docker.outputs.image_probe[1] }}
+          docker pull --platform linux/amd64 ${{ needs.operator_docker.outputs.image_operator[1] }}
+          kind load docker-image ${{ needs.probe_docker.outputs.image_probe[1] }}
+          kind load docker-image ${{ needs.operator_docker.outputs.image_operator[1] }}
       - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
