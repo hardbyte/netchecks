@@ -131,7 +131,7 @@ jobs:
     name: Build Probe Image
     runs-on: ubuntu-latest
     outputs:
-      image_probe_: ${{ steps.meta_probe.outputs.tags }}
+      image_probe: ${{ steps.meta_probe.outputs.tags }}
     permissions:
       contents: read
       packages: write
@@ -267,11 +267,9 @@ jobs:
         run: |
           cd operator
           poetry install --no-interaction --with dev
-      - name: Pull netchecks probe image
+      - name: Pull netchecks images
         run: |
           docker pull ${{ needs.probe_docker.outputs.image_probe }}
-      - name: Pull netchecks operator image
-        run: |
           docker pull ${{ needs.operator_docker.outputs.image_operator }}
       - name: Install kubectl
         run: |
