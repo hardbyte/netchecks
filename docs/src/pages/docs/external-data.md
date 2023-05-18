@@ -3,14 +3,26 @@ title: Injecting External Data
 description: Access external data from your Network Assertions
 ---
 
-Netchecks supports referencing external data from your Network Assertions. This allows you to inject 
-secrets and other data into your assertions.
+Use data from ConfigMaps and Secrets in your Network Assertions. 
+
+When an assertion referencing a ConfigMap or Secret is evaluated, the data is checked at the time
+the test runs - ensuring that references to the ConfigMap are always dynamic. Should the Secret 
+or ConfigMap be updated, subsequent probes will pick up the latest data at that point.
+
+In order to reference external data in NetworkAssertion rules, a context is required. The context 
+data can then be referenced within a CEL template.
+
+```
+{{ <context-name>.<key-name> }}
+```
 
 
-## Example loading data from a ConfigMap
+## Contexts from ConfigMaps
 
-Say you have a `ConfigMap` in the target namespace which contains
-an `API_TOKEN` that you want to use in your assertions.
+A [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/) in Kubernetes is commonly used
+to store configuration data for applications. Each ConfigMap is namespaced and stores key-value pairs.
+
+Say you have a `ConfigMap` in the target namespace which contains an `API_TOKEN` that you want to use in your assertions.
 
 ```yaml
 apiVersion: v1
@@ -24,7 +36,11 @@ data:
 Create one or more named contexts in your assertion to load the data from the ConfigMap. The name of the 
 context can be anything you like except for `data` and `spec` which are already used by Netchecks.
 
-In this example **somecontext** will load the data from the **some-config-map** ConfigMap:
+Then reference the data in your custom validation patterns, or anywhere in your assertion rules
+using the `{{ }}` template syntax.
+
+In this example **somecontext** will load the data from the **some-config-map** ConfigMap and inject
+it into a header in the HTTP request:
 
 ```yaml
 apiVersion: netchecks.io/v1
@@ -34,7 +50,9 @@ metadata:
   annotations:
     description: Assert probe can access configmap data
 spec:
+  # All rules in the NetworkAssertion share the same context
   context:
+    # A unique name for each context object
     - name: somecontext
       configMap:
         name: some-config-map
@@ -50,8 +68,52 @@ spec:
         pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == somecontext.API_TOKEN"
 ```
 
-Then reference the data in your custom validation patterns, or anywhere in your assertion rules
-using the `{{ }}` template syntax.
+The templated variable `{{ somecontext.API_TOKEN }}` will be substituted with the value 
+`some-data-from-a-configmap` before the test is executed.
+
+## Contexts from Secrets
+
+A [Secret](https://kubernetes.io/docs/concepts/configuration/secret/) in Kubernetes is an object 
+that contains sensitive data such as passwords, tokens, or other potentially sensitive 
+configuration data.
+
+Let's repeat the same example with an API_TOKEN this time stored - more appropriately - as a 
+secret:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: some-secret
+data:
+  API_TOKEN: a3E0Z2lodnN6emduMXAwcg==
+```
+
+The NetworkAssertion doesn't change much, note the context now refers to a `secret`:
+
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-with-external-secret-data
+  annotations:
+    description: Assert probe can access secret data
+spec:
+  context:
+    - name: somecontext
+      secret:
+        name: some-secret
+  rules:
+    - name: pie-dev-headers-and-validation
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ somecontext.API_TOKEN }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == somecontext.API_TOKEN"
+```
 
 
 {% callout title="Template Evaluation" %}
@@ -59,3 +121,8 @@ The `{{ }}` syntax is used to evaluate CEL templates before the assertion is car
 
 The `validate.pattern` is the exception, always evaluated as a CEL expression after the assertion has run.  
 {% /callout %}
+
+
+## Handling JSON and YAML data
+
+TODO: document.

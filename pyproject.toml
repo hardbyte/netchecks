@@ -25,6 +25,7 @@ pytest = "^7.2.0"
 coveralls = "^3.3.1"
 pytest-cov = "^4.0.0"
 ruff = "^0.0.241"
+black = "^23.3.0"
 
 [tool.ruff]
 line-length = 120
