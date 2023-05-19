@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: a-config-map
+data:
+  yaml_data: |
+    toplevel:
+      nestedkey: "yaml-data"
+    array:
+      - "value"
+      - "value2"
+---
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-with-inline-data
+  annotations:
+    description: Assert probe can access configmap data
+spec:
+  context:
+    - name: originalcontext
+      configMap:
+        name: a-config-map
+    - name: derivedcontext
+      inline:
+        key: "{{ parse_yaml(somecontext.yaml_data).toplevel.nestedkey }}"
+  rules:
+    - name: pie-dev-headers-and-validation
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ derivedcontext.key }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == derivedcontext.key"

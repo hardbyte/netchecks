@@ -21,6 +21,7 @@ In addition to the [built-in functions](https://github.com/google/cel-spec/blob/
 (`endsWith`, `contains`, `timestamp` etc), Netchecks also provides the following:
 
 - parse_json
+- parse_yaml
 - b64decode
 - b64encode
 
