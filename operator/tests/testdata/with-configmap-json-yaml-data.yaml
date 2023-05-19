@@ -4,10 +4,15 @@ metadata:
   name: a-config-map
 data:
   yaml_data: |
-   key: "yaml-data"
+    toplevel:
+      nestedkey: "yaml-data"
+    array:
+      - "value"
+      - "value2"
   json_data: |
    {
-     "key": "json-data" 
+     "key": "json-data",
+     "another": ["array", "value"]
    }
 ---
 apiVersion: netchecks.io/v1
@@ -26,7 +31,7 @@ spec:
       type: http
       url: https://pie.dev/headers
       headers:
-        "X-Netcheck-Header": "{{ parse_yaml(somecontext.json_data).key }}"
+        "X-Netcheck-Header": "{{ parse_json(somecontext.json_data).key }}"
       expected: pass
       validate:
         message: Http request with header to pie.dev service should reply with header value
@@ -35,8 +40,18 @@ spec:
       type: http
       url: https://pie.dev/headers
       headers:
-        "X-Netcheck-Header": "{{ parse_yaml(somecontext.yaml_data).key }}"
+        "X-Netcheck-Header": "{{ parse_yaml(somecontext.yaml_data).toplevel.nestedkey }}"
+        "X-Test": "{{ parse_yaml(somecontext.yaml_data).array[0] }}"
       expected: pass
       validate:
         message: Http request with header to pie.dev service should reply with header value
         pattern: parse_json(data.body).headers['X-Netcheck-Header'] == "yaml-data"
+    - name: yaml-array-parsing-test
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ parse_yaml(somecontext.yaml_data).array[0] }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: parse_json(data.body).headers['X-Netcheck-Header'] == "value"
