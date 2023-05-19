@@ -148,7 +148,7 @@ jobs:
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
           tags: |
-            edge
+            type=sha
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
@@ -168,19 +168,10 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          load: true
-          push: ${{ github.event_name != 'pull_request' }}
-          #platforms: linux/amd64,linux/arm64
+          push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Export Docker Image
-        run: |
-          docker save ghcr.io/hardbyte/netchecks:edge -o /tmp/netchecks_probe_image.tar
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: netchecks_probe_image
-          path: /tmp/netchecks_probe_image.tar
 
   operator_docker:
     name: Build Operator Image
@@ -203,7 +194,7 @@ jobs:
         with:
           images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
           tags: |
-            edge
+            type=sha
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
@@ -222,28 +213,17 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: operator
-          load: true
-          push: ${{ github.event_name != 'pull_request' }}
-          # See https://github.com/cdalvaro/docker-salt-master/blob/c556e06e5527cc2dc95966039858671f5f16cebe/.github/workflows/build-and-test.yml
-          #platforms: linux/amd64,linux/arm64
+          push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Export Docker Image
-        run: |
-          docker save ghcr.io/hardbyte/netchecks-operator:edge -o /tmp/netchecks_operator_image.tar
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: netchecks_operator_image
-          path: /tmp/netchecks_operator_image.tar
-
-  #      - name: Install Cosign
-#        uses: sigstore/cosign-installer@main
-#      - name: Sign the images with GitHub OIDC Token
-#        run: cosign sign --yes ${TAGS}
-#        if: github.event_name != 'pull_request'
-#        env:
-#          TAGS: ${{ steps.meta.outputs.tags }}
+            #      - name: Install Cosign
+            #        uses: sigstore/cosign-installer@main
+            #      - name: Sign the images with GitHub OIDC Token
+            #        run: cosign sign --yes ${TAGS}
+            #        if: github.event_name != 'pull_request'
+            #        env:
+            #          TAGS: ${{ steps.meta.outputs.tags }}
 
 
   k8s:
@@ -259,6 +239,10 @@ jobs:
       cilium_version: v1.13.2
       cilium_cli_version: v0.13.2
       kubectl_version: v1.25.2
+      PROBE_IMAGE_NAME: netchecks
+      OPERATOR_IMAGE_NAME: netchecks-operator
+      IMAGE_REGISTRY: ghcr.io
+      IMAGE_REPOSITORY: hardbyte
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -283,23 +267,6 @@ jobs:
         run: |
           cd operator
           poetry install --no-interaction --with dev
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Download probe image artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: netchecks_probe_image
-          path: /tmp
-      - name: Download operator image artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: netchecks_operator_image
-          path: /tmp
-      - name: Load netchecks image
-        run: |
-          docker load --input /tmp/netchecks_operator_image.tar
-          docker load --input /tmp/netchecks_probe_image.tar
-          docker image ls -a
       - name: Install kubectl
         run: |
           curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
@@ -307,7 +274,6 @@ jobs:
           echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
           kubectl version --client
-
       - name: Install cilium CLI binary
         run: |
           curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${{ env.cilium_cli_version }}/cilium-linux-amd64.tar.gz{,.sha256sum}
@@ -325,11 +291,13 @@ jobs:
           kubectl cluster-info
           export KUBE_API=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
           kind get nodes
-          
+
       - name: Load Netchecks Images into Kind
         run: |
-          kind load docker-image ghcr.io/hardbyte/netchecks:edge
-          kind load docker-image ghcr.io/hardbyte/netchecks-operator:edge
+          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
       - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
