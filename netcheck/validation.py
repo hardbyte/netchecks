@@ -4,6 +4,7 @@ import logging
 from typing import Dict
 
 import celpy
+import yaml
 from celpy import CELParseError, CELEvalError, json_to_cel
 
 logger = logging.getLogger("netcheck.validation")
@@ -43,6 +44,7 @@ def evaluate_cel_with_context(context: Dict, validation_rule: str):
     # create the CEL program
     functions = {
         "parse_json": lambda s: json_to_cel(json.loads(s)),
+        "parse_yaml": lambda s: json_to_cel(yaml.safe_load(s)),
         "b64decode": lambda s: base64.b64decode(s).decode("utf-8"),
         "b64encode": lambda s: base64.b64encode(s.encode()).decode(),
     }
