@@ -294,10 +294,10 @@ jobs:
 
       - name: Load Netchecks Images into Kind
         run: |
-          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:${{ github.sha }}
-          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:${{ github.sha }}
-          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:${{ github.sha }}
-          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:${{ github.sha }}
+          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+          docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
       - name: Prepare Netchecks Operator Helm Chart
         run: |
           helm dependency build operator/charts/netchecks
