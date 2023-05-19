@@ -31,13 +31,16 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
     # Load optional external contexts from the config
     context = {}
     for c in netchecks_config.get("contexts", []):
-        # If type is "directory", load the file at "path", parse it as JSON,
-        # then add it to the context using its "name" as the key
         if c["type"] == "file":
+            # load the file at "path", parse it as JSON,
+            # then add it to the context using its "name" as the key
             with open(c["path"], "r") as f:
                 context[c["name"]] = json.load(f)
         elif c["type"] == "inline":
-            context[c["name"]] = c["data"]
+            # Inline contexts are processed for CEL templates
+            inline_context = c["data"]
+            inline_context = replace_template(inline_context, context)
+            context[c["name"]] = inline_context
         elif c["type"] == "directory":
             # Return a Dict like object that lazy loads individual files
             # from the directory (with caching) and add them to the context

@@ -125,4 +125,85 @@ The `validate.pattern` is the exception, always evaluated as a CEL expression af
 
 ## Handling JSON and YAML data
 
-TODO: document.
+Often a config map contains JSON or YAML data. The `parse_json` and `parse_yaml` functions 
+can be used to extract data from these formats.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: a-config-map
+data:
+  yaml_data: |
+    toplevel:
+      nestedkey: "yaml-data"
+    array:
+      - "value"
+      - "value2"
+```
+
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: example-with-yaml-format
+spec:
+  context:
+    - name: somecontext
+      configMap:
+        name: a-config-map
+  rules:
+    - name: yaml-parsing-test
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ parse_yaml(somecontext.yaml_data).toplevel.nestedkey }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: parse_json(data.body).headers['X-Netcheck-Header'] == "yaml-data"
+    - name: yaml-array-parsing-test
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ parse_yaml(somecontext.yaml_data).array[0] }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: parse_json(data.body).headers['X-Netcheck-Header'] == "value"
+```
+
+## Inline Contexts
+
+Data to be used in multiple rules can be declared as an inline context, and 
+can reference already defined contexts using the `{{ }}` template syntax. 
+
+For example:
+
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: http-with-inline-data
+  annotations:
+    description: Assert probe can access configmap data
+spec:
+  context:
+    - name: originalcontext
+      inline:
+        key: "inline-value"
+    - name: derivedcontext
+      inline:
+        key: "{{ originalcontext.key }}"
+  rules:
+    - name: pie-dev-headers-and-validation
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ derivedcontext.key }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == derivedcontext.key"
+
+```

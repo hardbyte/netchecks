@@ -155,22 +155,32 @@ def transform_rule_for_config_file(rule):
 
 
 def transform_context_for_config_file(context):
-    """"""
+    """
+    The netchecks CLI expects each context to be one of the following types:
+    - directory
+    - file
+    - inline
+
+    This method will transform the context from K8s concepts like ConfigMap/Secret
+    (or inline) into one of these types.
+    """
+
     name = context["name"]
-    type = "directory"
+    result = {"name": name}
+    if 'configMap' in context or 'secret' in context:
+        # by default assume we are mapping a cm/secret to a directory
+        result['type'] = "directory"
+        result["path"] = f"/mnt/{name}"
 
-    # if 'configMap' in context:
-    #     cm = context['configMap']
-    # if 'items' in cm:
-    #     # We are mapping individual files from a configmap
-    #     type = "file"
-    # else:
+        # TODO handle the case where we are mapping a single file
+        # if 'items' in cm:
+        #     # We are mapping individual files from a configmap
+        #     result['type'] = "file"
+    elif 'inline' in context:
+        result['type'] = 'inline'
+        result['data'] = context['inline']
 
-    return {
-        "name": name,
-        "type": type,
-        "path": f"/mnt/{name}",
-    }
+    return result
 
 
 def create_network_assertions_config_map(
@@ -616,6 +626,9 @@ def create_job_spec(
                     mount_path=f"/mnt/{context_name}",
                 )
             )
+        elif "inline" in context_definition:
+            # We don't need to preprocess this
+            pass
 
     command = [
         "poetry",
