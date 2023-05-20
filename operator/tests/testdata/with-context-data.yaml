@@ -23,7 +23,7 @@ spec:
         name: a-config-map
     - name: derivedcontext
       inline:
-        key: "{{ parse_yaml(somecontext.yaml_data).toplevel.nestedkey }}"
+        key: "{{ parse_yaml(originalcontext.yaml_data).toplevel.nestedkey }}"
   rules:
     - name: pie-dev-headers-and-validation
       type: http
