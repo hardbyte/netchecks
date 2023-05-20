@@ -87,4 +87,3 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
         shell=True,
         check=True,
     )
-
