@@ -89,4 +89,4 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file
         shell=True,
         check=True,
     )
-    time.sleep(1.0)
+    time.sleep(3.0)
