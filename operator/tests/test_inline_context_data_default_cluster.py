@@ -3,7 +3,7 @@ import time
 import subprocess
 
 
-def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
+def test_inline_context_data(netchecks, k8s_namespace, test_file_path):
     manifest = test_file_path("with-context-data.yaml")
 
     subprocess.run(
@@ -79,6 +79,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
         assert test_data["status-code"] == 200
 
         data = json.loads(test_data["body"])
+        print(data)
         assert data["headers"]["X-Netcheck-Header"] == "yaml-data"
 
     # Delete the network assertion
