@@ -10,14 +10,14 @@ def test_operator(netchecks_crds, k8s_namespace, test_file_path):
             f"kubectl delete -A NetworkAssertions --all",
             shell=True,
         )
-        time.sleep(3.0)  # give it some time to react
+        time.sleep(5.0)  # give it some time to react
 
         subprocess.run(
             f"kubectl apply -f {test_file_path('http-job.yaml')} -n {k8s_namespace}",
             shell=True,
             check=True,
         )
-        time.sleep(10)  # allow operator to react (pull images, retry once)
+        time.sleep(5)  # allow operator to react (pull images, retry once)
 
         list_assertions_response = subprocess.run(
             f"kubectl get networkassertions -n {k8s_namespace}", shell=True, check=True
