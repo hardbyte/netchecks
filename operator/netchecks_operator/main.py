@@ -167,18 +167,18 @@ def transform_context_for_config_file(context):
 
     name = context["name"]
     result = {"name": name}
-    if 'configMap' in context or 'secret' in context:
+    if "configMap" in context or "secret" in context:
         # by default assume we are mapping a cm/secret to a directory
-        result['type'] = "directory"
+        result["type"] = "directory"
         result["path"] = f"/mnt/{name}"
 
         # TODO handle the case where we are mapping a single file
         # if 'items' in cm:
         #     # We are mapping individual files from a configmap
         #     result['type'] = "file"
-    elif 'inline' in context:
-        result['type'] = 'inline'
-        result['data'] = context['inline']
+    elif "inline" in context:
+        result["type"] = "inline"
+        result["data"] = context["inline"]
 
     return result
 
