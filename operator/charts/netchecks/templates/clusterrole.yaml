@@ -55,3 +55,7 @@ rules:
   - apiGroups: [""]
     resources: ["pods/log"]
     verbs: ["get", "list", "watch"]
+
+  - apiGroups: [""]
+    resources: ["pods/status"]
+    verbs: ["get", "patch"]
