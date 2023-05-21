@@ -3,7 +3,9 @@ import subprocess
 from kopf.testing import KopfRunner
 
 
-def test_operator(netchecks_crds, k8s_namespace, test_file_path):
+def test_operator(k8s_namespace, test_file_path):
+    # Ensure CRDs are already installed
+
     with KopfRunner(["run", "-A", "netchecks_operator/main.py"]) as runner:
         # Remove all existing network assertions
         subprocess.run(
