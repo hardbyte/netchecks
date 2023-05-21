@@ -85,7 +85,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
 
     # Delete the network assertion
     subprocess.run(
-        f"kubectl delete -n {k8s_namespace} -f {manifest}",
+        f"kubectl delete -n {k8s_namespace} -f {manifest} --timeout=30s",
         shell=True,
         check=True,
     )
@@ -174,7 +174,7 @@ def test_use_external_config_map_data_with_formatted_data(
 
     # Delete the network assertion
     subprocess.run(
-        f"kubectl delete -n {k8s_namespace} -f {manifest}",
+        f"kubectl delete -n {k8s_namespace} -f {manifest} --timeout=30s",
         shell=True,
         check=True,
     )

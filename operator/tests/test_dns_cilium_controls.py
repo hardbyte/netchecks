@@ -93,7 +93,7 @@ def test_k8s_version_with_installed_operator(
 
     # Delete the network assertion and Cilium network policies
     subprocess.run(
-        f"kubectl delete -n {k8s_namespace} -f {dns_restrictions_dir}",
+        f"kubectl delete -n {k8s_namespace} -f {dns_restrictions_dir} --timeout=30s",
         shell=True,
         check=True,
     )

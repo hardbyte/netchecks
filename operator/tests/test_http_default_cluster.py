@@ -83,7 +83,7 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file
 
     # Delete the network assertion
     subprocess.run(
-        f"kubectl delete -n {k8s_namespace} -f {http_assertion_manifest}",
+        f"kubectl delete -n {k8s_namespace} -f {http_assertion_manifest} --timeout=30s",
         shell=True,
         check=True,
     )
@@ -114,7 +114,7 @@ def test_immediate_delete_assertion(netchecks, k8s_namespace, test_file_path):
 
     # Instead of waiting for the job to complete, we delete the assertion immediately
     subprocess.run(
-        f"kubectl delete -n {k8s_namespace} -f {http_assertion_manifest}",
+        f"kubectl delete -n {k8s_namespace} -f {http_assertion_manifest} --timeout=30s",
         shell=True,
         check=True,
     )
