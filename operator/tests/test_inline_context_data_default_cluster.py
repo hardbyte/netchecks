@@ -24,9 +24,10 @@ def test_inline_context_data(netchecks, k8s_namespace, test_file_path):
             break
         time.sleep(1.5**i)
 
+    print("Job was created")
     # Wait for the job to complete
     subprocess.run(
-        f"kubectl wait Job/{assertion_name} -n {k8s_namespace} --for condition=complete --timeout=120s",
+        f"kubectl wait Job/{assertion_name} -n {k8s_namespace} --for condition=complete --timeout=60s",
         shell=True,
         check=True,
     )
@@ -43,6 +44,7 @@ def test_inline_context_data(netchecks, k8s_namespace, test_file_path):
             break
         time.sleep(1.5**i)
     assert assertion_name.encode() in policy_report_response.stdout
+    print("Policy report was created")
 
     summary_filter = "jsonpath='{.summary}'"
     policy_report_summary = subprocess.run(
@@ -84,7 +86,7 @@ def test_inline_context_data(netchecks, k8s_namespace, test_file_path):
 
     # Delete the network assertion
     subprocess.run(
-        f"kubectl delete -n {k8s_namespace} -f {manifest}",
+        f"kubectl delete -n {k8s_namespace} -f {manifest} --timeout=30s",
         shell=True,
         check=True,
     )

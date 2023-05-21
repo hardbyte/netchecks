@@ -61,7 +61,7 @@ def netchecks_crds():
     yield None
     print("Deleting CRDs")
     try:
-        subprocess.run(f"kubectl delete -f {crds_folder_path}", shell=True, check=True)
+        subprocess.run(f"kubectl delete -f {crds_folder_path} --timeout=30s", shell=True, check=True)
     except subprocess.CalledProcessError:
         pass
 
@@ -111,4 +111,4 @@ def k8s_namespace():
     subprocess.run(f"kubectl create namespace {name}", shell=True, check=True)
     yield name
     print("Deleting namespace")
-    subprocess.run(f"kubectl delete namespace {name}", shell=True, check=True)
+    subprocess.run(f"kubectl delete namespace {name} --timeout=30s", shell=True, check=True)
