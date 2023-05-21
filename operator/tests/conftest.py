@@ -53,17 +53,17 @@ def example_dir_path():
     return get_example_file
 
 
-@fixture(scope="session")
-def netchecks_crds():
-    crds_folder_path = os.path.join(NETCHECKS_CHART_DIR, "crds")
-    print(crds_folder_path)
-    subprocess.run(f"kubectl apply -f {crds_folder_path}", shell=True, check=True)
-    yield None
-    print("Deleting CRDs")
-    try:
-        subprocess.run(f"kubectl delete -f {crds_folder_path} --timeout=30s", shell=True, check=True)
-    except subprocess.CalledProcessError:
-        pass
+# @fixture(scope="session")
+# def netchecks_crds():
+#     crds_folder_path = os.path.join(NETCHECKS_CHART_DIR, "crds")
+#     print(crds_folder_path)
+#     subprocess.run(f"kubectl apply -f {crds_folder_path}", shell=True, check=True)
+#     yield None
+#     print("Deleting CRDs")
+#     try:
+#         subprocess.run(f"kubectl delete -f {crds_folder_path} --timeout=30s", shell=True, check=True)
+#     except subprocess.CalledProcessError:
+#         pass
 
 
 @fixture(scope="session")
