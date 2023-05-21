@@ -7,7 +7,7 @@ def test_operator(netchecks_crds, k8s_namespace, test_file_path):
     with KopfRunner(["run", "-A", "netchecks_operator/main.py"]) as runner:
         # Remove all existing network assertions
         subprocess.run(
-            f"kubectl delete -A NetworkAssertions --all",
+            f"kubectl delete -A NetworkAssertions --all --timeout=30s",
             shell=True,
         )
         time.sleep(3.0)  # give it some time to react
@@ -27,17 +27,21 @@ def test_operator(netchecks_crds, k8s_namespace, test_file_path):
         )
 
         subprocess.run(
-            f"kubectl delete -f {test_file_path('http-job.yaml')} -n {k8s_namespace}",
+            f"kubectl delete -f {test_file_path('http-job.yaml')} -n {k8s_namespace} --timeout=30s",
             shell=True,
             check=True,
         )
 
         subprocess.run(
-            f"kubectl delete -A NetworkAssertions --all",
+            f"kubectl delete -A NetworkAssertions --all --timeout=30s",
             shell=True,
         )
         time.sleep(3.0)  # give it some time to react
-
+        # Help it out incase something went wrong (we are testing after all)
+        subprocess.run(
+            f"kubectl delete -A Jobs -l app.kubernetes.io/component=probe -l app.kubernetes.io/name=netchecks --timeout=30s",
+            shell=True,
+        )
     assert runner.exit_code == 0
     assert runner.exception is None
 

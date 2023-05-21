@@ -23,6 +23,12 @@ import kopf
 from kubernetes import client
 
 from netchecks_operator.config import Config
+from importlib import metadata
+
+try:
+    NETCHECK_OPERATOR_VERSION = metadata.version("netcheck-operator")
+except metadata.PackageNotFoundError:
+    NETCHECK_OPERATOR_VERSION = "unknown"
 
 
 logger = get_logger()
@@ -32,7 +38,7 @@ logger.debug("Starting operator", config=settings.json())
 if settings.metrics.enabled:
     prometheus.start_http_server(settings.metrics.port)
 
-VERSION = "0.1.0"
+
 API_GROUP_NAME = "netchecks.io"
 
 # define Prometheus metrics
@@ -457,7 +463,7 @@ def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_na
             "annotations": {
                 "category": "Network",
                 "created-by": "netcheck",
-                "netcheck-operator-version": VERSION,
+                "netcheck-operator-version": NETCHECK_OPERATOR_VERSION,
             },
         },
         "results": report_results,
@@ -567,7 +573,7 @@ def create_job_object(job_name: str, job_spec):
 def get_common_labels(name):
     return {
         "app.kubernetes.io/name": "netchecks",
-        "app.kubernetes.io/version": VERSION,
+        "app.kubernetes.io/version": NETCHECK_OPERATOR_VERSION,
         "app.kubernetes.io/instance": name,
     }
 
