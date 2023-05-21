@@ -77,5 +77,7 @@ def test_dns_check_with_installed_operator(netchecks, k8s_namespace, test_file_p
 
     # Delete the network assertion
     subprocess.run(
-        f"kubectl delete -n {k8s_namespace} -f {manifest} --timeout=30s", shell=True, check=True
+        f"kubectl delete -n {k8s_namespace} -f {manifest} --timeout=30s",
+        shell=True,
+        check=True,
     )

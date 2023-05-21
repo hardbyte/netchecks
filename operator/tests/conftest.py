@@ -90,11 +90,15 @@ def netchecks(k8s_namespace):
         print("Uninstalling netchecks-operator")
         try:
             subprocess.run(
-                f"kubectl delete -A NetworkAssertions --all --timeout=30s", shell=True, check=True
+                f"kubectl delete -A NetworkAssertions --all --timeout=30s",
+                shell=True,
+                check=True,
             )
             time.sleep(3)
             subprocess.run(
-                f"kubectl delete -A Jobs -l app.kubernetes.io/component=probe -l app.kubernetes.io/name=netchecks --timeout=30s", shell=True, check=True
+                f"kubectl delete -A Jobs -l app.kubernetes.io/component=probe -l app.kubernetes.io/name=netchecks --timeout=30s",
+                shell=True,
+                check=True,
             )
             subprocess.run(
                 f"helm uninstall netchecks-operator -n {k8s_namespace}",
@@ -111,4 +115,6 @@ def k8s_namespace():
     subprocess.run(f"kubectl create namespace {name}", shell=True, check=True)
     yield name
     print("Deleting namespace")
-    subprocess.run(f"kubectl delete namespace {name} --timeout=30s", shell=True, check=True)
+    subprocess.run(
+        f"kubectl delete namespace {name} --timeout=30s", shell=True, check=True
+    )

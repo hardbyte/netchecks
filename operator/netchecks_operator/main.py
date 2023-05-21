@@ -430,9 +430,7 @@ def convert_iso_timestamp_to_k8s_timestamp(iso_timestamp):
 def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     crd_api = client.CustomObjectsApi()
 
-    logger = get_logger(
-        name=assertion_name, namespace=namespace, pod_name=pod_name
-    )
+    logger = get_logger(name=assertion_name, namespace=namespace, pod_name=pod_name)
     logger.info("Upsert PolicyReport")
     # get the resource and print out data
     # If it doesn't exist, create it

@@ -90,7 +90,6 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file
     time.sleep(3.0)
 
 
-
 def test_immediate_delete_assertion(netchecks, k8s_namespace, test_file_path):
     http_assertion_manifest = test_file_path("delayed-http.yaml")
 
@@ -130,4 +129,3 @@ def test_immediate_delete_assertion(netchecks, k8s_namespace, test_file_path):
         capture_output=True,
     )
     assert b"slow-http-request" not in policy_report_response.stdout
-
