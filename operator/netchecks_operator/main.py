@@ -99,9 +99,9 @@ def creation(body, spec, name, namespace, **kwargs):
             settings,
             template_overides=job_template,
         )
-        logger.debug("Job spec created", job_spec=job_spec)
+        logger.debug("Job spec created")
         job = create_job_object(name, job_spec)
-        logger.debug("Job instance created", job=job)
+        logger.debug("Job instance created")
 
         schedule = spec.get("schedule")
         if schedule is not None:
@@ -338,13 +338,12 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                 )
                 # pod_log_ws_client.run_forever(timeout=10)
                 pod_log = pod_log_ws_client.data.decode("utf-8")
-                logger.debug("Pod Log", log=pod_log)
+                logger.debug("Retrieved probe Pod's log")
                 if pod_log.startswith("unable to retrieve container logs"):
                     logger.warning("Unable to retrieve container logs.")
                     return
 
                 # Process the results, creating or updating the associated PolicyReport
-
                 process_probe_output(pod_log, assertion_name, namespace, name)
 
                 break
@@ -428,18 +427,16 @@ def convert_iso_timestamp_to_k8s_timestamp(iso_timestamp):
     }
 
 
-def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_name):
+def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     crd_api = client.CustomObjectsApi()
 
     logger = get_logger(
-        name=nework_assertion_name, namespace=namespace, pod_name=pod_name
+        name=assertion_name, namespace=namespace, pod_name=pod_name
     )
     logger.info("Upsert PolicyReport")
-    # TODO Use the Pod name to record in the PolicyReport result
     # get the resource and print out data
-
     # If it doesn't exist, create it
-    policy_report_label_selector = f"app.kubernetes.io/instance={nework_assertion_name}"
+    policy_report_label_selector = f"app.kubernetes.io/instance={assertion_name}"
     policy_reports = crd_api.list_namespaced_custom_object(
         group="wgpolicyk8s.io",
         version="v1alpha2",
@@ -447,7 +444,7 @@ def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_na
         plural="policyreports",
         label_selector=policy_report_label_selector,
     )
-    labels = get_common_labels(name=nework_assertion_name)
+    labels = get_common_labels(name=assertion_name)
     labels["policy.kubernetes.io/engine"] = "netcheck"
     report_results = convert_results_for_policy_report(
         probe_results, namespace, pod_name
@@ -458,7 +455,7 @@ def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_na
         "kind": "PolicyReport",
         "scope": {"kind": "Namespace", "name": namespace, "apiGroup": "v1"},
         "metadata": {
-            "name": nework_assertion_name,
+            "name": assertion_name,
             "labels": labels,
             "annotations": {
                 "category": "Network",
@@ -477,7 +474,7 @@ def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_na
             version="v1alpha2",
             namespace=namespace,
             plural="policyreports",
-            name=nework_assertion_name,
+            name=assertion_name,
         )
         logger.info("Existing policy report found", report=policy_report)
         crd_api.patch_namespaced_custom_object(
@@ -486,7 +483,7 @@ def upsert_policy_report(probe_results, nework_assertion_name, namespace, pod_na
             namespace=namespace,
             plural="policyreports",
             body=policy_report_body,
-            name=nework_assertion_name,
+            name=assertion_name,
         )
         logger.info("Updated existing PolicyReport")
     else:

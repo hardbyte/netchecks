@@ -1,0 +1,15 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: slow-http-request
+  annotations:
+    description: Assert pod can connect to a slow http server
+spec:
+  rules:
+    - name: kubernetes-version
+      type: http
+      url: https://pie.dev/delay/5
+      expected: pass
+      validate:
+        message: Http request to delayed API should succeed.
+

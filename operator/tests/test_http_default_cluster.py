@@ -4,8 +4,6 @@ import subprocess
 
 
 def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file_path):
-    # netchecks should be installed (via helm)
-    # Confirm netchecks is running
     http_assertion_manifest = test_file_path("http-job.yaml")
 
     subprocess.run(
@@ -90,3 +88,46 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file
         check=True,
     )
     time.sleep(3.0)
+
+
+
+def test_immediate_delete_assertion(netchecks, k8s_namespace, test_file_path):
+    http_assertion_manifest = test_file_path("delayed-http.yaml")
+
+    subprocess.run(
+        f"kubectl apply -n {k8s_namespace} -f {http_assertion_manifest}",
+        shell=True,
+        check=True,
+    )
+
+    # Assert that a Job gets created in the same namespace
+    for i in range(10):
+        jobs_response = subprocess.run(
+            f"kubectl get jobs -n {k8s_namespace}",
+            shell=True,
+            check=True,
+            capture_output=True,
+        )
+        if b"slow-http-request" in jobs_response.stdout:
+            break
+        time.sleep(1.1**i)
+
+    # Instead of waiting for the job to complete, we delete the assertion immediately
+    subprocess.run(
+        f"kubectl delete -n {k8s_namespace} -f {http_assertion_manifest}",
+        shell=True,
+        check=True,
+    )
+
+    time.sleep(5.0)
+
+    # Assert that a PolicyReport doesn't get created (or is deleted)
+
+    policy_report_response = subprocess.run(
+        f"kubectl get policyreports -n {k8s_namespace}",
+        shell=True,
+        check=True,
+        capture_output=True,
+    )
+    assert b"slow-http-request" not in policy_report_response.stdout
+
