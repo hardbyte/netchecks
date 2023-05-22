@@ -214,6 +214,6 @@ spec:
 ## Redaction
 
 By default, contexts are not included in the PolicyReport. This is to because they often include
-sensitive information such as passwords or tokens. For debugging purposes, you can disable this
-redaction by setting `disableRedaction: true` in the `spec` section of the NetworkAssertion.
+sensitive information such as passwords or tokens. You can disable this
+redaction for debugging purposes by setting `disableRedaction: true` in the `spec` section of the NetworkAssertion.
 
