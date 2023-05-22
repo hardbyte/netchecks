@@ -65,7 +65,7 @@ def test_output_unredacted_context_data(netchecks, k8s_namespace, test_file_path
         assert test_spec["type"] == "http"
         assert test_spec["method"] == "get"
 
-        assert 'X-Netcheck-Header' in test_spec["headers"]
+        assert "X-Netcheck-Header" in test_spec["headers"]
 
         test_data = json.loads(result["properties"]["data"])
         assert test_data["status-code"] == 200
