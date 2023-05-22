@@ -15,7 +15,12 @@ from netcheck.context import replace_template, LazyFileLoadingDict
 logger = logging.getLogger("netcheck.runner")
 
 
-def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False, include_context: bool = False):
+def run_from_config(
+    netchecks_config: Dict,
+    err_console,
+    verbose: bool = False,
+    include_context: bool = False,
+):
     if verbose:
         err_console.print(f"Loaded {len(netchecks_config['assertions'])} assertions")
 
@@ -65,8 +70,7 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False, 
                 validation_rule=rule.get("validation"),
                 validation_context=context,
                 verbose=verbose,
-                include_context=include_context
-
+                include_context=include_context,
             )
             assertion_results.append(result)
 
@@ -138,11 +142,11 @@ def check_individual_assertion(
 
     # Strip out known sensitive fields
     if not include_context:
-        for field in {'headers'}:
-            if field in test_detail['spec']:
-                test_detail['spec'][field] = "REDACTED"
-            if field in test_detail['data']:
-                test_detail['data'][field] = "REDACTED"
+        for field in {"headers"}:
+            if field in test_detail["spec"]:
+                test_detail["spec"][field] = "REDACTED"
+            if field in test_detail["data"]:
+                test_detail["data"][field] = "REDACTED"
 
     # Add the pass/status to the individual result. We also support an "expected": "fail" option
     # which will cause the test to fail if the validation passes.
