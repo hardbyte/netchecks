@@ -22,7 +22,8 @@ data can then be referenced within a CEL template.
 A [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/) in Kubernetes is commonly used
 to store configuration data for applications. Each ConfigMap is namespaced and stores key-value pairs.
 
-Say you have a `ConfigMap` in the target namespace which contains an `API_TOKEN` that you want to use in your assertions.
+Say you have a `ConfigMap` in the target namespace which contains an `API_TOKEN` that you want to use in 
+your assertions.
 
 ```yaml
 apiVersion: v1
@@ -50,6 +51,8 @@ metadata:
   annotations:
     description: Assert probe can access configmap data
 spec:
+  # Include the full context and headers in the PolicyReport for easier debugging
+  disableRedaction: true
   # All rules in the NetworkAssertion share the same context
   context:
     # A unique name for each context object
@@ -173,9 +176,9 @@ spec:
         pattern: parse_json(data.body).headers['X-Netcheck-Header'] == "value"
 ```
 
-## Inline Contexts
+## Reusable Variables
 
-Data to be used in multiple rules can be declared as an inline context, and 
+Data to be used in multiple rules can be declared as an **inline context**, and 
 can reference already defined contexts using the `{{ }}` template syntax. 
 
 For example:
@@ -207,3 +210,10 @@ spec:
         pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == derivedcontext.key"
 
 ```
+
+## Redaction
+
+By default, contexts are not included in the PolicyReport. This is to because they often include
+sensitive information such as passwords or tokens. For debugging purposes, you can disable this
+redaction by setting `disableRedaction: true` in the `spec` section of the NetworkAssertion.
+

@@ -110,6 +110,13 @@ The following keys are available in the `data` object for HTTP checks:
 - `body` - the HTTP response body
 - `headers` - the HTTP response headers
 
+
+{% callout title="Redaction" type="warning" %}
+Note because `headers` often contain sensitive information they are not
+included in the default output which can make debugging your assertions
+more difficult! To include them set `disableRedaction` to `true` in the NetworkAssertion spec.
+{% /callout %}
+- 
 ### DNS 
 
 - `response` - the raw DNS response
