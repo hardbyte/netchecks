@@ -6,7 +6,7 @@ icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.8
+version: 0.1.9
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -23,12 +23,14 @@ annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   artifacthub.io/changes: |
     - kind: added
-      description: Support for injecting context from configmaps.
+      description: Support for CEL templated variables, injecting context from ConfigMaps and Secrets.
       links:
         - name: GitHub Issue
           url: https://github.com/hardbyte/netchecks/issues/33
-        - name: GitHub PR
+        - name: Inject Context PR
           url: https://github.com/hardbyte/netchecks/pull/34
+        - name: Context from Secrets PR
+          url: https://github.com/hardbyte/netchecks/pull/37
     - kind: added
       description: Updated documentation, support multiple architectures.
   artifacthub.io/category: security
