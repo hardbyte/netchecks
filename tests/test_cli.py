@@ -290,7 +290,9 @@ def test_run_test_with_external_dir_context(data_dir_path):
 
 
 def test_run_http_config_with_headers(http_headers_config_filename):
-    result = runner.invoke(app, ["run", "--config", http_headers_config_filename, '--disable-redaction'])
+    result = runner.invoke(
+        app, ["run", "--config", http_headers_config_filename, "--disable-redaction"]
+    )
     assert result.exit_code == 0, result.stderr
     data = result.stdout
     response = json.loads(data)
