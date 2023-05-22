@@ -58,22 +58,25 @@ def run(
         file_okay=True,
         help="Config file with netcheck assertions",
     ),
-    output: Optional[NetcheckOutputType] = typer.Option(
-        NetcheckOutputType.json, "-o", "--output", help="Output format"
-    ),
+    # output: Optional[NetcheckOutputType] = typer.Option(
+    #     NetcheckOutputType.json, "-o", "--output", help="Output format"
+    # ),
     verbose: bool = typer.Option(False, "-v", "--verbose"),
 ):
-    """Carry out all network assertions in given config file."""
-    if verbose:
-        err_console.print(f"Loading assertions from {config}")
+    """
+    Carry out all network assertions in given config file.
+
+    """
     with config.open() as f:
         data = json.load(f)
 
     # TODO: Validate the config format once stable
     overall_results = run_from_config(data, err_console, verbose)
 
-    if verbose:
-        err_console.print(f"Output type {output}")
+    if not verbose:
+        # Unless we are in verbose mode we strip the context from
+        # the output
+        overall_results.pop("context", None)
 
     print_json(data=overall_results)
 
