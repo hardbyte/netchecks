@@ -22,23 +22,21 @@ def test_operator(k8s_namespace, test_file_path):
         time.sleep(5.0)  # allow operator to react (pull images, retry once)
 
 
-    assert runner.exit_code == 0
-    assert runner.exception is None
-    list_assertions_response = subprocess.run(
-        f"kubectl get networkassertions -n {k8s_namespace}", shell=True, check=True, capture_output=True
-    )
-    jobs_response = subprocess.run(
-        f"kubectl get jobs -n {k8s_namespace}", shell=True, check=True, capture_output=True
-    )
-    assert b'http-should-work' in list_assertions_response.stdout
-    assert b'http-should-work' in jobs_response.stdout
+        list_assertions_response = subprocess.run(
+            f"kubectl get networkassertions -n {k8s_namespace}", shell=True, check=True, capture_output=True
+        )
+        jobs_response = subprocess.run(
+            f"kubectl get jobs -n {k8s_namespace}", shell=True, check=True, capture_output=True
+        )
+        assert b'http-should-work' in list_assertions_response.stdout
+        assert b'http-should-work' in jobs_response.stdout
 
-    assert "Pod monitoring complete" in runner.stdout
-    assert "http-should-work" in runner.stdout
+        assert "Pod monitoring complete" in runner.stdout
+        assert "http-should-work" in runner.stdout
 
-    time.sleep(3)
-    # Now delete the networkassertion and ensure the other resources get deleted
-    with KopfRunner(["run", "-A", "netchecks_operator/main.py"]) as runner:
+        time.sleep(3)
+        # Now delete the networkassertion and ensure the other resources get deleted
+
         subprocess.run(
             f"kubectl delete -f {test_file_path('http-job.yaml')} -n {k8s_namespace} --timeout=30s",
             shell=True,
@@ -53,6 +51,8 @@ def test_operator(k8s_namespace, test_file_path):
             shell=True,
         )
 
+    assert runner.exit_code == 0
+    assert runner.exception is None
     assert (
         f"networkassertion delete handler called name=http-should-work namespace={k8s_namespace}"
         in runner.stdout

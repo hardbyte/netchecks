@@ -290,11 +290,23 @@ def test_run_test_with_external_dir_context(data_dir_path):
 
 
 def test_run_http_config_with_headers(http_headers_config_filename):
-    result = runner.invoke(app, ["run", "--config", http_headers_config_filename])
+    result = runner.invoke(app, ["run", "--config", http_headers_config_filename, '--disable-redaction'])
     assert result.exit_code == 0, result.stderr
     data = result.stdout
     response = json.loads(data)
 
     test_result = response["assertions"][0]["results"][0]
     assert test_result["spec"]["headers"]["X-Test-Header"] == "value"
+    assert "X-Test-Header" in json.loads(test_result["data"]["body"])["headers"]
+
+
+def test_run_http_config_with_headers_redacted_by_default(http_headers_config_filename):
+    result = runner.invoke(app, ["run", "--config", http_headers_config_filename])
+    assert result.exit_code == 0, result.stderr
+    data = result.stdout
+    response = json.loads(data)
+
+    test_result = response["assertions"][0]["results"][0]
+    assert test_result["spec"]["headers"] == "REDACTED"
+    # Note that the "sensitive" header could be present in the response body:
     assert "X-Test-Header" in json.loads(test_result["data"]["body"])["headers"]

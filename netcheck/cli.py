@@ -128,6 +128,7 @@ def http(
         err_console,
         validation_rule,
         verbose=verbose,
+        include_context=True,
     )
 
     output_result(result, should_fail, verbose)
@@ -183,6 +184,7 @@ def dns(
         err_console,
         validation_rule=validation_rule,
         verbose=verbose,
+        include_context=True,
     )
 
     output_result(result, should_fail, verbose)
