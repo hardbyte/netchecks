@@ -16,20 +16,18 @@ const navigation = [
         title: 'Introduction',
         links: [
             {title: 'Getting started', href: '/'},
-
-            {title: 'Core concepts', href: '/docs/core-concepts'}
+            {title: 'Validating HTTP Controls', href: '/docs/http'},
+            {title: 'Validating DNS Controls', href: '/docs/dns'},
         ],
     },
     {
         title: 'User Guide',
         links: [
             {title: 'Installation', href: '/docs/installation'},
-            {title: 'Validating HTTP Controls', href: '/docs/http'},
-            {title: 'Validating DNS Controls', href: '/docs/dns'},
+
             {title: 'Custom Validation Rules', href: '/docs/custom-validation-rules'},
             {title: 'External Data', href: '/docs/external-data'},
             {title: 'Alerting', href: '/docs/alerting'},
-
         ],
     },
     // {
@@ -42,7 +40,6 @@ const navigation = [
     {
         title: 'Contributor Guide',
         links: [
-
             {title: 'How to contribute', href: '/docs/how-to-contribute'},
             {title: 'Development', href: '/docs/development',},
             {title: 'Architecture guide', href: '/docs/architecture-guide'},
@@ -53,14 +50,15 @@ const navigation = [
             {title: 'Writing plugins', href: '/docs/writing-plugins'},
         ],
     },
-    // {
-    //   title: 'API Reference',
-    //   links: [
-    //     { title: 'http', href: '/docs/http' },
-    //     { title: 'dns', href: '/docs/dns' },
-    //     { title: 'ping', href: '/docs/ping' },
-    //   ],
-    // },
+    {
+      title: 'Reference',
+      links: [
+        {title: 'Core concepts', href: '/docs/core-concepts'}
+        // { title: 'http', href: '/docs/http' },
+        // { title: 'dns', href: '/docs/dns' },
+        // { title: 'ping', href: '/docs/ping' },
+      ],
+    },
 
 ]
 

@@ -11,8 +11,7 @@ The project roadmap is still being defined. The following is a list of features 
 
 ## Open Source
 
-- Document the custom validation rules for probes (e.g. check that the response body contains a specific string)
-- Support for configuring probes using secrets (e.g. injecting API keys into http requests)
+
 - NetworkAssertion CRD validation and documentation.
 - Tracing support for better debugging.
 - Plugin architecture for supporting custom test types.
