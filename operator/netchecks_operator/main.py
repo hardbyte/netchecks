@@ -91,6 +91,8 @@ def creation(body, spec, name, namespace, **kwargs):
             name, rules, context_definitions, namespace, logger
         )
 
+        disable_redaction = spec.get("disableRedaction", False)
+
         # Create a job spec
         job_spec = create_job_spec(
             name,
@@ -98,6 +100,7 @@ def creation(body, spec, name, namespace, **kwargs):
             context_definitions,
             settings,
             template_overides=job_template,
+            disable_redaction=disable_redaction,
         )
         logger.debug("Job spec created")
         job = create_job_object(name, job_spec)
@@ -579,6 +582,7 @@ def create_job_spec(
     context_definitions: List,
     settings: Config,
     template_overides: dict = None,
+    disable_redaction: bool = False,
 ):
     volumes = [
         V1Volume(
@@ -640,8 +644,8 @@ def create_job_spec(
         "/netcheck/config.json",
     ]
 
-    if settings.probe.verbose:
-        command.append("--verbose")
+    if disable_redaction:
+        command.append("--disable-redaction")
 
     logger.info("Probe command", command=command)
     container = client.V1Container(
