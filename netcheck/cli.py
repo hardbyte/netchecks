@@ -62,6 +62,8 @@ def run(
     #     NetcheckOutputType.json, "-o", "--output", help="Output format"
     # ),
     verbose: bool = typer.Option(False, "-v", "--verbose"),
+    # -- include-context flag
+    include_context: bool = typer.Option(False, "--include-context"),
 ):
     """
     Carry out all network assertions in given config file.
@@ -71,7 +73,7 @@ def run(
         data = json.load(f)
 
     # TODO: Validate the config format once stable
-    overall_results = run_from_config(data, err_console, verbose)
+    overall_results = run_from_config(data, err_console, verbose, include_context)
 
     if not verbose:
         # Unless we are in verbose mode we strip the context from

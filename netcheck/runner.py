@@ -15,9 +15,10 @@ from netcheck.context import replace_template, LazyFileLoadingDict
 logger = logging.getLogger("netcheck.runner")
 
 
-def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
+def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False, include_context: bool = False):
     if verbose:
         err_console.print(f"Loaded {len(netchecks_config['assertions'])} assertions")
+
     overall_results = {
         "type": "netcheck-output",
         "outputVersion": OUTPUT_JSON_VERSION,
@@ -64,12 +65,15 @@ def run_from_config(netchecks_config: Dict, err_console, verbose: bool = False):
                 validation_rule=rule.get("validation"),
                 validation_context=context,
                 verbose=verbose,
+                include_context=include_context
+
             )
             assertion_results.append(result)
 
         overall_results["assertions"].append(
             {"name": assertion["name"], "results": assertion_results}
         )
+
     return overall_results
 
 
@@ -80,6 +84,7 @@ def check_individual_assertion(
     validation_rule=None,
     validation_context=None,
     verbose=False,
+    include_context=False,
 ):
     match test_type:
         case "dns":
@@ -124,6 +129,20 @@ def check_individual_assertion(
         test_detail.update(validation_context)
 
     passed = evaluate_cel_with_context(test_detail, validation_rule)
+
+    # Remove the context from the `test_detail` object
+    if not include_context and validation_context is not None:
+        for key in validation_context:
+            if key in test_detail:
+                del test_detail[key]
+
+    # Strip out known sensitive fields
+    if not include_context:
+        for field in {'headers'}:
+            if field in test_detail['spec']:
+                test_detail['spec'][field] = "REDACTED"
+            if field in test_detail['data']:
+                test_detail['data'][field] = "REDACTED"
 
     # Add the pass/status to the individual result. We also support an "expected": "fail" option
     # which will cause the test to fail if the validation passes.
