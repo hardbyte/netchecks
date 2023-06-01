@@ -9,10 +9,8 @@ When an assertion referencing a ConfigMap or Secret is evaluated, the data is mo
 Pod carrying out the assertion at the time the test runs. Should the Secret or ConfigMap be
 updated, subsequent probes will pick up the latest data at that point.
 
-This data is made available to the probe in the form of a context.
-
-In order to reference external data in NetworkAssertion rules, a context is required. The context 
-data can then be referenced within a CEL template.
+This data is made available to the probe in the form of a context. The context data can then be
+referenced within a CEL template.
 
 ```
 {{ <context-name>.<key-name> }}
@@ -187,6 +185,9 @@ spec:
 
 Data to be used in multiple rules can be declared as an **inline context**, and 
 can reference already defined contexts using the `{{ }}` template syntax. 
+
+This can be useful to pre-process external data in one place that 
+might be reused in multiple NetworkAssertion rules.
 
 For example:
 
