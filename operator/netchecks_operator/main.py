@@ -602,6 +602,7 @@ def create_job_spec(
             volumes.append(
                 V1Volume(
                     name=context_name,
+                    # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ConfigMapVolumeSource.md
                     config_map=V1ConfigMapVolumeSource(
                         **context_definition["configMap"]
                     ),
