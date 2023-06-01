@@ -5,9 +5,11 @@ description: Access external data from your Network Assertions
 
 Use data from ConfigMaps and Secrets in your Network Assertions. 
 
-When an assertion referencing a ConfigMap or Secret is evaluated, the data is checked at the time
-the test runs - ensuring that references to the ConfigMap are always dynamic. Should the Secret 
-or ConfigMap be updated, subsequent probes will pick up the latest data at that point.
+When an assertion referencing a ConfigMap or Secret is evaluated, the data is mounted into the
+Pod carrying out the assertion at the time the test runs. Should the Secret or ConfigMap be
+updated, subsequent probes will pick up the latest data at that point.
+
+This data is made available to the probe in the form of a context.
 
 In order to reference external data in NetworkAssertion rules, a context is required. The context 
 data can then be referenced within a CEL template.
@@ -80,7 +82,7 @@ A [Secret](https://kubernetes.io/docs/concepts/configuration/secret/) in Kuberne
 that contains sensitive data such as passwords, tokens, or other potentially sensitive 
 configuration data.
 
-Let's repeat the same example with an API_TOKEN this time stored - more appropriately - as a 
+Let's repeat the same example with an `API_TOKEN` this time stored - more appropriately - as a 
 secret:
 
 ```yaml
@@ -106,6 +108,11 @@ spec:
     - name: somecontext
       secret:
         name: some-secret
+        # [Optionally] Limit which keys from the Secret (or ConfigMap) 
+        # get created as files.
+        # items:
+        #   - key: API_TOKEN
+        #     path: API_TOKEN
   rules:
     - name: pie-dev-headers-and-validation
       type: http
@@ -208,7 +215,6 @@ spec:
       validate:
         message: Http request with header to pie.dev service should reply with header value
         pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == derivedcontext.key"
-
 ```
 
 ## Redaction
@@ -217,3 +223,35 @@ By default, contexts are not included in the PolicyReport. This is to because th
 sensitive information such as passwords or tokens. You can disable this
 redaction for debugging purposes by setting `disableRedaction: true` in the `spec` section of the NetworkAssertion.
 
+
+Note that limiting which keys are projected from the Secret or ConfigMap is also a good way to
+limit the amount of sensitive data that is exposed to the Pod carrying out the test.
+
+
+```yaml
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: redaction-disabled
+spec:
+  disableRedaction: true
+  context:
+    - name: somecontext
+      secret:
+        name: some-secret
+        # [Optionally] Limit which keys from the Secret or ConfigMap 
+        # get created as files
+        items:
+          - key: API_TOKEN
+            path: API_TOKEN
+  rules:
+    - name: pie-dev-headers-and-validation
+      type: http
+      url: https://pie.dev/headers
+      headers:
+        "X-Netcheck-Header": "{{ somecontext.API_TOKEN }}"
+      expected: pass
+      validate:
+        message: Http request with header to pie.dev service should reply with header value
+        pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == somecontext.API_TOKEN"
+```
