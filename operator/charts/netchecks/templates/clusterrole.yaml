@@ -38,14 +38,14 @@ rules:
     verbs: [list, get, patch, create, update, watch]
 
   # Application: other resources we produce and manipulate
-  # The operator can create CronJobs, Jobs, and ConfigMaps but we don't delete them.
+  # The operator can create and delete CronJobs & Jobs
   - apiGroups: [batch, extensions]
     resources: [jobs, cronjobs]
     verbs: [create, delete]
   # We directly create config maps. At some point we may need to patch them.
   - apiGroups: [""]
     resources: [configmaps]
-    verbs: [create]
+    verbs: [create, delete]
 
   # The can be restricted to our operator namespace:
   - apiGroups: [""]
