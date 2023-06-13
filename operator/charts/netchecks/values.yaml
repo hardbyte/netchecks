@@ -10,8 +10,11 @@ installCRDs: true
 networkPolicy:
   enabled: true
 
-policyreporter:
+policy-reporter:
   enabled: false
+  # enable policy-report-ui
+  ui:
+    enabled: false
 
 operator:
   image:
