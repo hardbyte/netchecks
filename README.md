@@ -17,7 +17,7 @@
 [![PyPI](https://img.shields.io/pypi/v/netcheck.svg?style=flat-square&logo=pypi)](https://pypi.org/project/netcheck/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck?style=flat-square&logo=python)
 [![Coverage Status](https://img.shields.io/coverallsCoverage/github/hardbyte/netchecks?branch=main&style=flat-square&logo=coveralls)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
-[![CI status](https://img.shields.io/github/actions/workflow/status/hardbyte/netchecks/ci.yaml?branch=main&style=flat-square)](https://github.com/hardbyte/netchecks/actions?query=branch%3Amain)
+[![CI status](https://img.shields.io/github/actions/workflow/status/hardbyte/netchecks/ci.yaml?branch=main&style=flat-square&logo=github)](https://github.com/hardbyte/netchecks/actions?query=branch%3Amain)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
 [![PyPI Downloads](https://static.pepy.tech/badge/netcheck)](https://pypi.org/project/netcheck?style=flat-square)
 [![License](https://img.shields.io/github/license/hardbyte/netchecks?style=flat-square)](/LICENSE)
