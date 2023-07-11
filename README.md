@@ -1,4 +1,8 @@
+<div align="center">
+
 # Netchecks
+
+</div>
 
 <p align="center">
   <img alt="Netchecks Logo" src="https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png" width="150" />
@@ -6,12 +10,17 @@
 
 <div align="center">
 
-[![PyPI](https://img.shields.io/pypi/v/netcheck.svg)](https://pypi.org/project/netcheck/)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck)
-[![ArtifactHub - Netchecks](https://img.shields.io/badge/ArtifactHub-Netchecks-informational)](https://artifacthub.io/packages/helm/netchecks/netchecks)
-[![Coverage Status](https://coveralls.io/repos/github/hardbyte/netcheck/badge.svg?branch=main)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
-[![CI status](https://github.com/hardbyte/netchecks/workflows/CI/badge.svg?branch=main)](https://github.com/hardbyte/netchecks/actions?query=branch%3Amain)
-[![PyPI Downloads](https://static.pepy.tech/badge/netcheck)](https://pypi.org/project/netcheck/)
+![Kubernetes](https://img.shields.io/badge/k8s-%23326ce5.svg?style=flat-square&logo=kubernetes&logoColor=white)
+[![HELM](https://img.shields.io/badge/helm-%23326ce5.svg?style=flat-square&logo=helm&logoColor=white)](https://artifacthub.io/packages/helm/netchecks/netchecks)
+[![ArtifactHub - Netchecks](https://img.shields.io/badge/ArtifactHub-Netchecks-informational?style=flat-square&logo=artifacthub)](https://artifacthub.io/packages/helm/netchecks/netchecks)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fdocs.netchecks.io%2F&style=flat-square&label=docs)](https://docs.netchecks.io/)
+[![PyPI](https://img.shields.io/pypi/v/netcheck.svg?style=flat-square&logo=pypi)](https://pypi.org/project/netcheck/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck?style=flat-square&logo=python)
+[![Coverage Status](https://img.shields.io/coverallsCoverage/github/hardbyte/netchecks?branch=main&style=flat-square&logo=coveralls)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
+[![CI status](https://img.shields.io/github/actions/workflow/status/hardbyte/netchecks/ci.yaml?branch=main&style=flat-square)](https://github.com/hardbyte/netchecks/actions?query=branch%3Amain)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
+[![PyPI Downloads](https://static.pepy.tech/badge/netcheck)](https://pypi.org/project/netcheck?style=flat-square)
+[![License](https://img.shields.io/github/license/hardbyte/netchecks?style=flat-square)](/LICENSE)
 
 </div>
 
@@ -19,7 +28,7 @@
 
 There are two main components:
 - **Netchecks Operator** - Kubernetes Operator that runs network checks and reports results as `PolicyReport` resources. See the [operator README](https://github.com/hardbyte/netchecks/blob/main/operator/README.md) for more details and the full documentation can be found at [https://docs.netchecks.io](https://docs.netchecks.io)
-- **Netcheck CLI and Python Library** - Command line tool for running network checks and asserting that they are as expected. Keep reading for the quickstart.
+- **Netcheck CLI and Python Library** - Command line tool for running network checks and asserting that they are as expected. Keep reading for the quickstart guide.
 
 
 # Netcheck Command Line Tool
@@ -241,7 +250,7 @@ Kubernetes operator to inject data.
 
 ## Development
 
-Update version in pyproject.toml, push to `main` and create a release on GitHub. Pypi release will be carried
+Update version in `pyproject.toml`, push to `main` and create a release on GitHub. Pypi release will be carried
 out by GitHub actions. 
 
 Install dev dependencies with Poetry:
