@@ -13,6 +13,7 @@
 ![Kubernetes](https://img.shields.io/badge/k8s-%23326ce5.svg?style=flat-square&logo=kubernetes&logoColor=white)
 [![HELM](https://img.shields.io/badge/helm-%23326ce5.svg?style=flat-square&logo=helm&logoColor=white)](https://artifacthub.io/packages/helm/netchecks/netchecks)
 [![ArtifactHub - Netchecks](https://img.shields.io/badge/ArtifactHub-Netchecks-informational?style=flat-square&logo=artifacthub)](https://artifacthub.io/packages/helm/netchecks/netchecks)
+[![GitHub release (with filter)](https://img.shields.io/github/v/release/hardbyte/netchecks?style=flat-square&logo=github)](https://github.com/hardbyte/netchecks/releases/latest)
 [![PyPI](https://img.shields.io/pypi/v/netcheck.svg?style=flat-square&logo=pypi)](https://pypi.org/project/netcheck/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck?style=flat-square&logo=python)
 [![Coverage Status](https://img.shields.io/coverallsCoverage/github/hardbyte/netchecks?branch=main&style=flat-square&logo=coveralls)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
