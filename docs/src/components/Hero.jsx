@@ -29,7 +29,7 @@ spec:
       validate:
         message: Http request to Kubernetes API should succeed.`
   },
-  { name: 'dns-assertion.yaml', isActive: false, codeLanguage: 'yaml', code: `apiVersion: netchecks.io/v1
+  { name: 'dns-assertion.yaml', isActive: true, codeLanguage: 'yaml', code: `apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
   name: dns-should-work
@@ -137,7 +137,7 @@ export function Hero() {
                         <div
                           className={clsx(
                             'flex items-center rounded-full px-2.5',
-                            tab.isActive && 'bg-slate-800'
+                            tab.isActive && 'bg-slate-800 cursor-pointer'
                           )}
                           onClick={() => setCurrentTab(tab)}
                         >
