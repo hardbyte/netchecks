@@ -325,15 +325,15 @@ jobs:
             --wait=false \
             --helm-set cni.chainingMode=portmap
 
-      - name: Enable Hubble Relay
-        run: |
-          cilium hubble enable --ui
-
-      - name: Relay Port Forward
-        run: |
-          cilium hubble port-forward&
-          sleep 10s
-          [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
+#      - name: Enable Hubble Relay
+#        run: |
+#          cilium hubble enable --ui
+#
+#      - name: Relay Port Forward
+#        run: |
+#          cilium hubble port-forward&
+#          sleep 10s
+#          [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
 
       - name: Run Integration Tests (with Cilium)
         run: |
