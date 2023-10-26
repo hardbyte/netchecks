@@ -316,9 +316,6 @@ jobs:
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
           poetry run pytest
         timeout-minutes: 10
-      - name: Debug resolve
-        run: |
-          cat /etc/resolv.conf
 
       # Install Cilium with HostPort support for extended connectivity test.
       - name: Install Cilium
@@ -326,7 +323,6 @@ jobs:
           cilium install \
             --version=${{ env.cilium_version }} \
             --wait=false \
-            --config monitor-aggregation=none \
             --helm-set cni.chainingMode=portmap
 
       - name: Enable Hubble Relay
