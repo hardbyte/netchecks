@@ -325,6 +325,10 @@ jobs:
             --wait=true \
             --helm-set cni.chainingMode=portmap
 
+      - name: Debug Cilium Resources
+        run: |
+          kubectl api-resources | grep cilium
+
 #      - name: Enable Hubble Relay
 #        run: |
 #          cilium hubble enable --ui
