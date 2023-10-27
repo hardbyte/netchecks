@@ -279,12 +279,29 @@ jobs:
           curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${{ env.cilium_cli_version }}/cilium-linux-amd64.tar.gz{,.sha256sum}
           sha256sum --check cilium-linux-amd64.tar.gz.sha256sum
           sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
+          cilium version --client
+
+      - name: Fetch kind cilium config
+        run: |
+          curl -LO https://raw.githubusercontent.com/cilium/cilium/1.14.3/Documentation/installation/kind-config.yaml
 
       - name: Create kind cluster
         uses: helm/kind-action@v1.8.0
         with:
           version: ${{ env.KIND_VERSION }}
           cluster_name: kind
+          config: kind-config.yaml
+
+      - name: Install Cilium
+        run: |
+          cilium install \
+            --version=${{ env.cilium_version }} \
+            --wait=true \
+            --helm-set cni.chainingMode=portmap
+
+      - name: Debug Cilium Resources
+        run: |
+          kubectl api-resources --api-group='cilium.io'
 
       - name: Get Cluster Info
         run: |
@@ -316,18 +333,6 @@ jobs:
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
           poetry run pytest
         timeout-minutes: 10
-
-      # Install Cilium with HostPort support for extended connectivity test.
-      - name: Install Cilium
-        run: |
-          cilium install \
-            --version=${{ env.cilium_version }} \
-            --wait=true \
-            --helm-set cni.chainingMode=portmap
-
-      - name: Debug Cilium Resources
-        run: |
-          kubectl api-resources | grep cilium
 
 #      - name: Enable Hubble Relay
 #        run: |
