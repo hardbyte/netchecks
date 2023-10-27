@@ -236,7 +236,7 @@ jobs:
       KIND_CONFIG: .github/kind-config.yaml
       TIMEOUT: 2m
       LOG_TIME: 30m
-      cilium_version: v1.14.3
+      cilium_version: 1.14.3
       cilium_cli_version: v0.15.11
       kubectl_version: v1.25.2
       PROBE_IMAGE_NAME: netchecks
@@ -294,14 +294,11 @@ jobs:
 
       - name: Install Cilium
         run: |
-          cilium install \
-            --version=${{ env.cilium_version }} \
-            --wait=true \
-            --helm-set cni.chainingMode=portmap
+          cilium install --version ${{ env.cilium_version }} 
 
-      - name: Debug Cilium Resources
+      - name: Wait for Cilium Operator
         run: |
-          kubectl api-resources --api-group='cilium.io'
+          cilium status --wait
 
       - name: Get Cluster Info
         run: |
