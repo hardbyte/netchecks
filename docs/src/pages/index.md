@@ -6,20 +6,15 @@ description: A cloud native tool to dynamically declare a set of statements abou
 
 Learn how to get Netchecks set up in your own Kubernetes cluster. {% .lead %}
 
-{% quick-links %}
-
-{% quick-link title="Installation" icon="installation" href="/docs/installation" description="Step-by-step guides to setting up your system and installing the library." /%}
-
-{% quick-link title="Architecture guide" icon="presets" href="/" description="Learn how the internals work and contribute." /%}
-
-{% quick-link title="API reference" icon="theming" href="/" description="Learn to easily customize and modify your app's visual design to fit your brand." /%}
-
-{% quick-link title="Examples" icon="plugins" href="/" description="See how others are using the library in their projects." /%}
-
-{% /quick-links %}
-
-
 ---
+## Why does this exist?
+
+Like all software, security controls such as firewalls and network policies need validation to ensure they are working as intended. This is often done manually 
+as part of a one-off cyber-security review. Best practice is to configure automated checks that notify team members when a security control is not working as expected. 
+These can be as simple as a curl command in a cron job that tries to access a service that should be blocked and alerts if it succeeds. With Netchecks, you
+declare these checks declaratively and have them run automatically on a schedule, Netchecks will create PolicyReports that can be used for audit purposes, to trigger
+actions, alerts and notifications.
+
 ## Quick start
 
 The Netchecks operator is a Kubernetes operator that helps users verify network policies and connectivity within their clusters. By creating NetworkAssertions, users can automate and schedule network tests, making it easier to ensure the network is operating as expected.
@@ -86,3 +81,14 @@ The `PolicyReport` contains information about the test run and the results of th
 {% /callout %}
 
 
+{% quick-links %}
+
+{% quick-link title="Installation" icon="installation" href="/docs/installation" description="Step-by-step guides to setting up your system and installing the library." /%}
+
+{% quick-link title="Architecture guide" icon="presets" href="/" description="Learn how the internals work and contribute." /%}
+
+{% quick-link title="API reference" icon="theming" href="/" description="Learn to easily customize and modify your app's visual design to fit your brand." /%}
+
+{% quick-link title="Examples" icon="plugins" href="/" description="See how others are using the library in their projects." /%}
+
+{% /quick-links %}
