@@ -31,4 +31,4 @@ RUN poetry install --no-root --no-cache
 
 COPY --chown=${USERNAME}:${USER_GID} ./netchecks_operator/ /app/netchecks_operator/
 RUN poetry install --no-cache
-CMD ["poetry", "run", "kopf", "run", "/app/netchecks_operator/main.py", "--liveness=http://0.0.0.0:8080/healthz"]
+CMD ["poetry", "run", "kopf", "run", "/app/netchecks_operator/main.py", "--all-namespaces", "--liveness=http://0.0.0.0:8080/healthz"]
