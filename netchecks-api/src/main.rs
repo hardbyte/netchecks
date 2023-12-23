@@ -2,7 +2,6 @@
 #[macro_use] extern crate rocket;
 
 
-
 use rocket::fs::NamedFile;
 
 use k8s_openapi::api::batch::v1::Job;
@@ -18,6 +17,7 @@ use garde::Validate;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
+use kube::api::ListParams;
 use schemars::JsonSchema;
 use crate::network_assertion_rule::{Context, NetworkAssertionRule};
 
@@ -65,14 +65,23 @@ async fn list_network_assertions() -> Option<String> {
 
     let client = Client::try_default().await.ok()?;
 
-    let crds: Api<CustomResourceDefinition> = Api::all(client.clone());
-
     // Manage the NetworkAssertion CR
     let nas: Api<NetworkAssertion> = Api::namespaced(client.clone(), "netchecks");
-    let first_network_assertion = nas.get("aws-dns-should-work").await.ok()?;
+
+    let network_assertion_list = nas.list(
+        &ListParams {
+            //label_selector: ""
+        }
+    )?; // Require result to succeed
+
+    let names = network_assertion_list.map(|nas: NetworkAssertion | nas.metadata.name);
+    // join the names vector of Optional String
+    let joined_names = names.filter_map(|x| x).collect::<Vec<String>>().join(", ");
+
+    // let first_network_assertion = nas.get("aws-dns-should-work").await.ok()?;
 
 
-    Some(format!("Hello {:?}", first_network_assertion.metadata.name))
+    Some(format!("Installed NetworkAssertions {:?}", joined_names))
 }
 
 #[launch]
