@@ -506,7 +506,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
         logger.info("PolicyReport created")
 
     # Create an event on the policy report
-    logger.info("Policy Report Metadata", meta=policy_report['metadata'])
+    logger.info("Policy Report Metadata", meta=policy_report["metadata"])
     kopf.event(
         objs=policy_report,
         type="Normal",
