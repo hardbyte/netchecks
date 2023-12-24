@@ -373,7 +373,7 @@ def summarize_results(probe_results):
             # be one of: pass, fail, warn, error, skip
             summary[test_result.get("status", "skip")] += 1
 
-    return summary
+    return dict(summary)
 
 
 def convert_results_for_policy_report(probe_results, namespace, pod_name):
@@ -435,8 +435,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
 
     logger = get_logger(name=assertion_name, namespace=namespace, pod_name=pod_name)
     logger.info("Upsert PolicyReport")
-    # get the resource and print out data
-    # If it doesn't exist, create it
+    # get the resource, if it doesn't exist, create it
     policy_report_label_selector = f"app.kubernetes.io/instance={assertion_name}"
     policy_reports = crd_api.list_namespaced_custom_object(
         group="wgpolicyk8s.io",
@@ -469,7 +468,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     }
 
     if len(policy_reports["items"]) > 0:
-        logger.info("Existing policy reports found", reports=policy_reports)
+        logger.debug("Existing policy reports found", reports=policy_reports)
         policy_report = crd_api.get_namespaced_custom_object(
             group="wgpolicyk8s.io",
             version="v1alpha2",
@@ -477,7 +476,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
             plural="policyreports",
             name=assertion_name,
         )
-        logger.info("Existing policy report found", report=policy_report)
+        logger.debug("Existing policy report found", report=policy_report)
         crd_api.patch_namespaced_custom_object(
             group="wgpolicyk8s.io",
             version="v1alpha2",
@@ -506,12 +505,21 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
 
         logger.info("PolicyReport created")
 
+    # Create an event on the policy report
+    logger.info("Policy Report Metadata", meta=policy_report["metadata"])
+    kopf.event(
+        objs=policy_report,
+        type="Normal",
+        reason="updated",
+        message=f"Updated after running Netchecks Probe for Network Assertion '{assertion_name}'.\nSummary:\n{report_summary}",
+    )
+
     return policy_report
 
 
 def process_probe_output(pod_log: str, network_assertion_name, namespace, pod_name):
     """
-    Extract JSON from pod log
+    Extract JSON from pod log and update the PolicyReport
     """
     try:
         probe_results = json.loads(pod_log)
