@@ -15,6 +15,13 @@ jobs:
           dockerfile: Dockerfile
           recursive: true
       - uses: psf/black@stable
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: flake8 Lint
+        uses: py-actions/flake8@v2
+        with:
+          ignore: "E501" # Ignore long lines warnings
 
   check-versions:
     runs-on: ubuntu-latest
