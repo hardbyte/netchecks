@@ -8,7 +8,9 @@ ENV USERNAME=netchecks \
     POETRY_VERSION=1.4.1 \
     POETRY_HOME=/home/netchecks/bin/poetry \
     POETRY_VENV=/home/netchecks/bin/poetry-venv \
-    POETRY_CACHE_DIR=/home/netchecks/bin/.cache
+    POETRY_CACHE_DIR=/home/netchecks/bin/.cache \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 RUN groupadd --gid ${USER_GID} ${USERNAME} \
     && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME}
