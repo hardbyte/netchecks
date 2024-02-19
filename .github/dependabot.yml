@@ -1,0 +1,74 @@
+version: 2
+updates:
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Pacific/Auckland"
+    commit-message:
+    ignore:
+      - dependency-name: "python"
+        update-types:
+          ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    labels:
+      - "docker"
+      - "dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    commit-message:
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Pacific/Auckland"
+    labels:
+      - "ci/cd"
+      - "dependencies"
+
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    commit-message:
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Pacific/Auckland"
+    groups:
+      npm-packages:
+        patterns:
+          - "*"
+    labels:
+      - "docs"
+      - "dependencies"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    commit-message:
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Pacific/Auckland"
+    groups:
+      python-packages:
+        patterns:
+          - "*"
+    labels:
+      - "cli"
+      - "dependencies"
+
+  - package-ecosystem: "pip"
+    directory: "/operator"
+    commit-message:
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Pacific/Auckland"
+    groups:
+      python-packages:
+        patterns:
+          - "*"
+    labels:
+      - "operator"
+      - "dependencies"
