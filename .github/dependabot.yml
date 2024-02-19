@@ -6,7 +6,7 @@ updates:
       interval: "daily"
       time: "09:00"
       timezone: "Pacific/Auckland"
-    commit-message:
+    open-pull-requests-limit: 1
     ignore:
       - dependency-name: "python"
         update-types:
@@ -19,7 +19,7 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
-    commit-message:
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
       time: "09:00"
@@ -30,7 +30,7 @@ updates:
 
   - package-ecosystem: "npm"
     directory: "/docs"
-    commit-message:
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
       time: "09:00"
@@ -45,7 +45,7 @@ updates:
 
   - package-ecosystem: "pip"
     directory: "/"
-    commit-message:
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
       time: "09:00"
@@ -60,7 +60,7 @@ updates:
 
   - package-ecosystem: "pip"
     directory: "/operator"
-    commit-message:
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
       time: "09:00"
