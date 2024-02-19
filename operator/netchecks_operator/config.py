@@ -45,7 +45,9 @@ class ProbeConfig(BaseModel):
     podAnnotations: dict[str, str] = {}
     image: ImageConfig = ImageConfig()
     resources: dict[str, dict] = {}
-    verbose: bool = False  # Don't enable until the operator has been modified to split stdout and stderr
+    verbose: bool = (
+        False  # Don't enable until the operator has been modified to split stdout and stderr
+    )
 
 
 class Config(BaseSettings):
