@@ -41,9 +41,7 @@ def show_version(value: bool = True):
 @app.callback()
 def common(
     ctx: typer.Context,
-    version: bool = typer.Option(
-        None, "--version", callback=show_version, is_eager=True
-    ),
+    version: bool = typer.Option(None, "--version", callback=show_version, is_eager=True),
 ):
     pass
 
@@ -84,9 +82,7 @@ def run(
 
 @app.command()
 def http(
-    url: str = typer.Option(
-        "https://github.com/status", help="URL to request", rich_help_panel="http test"
-    ),
+    url: str = typer.Option("https://github.com/status", help="URL to request", rich_help_panel="http test"),
     method: NetcheckHttpMethod = typer.Option(
         NetcheckHttpMethod.get,
         help="HTTP method",
@@ -95,9 +91,7 @@ def http(
     ),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Timeout in seconds"),
     should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
-    validation_rule: str = typer.Option(
-        None, "--validation-rule", help="Validation rule in CEL to apply to result"
-    ),
+    validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
     headers: Optional[List[str]] = typer.Option(
         None, "-h", "--header", help="Headers to send with request. Format: 'key:value'"
     ),
@@ -149,13 +143,9 @@ def dns(
         help="DNS server to use for dns tests.",
         rich_help_panel="dns test",
     ),
-    host: str = typer.Option(
-        "github.com", help="Host to search for", rich_help_panel="dns test"
-    ),
+    host: str = typer.Option("github.com", help="Host to search for", rich_help_panel="dns test"),
     should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
-    validation_rule: str = typer.Option(
-        None, "--validation-rule", help="Validation rule in CEL to apply to result"
-    ),
+    validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Timeout in seconds"),
     verbose: bool = typer.Option(False, "-v", "--verbose"),
 ):
@@ -201,9 +191,7 @@ def notify_for_unexpected_test_result(failed, should_fail, verbose=False):
             if not should_fail:
                 err_console.print("[green]✔ Passed (as expected)[/]")
             else:
-                err_console.print(
-                    "[bold red]:bomb: The network test worked but was expected to fail![/]"
-                )
+                err_console.print("[bold red]:bomb: The network test worked but was expected to fail![/]")
 
 
 if __name__ == "__main__":

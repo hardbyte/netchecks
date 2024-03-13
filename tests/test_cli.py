@@ -94,9 +94,7 @@ def test_default_http_check_should_fail():
 
 
 def test_http_check_with_timout():
-    result = runner.invoke(
-        app, ["http", "--timeout", "2.1", "--url", "https://pie.dev/status/200"]
-    )
+    result = runner.invoke(app, ["http", "--timeout", "2.1", "--url", "https://pie.dev/status/200"])
     assert result.exit_code == 0
 
     data = result.stdout
@@ -171,18 +169,14 @@ def test_run_invalid_config_unknown_check(invalid_config_filename):
 
 
 def test_run_valid_config_expected_fail_check(valid_config_expected_fail_filename):
-    result = runner.invoke(
-        app, ["run", "--config", valid_config_expected_fail_filename]
-    )
+    result = runner.invoke(app, ["run", "--config", valid_config_expected_fail_filename])
     assert result.exit_code == 0
     data = result.stdout
     json.loads(data)
 
 
 def test_run_valid_config_unexpected_failures(valid_config_unexpected_fail_filename):
-    result = runner.invoke(
-        app, ["run", "--config", valid_config_unexpected_fail_filename]
-    )
+    result = runner.invoke(app, ["run", "--config", valid_config_unexpected_fail_filename])
     assert result.exit_code == 0
     data = result.stdout
     json.loads(data)
@@ -199,9 +193,7 @@ def test_run_valid_dns_config(dns_config_filename):
 
 
 def test_run_valid_dns_custom_config(dns_config_with_validation_filename):
-    result = runner.invoke(
-        app, ["run", "--config", dns_config_with_validation_filename]
-    )
+    result = runner.invoke(app, ["run", "--config", dns_config_with_validation_filename])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
 
@@ -212,9 +204,7 @@ def test_run_valid_dns_custom_config(dns_config_with_validation_filename):
 
 
 def test_run_test_with_context(config_with_context_filename):
-    result = runner.invoke(
-        app, ["run", "--config", config_with_context_filename, "--verbose"]
-    )
+    result = runner.invoke(app, ["run", "--config", config_with_context_filename, "--verbose"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
 
@@ -290,9 +280,7 @@ def test_run_test_with_external_dir_context(data_dir_path):
 
 
 def test_run_http_config_with_headers(http_headers_config_filename):
-    result = runner.invoke(
-        app, ["run", "--config", http_headers_config_filename, "--disable-redaction"]
-    )
+    result = runner.invoke(app, ["run", "--config", http_headers_config_filename, "--disable-redaction"])
     assert result.exit_code == 0, result.stderr
     data = result.stdout
     response = json.loads(data)

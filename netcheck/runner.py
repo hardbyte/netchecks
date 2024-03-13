@@ -74,9 +74,7 @@ def run_from_config(
             )
             assertion_results.append(result)
 
-        overall_results["assertions"].append(
-            {"name": assertion["name"], "results": assertion_results}
-        )
+        overall_results["assertions"].append({"name": assertion["name"], "results": assertion_results})
 
     return overall_results
 

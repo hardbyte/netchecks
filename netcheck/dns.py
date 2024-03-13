@@ -64,9 +64,7 @@ def dns_lookup_check(host, server, timeout=10):
     startTimestamp = datetime.datetime.utcnow().isoformat()
 
     try:
-        result_data = get_A_records_by_dns_lookup(
-            host, nameserver=server, timeout=timeout
-        )
+        result_data = get_A_records_by_dns_lookup(host, nameserver=server, timeout=timeout)
 
     except Exception as e:
         logger.info(f"Unexpected exception:\n\n{e}")
