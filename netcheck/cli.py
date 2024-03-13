@@ -8,9 +8,8 @@ import typer
 from typing import List, Optional
 
 from netcheck.dns import DEFAULT_DNS_VALIDATION_RULE
-from .validation import evaluate_cel_with_context
 from .version import NETCHECK_VERSION
-from .http import NetcheckHttpMethod, DEFAULT_HTTP_VALIDATION_RULE
+from .http import NetcheckHttpMethod
 from .runner import run_from_config, check_individual_assertion
 
 
@@ -113,7 +112,7 @@ def http(
     }
 
     if verbose:
-        err_console.print(f"Netcheck http configuration:")
+        err_console.print("Netcheck http configuration:")
         err_console.print_json(data=test_config)
 
     result = check_individual_assertion(
@@ -158,8 +157,8 @@ def dns(
         "expected": "fail" if should_fail else None,
     }
     if verbose:
-        err_console.print(f"netcheck dns")
-        err_console.print(f"Options")
+        err_console.print("netcheck dns")
+        err_console.print("Options")
         err_console.print_json(data=test_config)
 
     if validation_rule is None:

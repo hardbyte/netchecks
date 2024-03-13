@@ -86,8 +86,8 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, example_d
         assert result["result"] == "pass", str(result)
         assert result["source"] == "netchecks"
 
-        test_spec = json.loads(result["properties"]["spec"])
-        test_data = json.loads(result["properties"]["data"])
+        json.loads(result["properties"]["spec"])
+        json.loads(result["properties"]["data"])
 
     # Delete the network assertion and Cilium network policies
     subprocess.run(

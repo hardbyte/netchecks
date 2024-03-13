@@ -66,17 +66,17 @@ def creation(body, spec, name, namespace, **kwargs):
     with ASSERTION_REQUEST_TIME.labels(name, "create").time():
         logger = get_logger(name=name, namespace=namespace)
         batch_v1 = client.BatchV1Api()
-        logger.info(f"NetworkAssertion on-create handler called")
+        logger.info("NetworkAssertion on-create handler called")
         ASSERTION_COUNT.labels(name).inc()
 
-        logger.debug(f"Requested NetworkAssertion body", body=body)
-        logger.info(f"Requested NetworkAssertion spec", spec=spec)
+        logger.debug("Requested NetworkAssertion body", body=body)
+        logger.info("Requested NetworkAssertion spec", spec=spec)
 
         # Validate the NetworkAssertion spec
         rules = spec.get("rules")
         logger.info("Rules loaded from NetworkAssertion", rules=rules)
         if not rules:
-            raise kopf.PermanentError(f"Rules must be set.")
+            raise kopf.PermanentError("Rules must be set.")
 
         context_definitions = spec.get("context", [])
         logger.info("Contexts loaded from NetworkAssertion", contexts=context_definitions)
@@ -235,7 +235,7 @@ def edit(spec, old, name, namespace, body, **kwargs):
     """
     with ASSERTION_REQUEST_TIME.labels(name, "update").time():
         logger = get_logger(name=name, namespace=namespace)
-        logger.info(f"Mutation handler called", name=name, namespace=namespace)
+        logger.info("Mutation handler called", name=name, namespace=namespace)
         logger.info("Spec", spec=spec)
         logger.info("Old", old=old)
         logger.info("Diff", diff=kwargs.get("diff"))
@@ -247,7 +247,7 @@ def edit(spec, old, name, namespace, body, **kwargs):
             logger.info("Deleting CronJob")
             try:
                 batch_v1.delete_namespaced_cron_job(name=name, namespace=namespace)
-            except client.exceptions.ApiException as e:
+            except client.exceptions.ApiException:
                 logger.info("Couldn't find existing CronJob. Ignoring")
         else:
             logger.info("Deleting Job")
@@ -282,13 +282,13 @@ def edit(spec, old, name, namespace, body, **kwargs):
 @kopf.on.delete("networkassertions.v1.netchecks.io")
 def delete(name, namespace, **kwargs):
     logger = get_logger(name=name, namespace=namespace)
-    logger.info(f"networkassertion delete handler called")
+    logger.info("networkassertion delete handler called")
 
 
 @kopf.on.resume("networkassertions.v1.netchecks.io")
 def on_resume(spec, name, namespace, **kwargs):
     logger = get_logger(name=name, namespace=namespace)
-    logger.info(f"networkassertions resume handler called")
+    logger.info("networkassertions resume handler called")
 
     # May need to explicitly restart daemon?
 

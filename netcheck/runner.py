@@ -109,7 +109,7 @@ def check_individual_assertion(
             )
         case _:
             logger.warning("Unhandled test type")
-            raise NotImplemented("Unknown test type")
+            raise NotImplementedError("Unknown test type")
 
     if validation_rule is None:
         # use the default validation rule

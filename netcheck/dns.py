@@ -42,7 +42,7 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
         for IPval in answer:
             result["A"].append(IPval.to_text())
         result["response-code"] = "NOERROR"
-    except Timeout as e:
+    except Timeout:
         result["response-code"] = "TIMEOUT"
     except dns.resolver.NXDOMAIN:
         result["response-code"] = "NXDOMAIN"

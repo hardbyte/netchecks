@@ -168,7 +168,7 @@ def test_use_external_config_map_data_with_formatted_data(netchecks, k8s_namespa
 
         # Test data should be a string containing JSON returned by the server which should include the header
         # we injected from the configmap
-        data = json.loads(test_data["body"])
+        json.loads(test_data["body"])
 
     # Delete the network assertion
     subprocess.run(
