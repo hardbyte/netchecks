@@ -39,9 +39,7 @@ def replace_template_in_string(s: str, evaluation_context: Dict) -> str:
 
     """
     # Extract the group from the regex match and pass to `evaluate_template`.
-    return TEMPLATE_REGEX.sub(
-        lambda m: evaluate_template(m.group(1).strip(), evaluation_context), s
-    )
+    return TEMPLATE_REGEX.sub(lambda m: evaluate_template(m.group(1).strip(), evaluation_context), s)
 
 
 def replace_template(original: Dict, evaluation_context: Dict):

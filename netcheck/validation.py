@@ -37,7 +37,7 @@ def evaluate_cel_with_context(context: Dict, validation_rule: str):
     # Validate the CEL validation rule and compile to ast
     try:
         ast = env.compile(validation_rule)
-    except CELParseError as e:
+    except CELParseError:
         print("Invalid CEL expression. Treating as error.")
         raise ValueError("Invalid CEL expression")
 
@@ -56,7 +56,7 @@ def evaluate_cel_with_context(context: Dict, validation_rule: str):
     # Evaluate the CEL expression
     try:
         context = prgm.evaluate(activation)
-    except CELEvalError as e:
+    except CELEvalError:
         # Note this can fail if the context is missing a key e.g. the probe
         # failed to return a value for a key that the validation rule expects
 

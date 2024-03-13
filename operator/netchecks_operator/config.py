@@ -16,9 +16,7 @@ def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
 
     The environment variable name is loaded from the default config.
     """
-    settings_environment_variable_name = (
-        settings.__config__.settings_environment_variable_name
-    )
+    settings_environment_variable_name = settings.__config__.settings_environment_variable_name
 
     if settings_environment_variable_name in os.environ:
         config_file_path = Path(os.environ.get("JSON_CONFIG"))
@@ -45,9 +43,7 @@ class ProbeConfig(BaseModel):
     podAnnotations: dict[str, str] = {}
     image: ImageConfig = ImageConfig()
     resources: dict[str, dict] = {}
-    verbose: bool = (
-        False  # Don't enable until the operator has been modified to split stdout and stderr
-    )
+    verbose: bool = False  # Don't enable until the operator has been modified to split stdout and stderr
 
 
 class Config(BaseSettings):

@@ -20,9 +20,7 @@ if __name__ == "__main__":
     git_root_path = Path(__file__).resolve().parent.parent
     cli_toml_path = git_root_path / "pyproject.toml"
     operator_toml_path = git_root_path / "operator" / "pyproject.toml"
-    operator_chart_path = (
-        git_root_path / "operator" / "charts" / "netchecks" / "Chart.yaml"
-    )
+    operator_chart_path = git_root_path / "operator" / "charts" / "netchecks" / "Chart.yaml"
 
     cli_toml = read_toml(cli_toml_path)
     operator_toml = read_toml(operator_toml_path)

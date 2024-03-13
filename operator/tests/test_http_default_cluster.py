@@ -76,7 +76,7 @@ def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file
         assert test_spec["type"] == "http"
         assert test_spec["method"] == "get"
         assert test_spec["headers"] == "REDACTED"
-        assert test_spec["verify-tls-cert"] == False
+        assert not test_spec["verify-tls-cert"]
         assert test_spec["url"] == "https://kubernetes.default.svc/version"
 
         test_data = json.loads(result["properties"]["data"])

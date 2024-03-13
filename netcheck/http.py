@@ -2,7 +2,7 @@ import datetime
 import logging
 from enum import Enum
 from typing import Dict, Optional
-
+from pydantic import BaseModel
 import urllib3
 
 # We disable urllib warning because we expect to be carrying out tests against hosts using self-signed
@@ -10,8 +10,8 @@ import urllib3
 urllib3.disable_warnings()
 
 
-import requests
-from pydantic import BaseModel
+import requests  # noqa: E402
+
 
 logger = logging.getLogger("netcheck.http")
 DEFAULT_HTTP_VALIDATION_RULE = """

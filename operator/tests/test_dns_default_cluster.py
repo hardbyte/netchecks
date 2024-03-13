@@ -9,9 +9,7 @@ def test_dns_check_with_installed_operator(netchecks, k8s_namespace, test_file_p
     manifest = test_file_path("cluster-dns.yaml")
     name = "cluster-dns-should-work"
 
-    subprocess.run(
-        f"kubectl apply -n {k8s_namespace} -f {manifest}", shell=True, check=True
-    )
+    subprocess.run(f"kubectl apply -n {k8s_namespace} -f {manifest}", shell=True, check=True)
 
     # Assert that a Job gets created in the same namespace
     for i in range(10):
@@ -72,8 +70,8 @@ def test_dns_check_with_installed_operator(netchecks, k8s_namespace, test_file_p
         assert result["result"] == "pass"
         assert result["source"] == "netchecks"
 
-        test_spec = json.loads(result["properties"]["spec"])
-        test_data = json.loads(result["properties"]["data"])
+        json.loads(result["properties"]["spec"])
+        json.loads(result["properties"]["data"])
 
     # Delete the network assertion
     subprocess.run(
