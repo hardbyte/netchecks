@@ -1,5 +1,6 @@
 import datetime
 import json
+import random
 from collections import defaultdict
 from json import JSONDecodeError
 from time import sleep
@@ -331,8 +332,9 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                 sleep(5)
                 continue
             case "Succeeded":
-                # Note it is possible to get here having already processed this container
-                # (e.g. after operator restart)
+                # Note it is possible to get here concurrently for the same network assertion
+                # (e.g. after operator restart) so we add a random backoff to avoid contention
+                sleep(2 * random.random())
                 logger.info("Probe Pod has completed")
                 logger.info("Getting pod output")
                 # Doesn't seem to be a nice way to separate stdout and stderr
@@ -363,7 +365,7 @@ def summarize_results(probe_results):
     Summarize the results of the probe run
     """
     logger = get_logger()
-    logger.info("Summarizing probe results", probe_results=probe_results)
+    logger.info("Summarizing probe results")
     # Dict of pass/fail/warn/error counts defaulting to 0
     summary = defaultdict(int)
 
@@ -376,10 +378,9 @@ def summarize_results(probe_results):
     return dict(summary)
 
 
-def convert_results_for_policy_report(probe_results, namespace, pod_name):
+def convert_results_for_policy_report(probe_results, logger):
     # https://htmlpreview.github.io/?https://github.com/kubernetes-sigs/wg-policy-prototypes/blob/master/policy-report/docs/index.html
     res = []
-    logger = get_logger()
     for assertion_result in probe_results["assertions"]:
         for i, test_result in enumerate(assertion_result["results"], start=1):
             policy_report_data = {
@@ -416,7 +417,7 @@ def convert_results_for_policy_report(probe_results, namespace, pod_name):
                 # ],
             }
             logger.info(
-                "Policy Report Result", policy_report_result=policy_report_result
+                "Policy Report Result", result=policy_report_result['result']
             )
             res.append(policy_report_result)
     return res
@@ -432,9 +433,15 @@ def convert_iso_timestamp_to_k8s_timestamp(iso_timestamp):
 
 def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     crd_api = client.CustomObjectsApi()
-
     logger = get_logger(name=assertion_name, namespace=namespace, pod_name=pod_name)
     logger.info("Upsert PolicyReport")
+    parent_network_assertion = crd_api.get_namespaced_custom_object(
+        group=API_GROUP_NAME,
+        version="v1",
+        namespace=namespace,
+        plural="networkassertions",
+        name=assertion_name
+    )
     # get the resource, if it doesn't exist, create it
     policy_report_label_selector = f"app.kubernetes.io/instance={assertion_name}"
     policy_reports = crd_api.list_namespaced_custom_object(
@@ -446,9 +453,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     )
     labels = get_common_labels(name=assertion_name)
     labels["policy.kubernetes.io/engine"] = "netcheck"
-    report_results = convert_results_for_policy_report(
-        probe_results, namespace, pod_name
-    )
+    report_results = convert_results_for_policy_report(probe_results, logger)
     report_summary = summarize_results(probe_results)
     policy_report_body = {
         "apiVersion": "wgpolicyk8s.io/v1alpha2",
@@ -468,7 +473,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     }
 
     if len(policy_reports["items"]) > 0:
-        logger.debug("Existing policy reports found", reports=policy_reports)
+        logger.debug("Existing policy reports found", existing_policy_report_count=len(policy_reports))
         policy_report = crd_api.get_namespaced_custom_object(
             group="wgpolicyk8s.io",
             version="v1alpha2",
@@ -476,7 +481,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
             plural="policyreports",
             name=assertion_name,
         )
-        logger.debug("Existing policy report found", report=policy_report)
+        logger.debug("Existing policy report found", report_uid=policy_report['metadata']['uid'])
         crd_api.patch_namespaced_custom_object(
             group="wgpolicyk8s.io",
             version="v1alpha2",
@@ -485,12 +490,11 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
             body=policy_report_body,
             name=assertion_name,
         )
-        logger.info("Updated existing PolicyReport")
+        logger.info("Updated the existing PolicyReport")
     else:
-        # Create a new PolicyReport
+        # Create a new PolicyReport controlled by the NetworkAssertion
         logger.info("Creating new PolicyReport")
-
-        kopf.adopt(policy_report_body)
+        kopf.adopt(policy_report_body, owner=parent_network_assertion)
         try:
             policy_report = crd_api.create_namespaced_custom_object(
                 group="wgpolicyk8s.io",
@@ -506,9 +510,9 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
         logger.info("PolicyReport created")
 
     # Create an event on the policy report
-    logger.info("Policy Report Metadata", meta=policy_report["metadata"])
+    logger.debug("Adding event to Policy Report and NetworkAssertion")
     kopf.event(
-        objs=policy_report,
+        objs=[policy_report, parent_network_assertion],
         type="Normal",
         reason="updated",
         message=f"Updated after running Netchecks Probe for Network Assertion '{assertion_name}'.\nSummary:\n{report_summary}",
@@ -521,13 +525,14 @@ def process_probe_output(pod_log: str, network_assertion_name, namespace, pod_na
     """
     Extract JSON from pod log and update the PolicyReport
     """
+    logger = get_logger(name=network_assertion_name, namespace=namespace, pod_name=pod_name)
     try:
         probe_results = json.loads(pod_log)
     except JSONDecodeError as e:
         print("Error parsing output from probe pod as JSON.\n\n", pod_log)
         raise e
 
-    print("Probe results", probe_results)
+    logger.debug("Probe results", results=probe_results)
     upsert_policy_report(probe_results, network_assertion_name, namespace, pod_name)
 
     # Update prometheus metrics for the probe results

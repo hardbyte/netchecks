@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "netcheck-operator"
-version = "0.4.4"
+version = "0.5.0"
 description = "Netcheck is a cloud native tool for specifying and regularly checking assertions about network conditions. Organisations use netcheck to proactively verify whether security controls are working as intended, alerting them to misconfiguration and potential threats."
 authors = ["Brian Thorne <brian@hardbyte.nz>"]
 readme = "README.md"
@@ -9,8 +9,8 @@ packages = [{include = "netchecks_operator"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-kopf = "^1.36.0"
-kubernetes = "^26.1"
+kopf = "^1.37.1"
+kubernetes = "^29.0"
 rich = "^13.3"
 structlog = "^23.1.0"
 prometheus-client = "^0.16.0"
@@ -18,8 +18,8 @@ pydantic = "^1.10.7"
 
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.2.1"
-ruff = "^0.0.241"
+pytest = "^8.1"
+ruff = "^0.3"
 black = "^23"
 
 [build-system]
