@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "netcheck"
-version = "0.4.4"
+version = "0.5.0"
 description = "Netchecks is a cloud native tool for specifying and regularly checking assertions about network conditions. Use netchecks to proactively verify whether security controls are working as intended, alerting on misconfiguration."
 authors = ["Brian Thorne <brian@hardbyte.nz>"]
 readme = "README.md"
@@ -25,11 +25,9 @@ pytest = ">=7.2,<9.0"
 coveralls = "^3.3.1"
 pytest-cov = "^4.0.0"
 ruff = ">=0.0.241,<0.3.3"
-black = ">=23.3,<25.0"
 
 [tool.ruff]
 line-length = 120
-
 
 [build-system]
 requires = ["poetry-core"]
