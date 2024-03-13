@@ -115,6 +115,4 @@ def k8s_namespace():
     subprocess.run(f"kubectl create namespace {name}", shell=True, check=True)
     yield name
     print("Trying to delete namespace")
-    subprocess.run(
-        f"kubectl delete namespace {name} --timeout=30s", shell=True, check=False
-    )
+    subprocess.run(f"kubectl delete namespace {name} --timeout=30s", shell=True, check=False)

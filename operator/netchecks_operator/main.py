@@ -43,9 +43,7 @@ if settings.metrics.enabled:
 API_GROUP_NAME = "netchecks.io"
 
 # define Prometheus metrics
-ASSERTION_COUNT = prometheus.Counter(
-    "netchecks_assertions", "Number of network assertions", ["name"]
-)
+ASSERTION_COUNT = prometheus.Counter("netchecks_assertions", "Number of network assertions", ["name"])
 ASSERTION_REQUEST_TIME = prometheus.Summary(
     "netchecks_operator_assertion_processing_seconds",
     "Time spent processing network assertions by the netchecks operator",
@@ -81,16 +79,12 @@ def creation(body, spec, name, namespace, **kwargs):
             raise kopf.PermanentError(f"Rules must be set.")
 
         context_definitions = spec.get("context", [])
-        logger.info(
-            "Contexts loaded from NetworkAssertion", contexts=context_definitions
-        )
+        logger.info("Contexts loaded from NetworkAssertion", contexts=context_definitions)
 
         # Grab any template overrides (metadata, spec->serviceAccountName)
         job_template = spec.get("template")
 
-        cm_response = create_network_assertions_config_map(
-            name, rules, context_definitions, namespace, logger
-        )
+        cm_response = create_network_assertions_config_map(name, rules, context_definitions, namespace, logger)
 
         disable_redaction = spec.get("disableRedaction", False)
 
@@ -123,9 +117,7 @@ def creation(body, spec, name, namespace, **kwargs):
             logger.info("Creating CronJob in k8s")
             logger.debug("Linking CronJob with NetworkAssertion")
             kopf.adopt(cron_job)
-            api_response = batch_v1.create_namespaced_cron_job(
-                body=cron_job, namespace=namespace
-            )
+            api_response = batch_v1.create_namespaced_cron_job(body=cron_job, namespace=namespace)
             # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
             kopf.info(
                 body,
@@ -193,9 +185,7 @@ def transform_context_for_config_file(context):
     return result
 
 
-def create_network_assertions_config_map(
-    name, rules, contexts: List, namespace, logger
-):
+def create_network_assertions_config_map(name, rules, contexts: List, namespace, logger):
     core_api = client.CoreV1Api()
 
     # Transform the provided contexts into netcheck cli format
@@ -227,9 +217,7 @@ def create_network_assertions_config_map(
     kopf.adopt(config_map)
     logger.info("Creating config map")
     logger.debug("Config map spec", cm=config_map)
-    cm_response = core_api.create_namespaced_config_map(
-        namespace=namespace, body=config_map
-    )
+    cm_response = core_api.create_namespaced_config_map(namespace=namespace, body=config_map)
     logger.info("Created config map")
     logger.debug("K8s response to creating config map", cm=cm_response)
     return cm_response
@@ -353,9 +341,7 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
 
                 break
             case _:
-                logger.info(
-                    "Pod details retrieved", phase=pod.status.phase, status=pod.status
-                )
+                logger.info("Pod details retrieved", phase=pod.status.phase, status=pod.status)
                 sleep(1.0)
     logger.info("Pod monitoring complete", name=name, namespace=namespace)
 
@@ -393,18 +379,12 @@ def convert_results_for_policy_report(probe_results, logger):
                 "source": "netchecks",
                 "policy": assertion_result["name"],
                 "rule": test_result.get("name", f"{assertion_result['name']}-rule-{i}"),
-                "category": test_result["spec"][
-                    "type"
-                ],  # This is the test type: http/dns
+                "category": test_result["spec"]["type"],  # This is the test type: http/dns
                 # "severity": test_result.get('severity'),   # high, medium, low
-                "timestamp": convert_iso_timestamp_to_k8s_timestamp(
-                    test_result_iso_timestamp
-                ),
+                "timestamp": convert_iso_timestamp_to_k8s_timestamp(test_result_iso_timestamp),
                 "result": test_result.get("status", "skip"),
                 # "scored": True,
-                "message": test_result.get(
-                    "message", f'Rule from {assertion_result["name"]}'
-                ),
+                "message": test_result.get("message", f'Rule from {assertion_result["name"]}'),
                 # Properties have to be str -> str
                 "properties": policy_report_data,
                 # "resources": [
@@ -416,9 +396,7 @@ def convert_results_for_policy_report(probe_results, logger):
                 #     }
                 # ],
             }
-            logger.info(
-                "Policy Report Result", result=policy_report_result['result']
-            )
+            logger.info("Policy Report Result", result=policy_report_result["result"])
             res.append(policy_report_result)
     return res
 
@@ -436,11 +414,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     logger = get_logger(name=assertion_name, namespace=namespace, pod_name=pod_name)
     logger.info("Upsert PolicyReport")
     parent_network_assertion = crd_api.get_namespaced_custom_object(
-        group=API_GROUP_NAME,
-        version="v1",
-        namespace=namespace,
-        plural="networkassertions",
-        name=assertion_name
+        group=API_GROUP_NAME, version="v1", namespace=namespace, plural="networkassertions", name=assertion_name
     )
     # get the resource, if it doesn't exist, create it
     policy_report_label_selector = f"app.kubernetes.io/instance={assertion_name}"
@@ -481,7 +455,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
             plural="policyreports",
             name=assertion_name,
         )
-        logger.debug("Existing policy report found", report_uid=policy_report['metadata']['uid'])
+        logger.debug("Existing policy report found", report_uid=policy_report["metadata"]["uid"])
         crd_api.patch_namespaced_custom_object(
             group="wgpolicyk8s.io",
             version="v1alpha2",
@@ -539,30 +513,19 @@ def process_probe_output(pod_log: str, network_assertion_name, namespace, pod_na
 
     for assertion_result in probe_results["assertions"]:
         for test_result in assertion_result["results"]:
-            test_start_iso_timestamp = datetime.datetime.fromisoformat(
-                test_result["data"]["startTimestamp"]
-            )
-            test_end_iso_timestamp = datetime.datetime.fromisoformat(
-                test_result["data"]["endTimestamp"]
-            )
-            test_duration = (
-                test_end_iso_timestamp - test_start_iso_timestamp
-            ).total_seconds()
+            test_start_iso_timestamp = datetime.datetime.fromisoformat(test_result["data"]["startTimestamp"])
+            test_end_iso_timestamp = datetime.datetime.fromisoformat(test_result["data"]["endTimestamp"])
+            test_duration = (test_end_iso_timestamp - test_start_iso_timestamp).total_seconds()
 
-            ASSERTION_TEST_TIME.labels(
-                name=network_assertion_name, type=test_result["spec"]["type"]
-            ).observe(test_duration)
+            ASSERTION_TEST_TIME.labels(name=network_assertion_name, type=test_result["spec"]["type"]).observe(
+                test_duration
+            )
 
 
 def get_job_status(api_instance, job_name):
-    api_response = api_instance.read_namespaced_job_status(
-        name=job_name, namespace="default"
-    )
+    api_response = api_instance.read_namespaced_job_status(name=job_name, namespace="default")
 
-    job_completed = (
-        api_response.status.succeeded is not None
-        or api_response.status.failed is not None
-    )
+    job_completed = api_response.status.succeeded is not None or api_response.status.failed is not None
 
     print(f"Job status='{api_response.status}'")
     print(f"Job completed={job_completed}")
@@ -616,9 +579,7 @@ def create_job_spec(
                 V1Volume(
                     name=context_name,
                     # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ConfigMapVolumeSource.md
-                    config_map=V1ConfigMapVolumeSource(
-                        **context_definition["configMap"]
-                    ),
+                    config_map=V1ConfigMapVolumeSource(**context_definition["configMap"]),
                 )
             )
             volume_mounts.append(
@@ -629,9 +590,7 @@ def create_job_spec(
             )
         elif "secret" in context_definition:
             # Rename 'name' to 'secretName' for V1SecretVolumeSource
-            context_definition["secret"]["secret_name"] = context_definition[
-                "secret"
-            ].pop("name")
+            context_definition["secret"]["secret_name"] = context_definition["secret"].pop("name")
 
             volumes.append(
                 V1Volume(
@@ -677,9 +636,7 @@ def create_job_spec(
     labels = get_common_labels(name)
     labels["app.kubernetes.io/component"] = "probe"
     pod_template = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(
-            labels=labels, annotations=settings.probe.podAnnotations
-        ),
+        metadata=client.V1ObjectMeta(labels=labels, annotations=settings.probe.podAnnotations),
         spec=client.V1PodSpec(
             restart_policy="Never",
             containers=[container],

@@ -10,9 +10,7 @@ INCLUDE_CILIUM_TESTS = os.getenv("INCLUDE_CILIUM_TESTS")
 
 
 @pytest.mark.skipif(INCLUDE_CILIUM_TESTS is None, reason="Cilium is not installed")
-def test_k8s_version_with_installed_operator(
-    netchecks, k8s_namespace, example_dir_path
-):
+def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, example_dir_path):
     dns_restrictions_dir = example_dir_path("cilium-dns-restrictions")
 
     # Apply the example DNS restrictions and network assertions
