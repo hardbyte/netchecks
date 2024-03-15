@@ -8,7 +8,7 @@ from netcheck.validation import evaluate_cel_with_context
 from netcheck.version import OUTPUT_JSON_VERSION
 
 from netcheck.version import NETCHECK_VERSION
-from netcheck.checks import internal_check
+from netcheck.checks.internal import internal_check
 from netcheck.checks.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
 from netcheck.checks.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
 from netcheck.context import replace_template, LazyFileLoadingDict

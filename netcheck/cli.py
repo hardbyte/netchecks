@@ -8,9 +8,9 @@ import typer
 from typing import List, Optional
 
 from netcheck.checks.dns import DEFAULT_DNS_VALIDATION_RULE
-from netcheck.version import NETCHECK_VERSION
 from netcheck.checks.http import NetcheckHttpMethod
 from netcheck.runner import run_from_config, check_individual_assertion
+from netcheck.version import NETCHECK_VERSION
 
 
 app = typer.Typer(no_args_is_help=True)
