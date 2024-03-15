@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 
 import { Icon } from '@/components/Icon'
+import {PresetsIcon} from "@/components/icons/PresetsIcon";
 
 const styles = {
   note: {
@@ -15,11 +16,18 @@ const styles = {
     title: 'text-amber-900 dark:text-amber-500',
     body: 'text-amber-800 [--tw-prose-underline:theme(colors.amber.400)] [--tw-prose-background:theme(colors.amber.50)] prose-a:text-amber-900 prose-code:text-amber-900 dark:text-slate-300 dark:[--tw-prose-underline:theme(colors.sky.700)] dark:prose-code:text-slate-300',
   },
+  beginner: {
+    container:
+      'bg-green-50 dark:bg-slate-800/60 dark:ring-1 dark:ring-slate-300/10',
+    title: 'text-green-900 dark:text-green-400',
+    body: 'text-green-800 [--tw-prose-background:theme(colors.green.50)] prose-a:text-green-900 prose-code:text-green-900 dark:text-slate-300 dark:prose-code:text-slate-300',
+  },
 }
 
 const icons = {
   note: (props) => <Icon icon="lightbulb" {...props} />,
   warning: (props) => <Icon icon="warning" color="amber" {...props} />,
+  beginner: (props) => <Icon icon="installation" {...props} />,
 }
 
 export function Callout({ type = 'note', title, children }) {

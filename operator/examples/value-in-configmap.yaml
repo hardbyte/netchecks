@@ -21,8 +21,6 @@ spec:
   rules:
     - name: validate-configmap-value
       type: internal
-      #url: https://pie.dev/headers
-      expected: pass
       validate:
         message: Configmap should have particular value
         pattern: "somecontext.foo == 'bar'"

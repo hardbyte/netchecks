@@ -18,6 +18,7 @@ const navigation = [
             {title: 'Getting started', href: '/'},
             {title: 'Validating HTTP Controls', href: '/docs/http'},
             {title: 'Validating DNS Controls', href: '/docs/dns'},
+            {title: 'Validating K8s Data', href: '/docs/k8s_data'},
         ],
     },
     {

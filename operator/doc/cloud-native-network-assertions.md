@@ -23,6 +23,7 @@ Verifying that cluster internal restrictions are working. E.g., if `NetworkPolic
 - Verify that a Pod cannot connect via HTTP to a service in a different namespace
 - Verify that a Pod with the correct labels/annotations/service account can connect via HTTP to a service in a different namespace
 
+Validating Configmap/Secret data.
 
 ### DNS Verification
 
@@ -80,8 +81,6 @@ deployments.
 
 A more complicated variation would be for each `NetworkAssertion` to have a list of required `fixtures`, which could 
 be deployed independently of each test. Tests would only get run once all fixtures are in a healthy state. 
-
-
 
 
 ### Results
