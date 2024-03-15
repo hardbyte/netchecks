@@ -7,10 +7,10 @@ from rich.console import Console
 import typer
 from typing import List, Optional
 
-from netcheck.dns import DEFAULT_DNS_VALIDATION_RULE
-from .version import NETCHECK_VERSION
-from .http import NetcheckHttpMethod
-from .runner import run_from_config, check_individual_assertion
+from netcheck.checks.dns import DEFAULT_DNS_VALIDATION_RULE
+from netcheck.version import NETCHECK_VERSION
+from netcheck.checks.http import NetcheckHttpMethod
+from netcheck.runner import run_from_config, check_individual_assertion
 
 
 app = typer.Typer(no_args_is_help=True)
@@ -28,6 +28,7 @@ class NetcheckOutputType(str, Enum):
 class NetcheckTestType(str, Enum):
     dns = "dns"
     http = "http"
+    internal = "internal"
 
 
 def show_version(value: bool = True):

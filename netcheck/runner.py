@@ -8,8 +8,9 @@ from netcheck.validation import evaluate_cel_with_context
 from netcheck.version import OUTPUT_JSON_VERSION
 
 from netcheck.version import NETCHECK_VERSION
-from netcheck.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
-from netcheck.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
+from netcheck.checks import internal_check
+from netcheck.checks.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
+from netcheck.checks.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
 from netcheck.context import replace_template, LazyFileLoadingDict
 
 logger = logging.getLogger("netcheck.runner")
@@ -107,6 +108,12 @@ def check_individual_assertion(
                 timeout=test_config.get("timeout"),
                 verify=test_config.get("verify-tls-cert", True),
             )
+        case "internal":
+            if verbose:
+                err_console.print(f"Internal check with command '{test_config['command']}'")
+            test_detail = internal_check(
+                test_config.get("timeout", 5),
+            )
         case _:
             logger.warning("Unhandled test type")
             raise NotImplementedError("Unknown test type")
@@ -118,6 +125,10 @@ def check_individual_assertion(
                 validation_rule = DEFAULT_HTTP_VALIDATION_RULE
             case "dns":
                 validation_rule = DEFAULT_DNS_VALIDATION_RULE
+            case "internal":
+                validation_rule = "true"
+            case _:
+                raise NotImplementedError("Unknown check type")
     elif verbose:
         err_console.print("Using custom validation rule")
 

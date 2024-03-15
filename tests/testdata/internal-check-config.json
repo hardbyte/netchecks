@@ -1,0 +1,6 @@
+{
+  "assertions": [
+    {"name":  "default", "rules": [{"type": "internal"}] },
+    {"name":  "default", "rules": [{"type": "internal", "validation":  "false"}] }
+    ]
+}

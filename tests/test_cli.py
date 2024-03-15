@@ -300,3 +300,20 @@ def test_run_http_config_with_headers_redacted_by_default(http_headers_config_fi
     assert test_result["spec"]["headers"] == "REDACTED"
     # Note that the "sensitive" header could be present in the response body:
     assert "X-Test-Header" in json.loads(test_result["data"]["body"])["headers"]
+
+
+def test_run_internal_config_default(internal_config_filename):
+    result = runner.invoke(app, ["run", "--config", internal_config_filename])
+    assert result.exit_code == 0, result.stderr
+    data = result.stdout
+    response = json.loads(data)
+
+    expected_pass_result = response["assertions"][0]["results"][0]
+    expected_fail_result = response["assertions"][1]["results"][0]
+
+    assert "status" in expected_pass_result
+    assert "status" in expected_fail_result
+
+    assert expected_pass_result["status"] == "pass"
+    assert expected_fail_result["status"] == "fail"
+

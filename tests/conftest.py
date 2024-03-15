@@ -19,6 +19,11 @@ def dns_config_filename():
 
 
 @fixture()
+def internal_config_filename():
+    return os.path.join(TEST_DATA_DIR, "internal-check-config.json")
+
+
+@fixture()
 def dns_config_with_validation_filename():
     return os.path.join(TEST_DATA_DIR, "dns-config-custom-validation.json")
 
