@@ -316,4 +316,3 @@ def test_run_internal_config_default(internal_config_filename):
 
     assert expected_pass_result["status"] == "pass"
     assert expected_fail_result["status"] == "fail"
-
