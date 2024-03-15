@@ -58,6 +58,85 @@ entries:
       artifacthub.io/operatorCapabilities: Deep Insights
       artifacthub.io/prerelease: "false"
     apiVersion: v2
+    appVersion: 0.5.1
+    created: "2024-03-15T20:52:34.541688839Z"
+    dependencies:
+    - condition: policy-reporter.enabled
+      name: policy-reporter
+      repository: https://kyverno.github.io/policy-reporter
+      version: 2.19.4
+    description: Netchecks proactively verifies whether your security controls are
+      working as intended.
+    digest: 26fc3a65bd99f697b6166454f41897b18cd1abf04e69c6a18cf9d596c8914913
+    icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
+    maintainers:
+    - email: brian@hardbyte.nz
+      name: Brian Thorne
+      url: hardbyte.nz
+    name: netchecks
+    sources:
+    - https://github.com/hardbyte/netchecks
+    type: application
+    urls:
+    - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.14/netchecks-0.1.14.tgz
+    version: 0.1.14
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: Fixed issue where PolicyReport was owned by the probe Pod.
+          links:
+            - name: GitHub Issue
+              url: https://github.com/hardbyte/netchecks/issues/91
+        - kind: added
+          description: Updated versions, added K8s Events on probe run.
+        - kind: added
+          description: Support for CEL templated variables, injecting context from ConfigMaps and Secrets.
+          links:
+            - name: GitHub Issue
+              url: https://github.com/hardbyte/netchecks/issues/33
+            - name: Inject Context PR
+              url: https://github.com/hardbyte/netchecks/pull/34
+            - name: Context from Secrets PR
+              url: https://github.com/hardbyte/netchecks/pull/37
+        - kind: added
+          description: Updated documentation, support multiple architectures.
+      artifacthub.io/crds: |
+        - kind: NetworkAssertion
+          version: v1
+          name: networkassertions.netchecks.io
+          displayName: Network Assertion
+          description: NetworkAssertion is the Schema for the networkassertions API
+      artifacthub.io/crdsExamples: |
+        - apiVersion: netchecks.io/v1
+          kind: NetworkAssertion
+          metadata:
+            name: http-should-work
+            annotations:
+              description: Assert pod can connect to k8s API
+          spec:
+            template:
+              metadata:
+                labels:
+                  optional-label: applied-to-test-pod
+                annotations:
+                  my: override-annotation
+            rules:
+              - name: kubernetes-version
+                type: http
+                url: https://kubernetes.default.svc/version
+                verify-tls-cert: false
+                expected: pass
+                validate:
+                  message: Http request to Kubernetes API should succeed.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://docs.netchecks.io
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Deep Insights
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
     appVersion: 0.5.0
     created: "2024-03-15T05:08:43.341721116Z"
     dependencies:
@@ -578,4 +657,4 @@ entries:
     urls:
     - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.2/netchecks-0.1.2.tgz
     version: 0.1.2
-generated: "2024-03-15T05:08:43.341768364Z"
+generated: "2024-03-15T20:52:34.541716501Z"
