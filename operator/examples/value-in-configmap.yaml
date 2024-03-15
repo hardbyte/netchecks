@@ -3,12 +3,12 @@ kind: ConfigMap
 metadata:
   name: some-config-map
 data:
-  foo: bar
+  foo: "bar"
 ---
 apiVersion: netchecks.io/v1
 kind: NetworkAssertion
 metadata:
-  name: http-with-external-data
+  name: k8s-config-check
   namespace: default
   annotations:
     description: Assert probe can access configmap data
