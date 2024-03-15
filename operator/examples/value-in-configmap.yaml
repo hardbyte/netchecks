@@ -17,6 +17,7 @@ spec:
     - name: somecontext
       configMap:
         name: some-config-map
+  schedule: "*/5 * * * *"
   rules:
     - name: validate-configmap-value
       type: internal

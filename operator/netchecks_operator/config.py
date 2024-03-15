@@ -51,6 +51,8 @@ class Config(BaseSettings):
 
     metrics: MetricsConfig = MetricsConfig()
 
+    policy_report_max_results: int = 1000
+
     class Config:
         case_sensitive = True
         settings_environment_variable_name = "JSON_CONFIG"

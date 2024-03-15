@@ -351,7 +351,8 @@ def summarize_results(probe_results):
     Summarize the results of the probe run
     """
     logger = get_logger()
-    logger.info("Summarizing probe results")
+    logger.debug("Summarizing probe results")
+    logger.debug("Current probe results", probe_results=probe_results)
     # Dict of pass/fail/warn/error counts defaulting to 0
     summary = defaultdict(int)
 
@@ -429,6 +430,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     labels["policy.kubernetes.io/engine"] = "netcheck"
     report_results = convert_results_for_policy_report(probe_results, logger)
     report_summary = summarize_results(probe_results)
+    logger.debug("Probe Summary", data=report_summary)
     policy_report_body = {
         "apiVersion": "wgpolicyk8s.io/v1alpha2",
         "kind": "PolicyReport",
@@ -455,7 +457,35 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
             plural="policyreports",
             name=assertion_name,
         )
-        logger.debug("Existing policy report found", report_uid=policy_report["metadata"]["uid"])
+        logger.debug(
+            "Existing policy report found",
+            report_uid=policy_report["metadata"]["uid"],
+            existing_summary=policy_report["summary"],
+        )
+        # Python Kubernetes library doesn't currently support JSON PATCH or we could be very specific
+        # about what to update. Instead we have to do a full replace of the summary and append the new results
+        # https://github.com/kubernetes-client/python/issues/2039
+        # [
+        #     # Update the summary with full "replace"
+        #     {"op": "remove", "path": "summary", "value": report_summary},
+        #     # Append the new results to the existing results
+        #     {"op": "add", "path": "/results/-", "value": report_results},
+        # ]
+
+        # Instead we use a JSON Merge Patch syntax (with the entire existing body)
+        summary_json_merge_patch_body = {
+            k: report_summary[k] if k in report_summary else None for k in "pass fail warn error skip".split()
+        }
+        policy_report_body["summary"] = summary_json_merge_patch_body
+
+        # Append the new results to the existing results
+        policy_report_body["results"] = policy_report["results"] + report_results
+
+        # Limit the number of results to the configured maximum
+        logger.info("Max limit", max_results=settings.policy_report_max_results)
+        if len(policy_report_body["results"]) > settings.policy_report_max_results:
+            policy_report_body["results"] = policy_report_body["results"][-settings.policy_report_max_results :]
+
         crd_api.patch_namespaced_custom_object(
             group="wgpolicyk8s.io",
             version="v1alpha2",
