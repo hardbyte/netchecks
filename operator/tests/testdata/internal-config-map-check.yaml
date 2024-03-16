@@ -1,0 +1,18 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: internal-k8s-config-check
+  annotations:
+    description: Assert probe can access and validate configmap data
+spec:
+  context:
+    - name: somecontext
+      configMap:
+        name: some-config-map
+  schedule: "*/10 * * * *"
+  rules:
+    - name: validate-configmap-value
+      type: internal
+      validate:
+        message: Configmap should have particular value
+        pattern: "somecontext.foo == 'bar'"
