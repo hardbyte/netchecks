@@ -24,7 +24,7 @@ netcheck = "netcheck.cli:app"
 pytest = ">=7.2,<9.0"
 coveralls = "^3.3.1"
 pytest-cov = "^4.0.0"
-ruff = ">=0.0.241,<0.3.3"
+ruff = ">=0.0.241,<0.3.4"
 
 [tool.ruff]
 line-length = 120
