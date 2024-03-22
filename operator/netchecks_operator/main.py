@@ -473,17 +473,18 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
         # ]
 
         # Instead we use a JSON Merge Patch syntax (with the entire existing body)
+        # Replace the summary
         summary_json_merge_patch_body = {
             k: report_summary[k] if k in report_summary else None for k in "pass fail warn error skip".split()
         }
         policy_report_body["summary"] = summary_json_merge_patch_body
 
-        # Append the new results to the existing results
-        policy_report_body["results"] = policy_report["results"] + report_results
+        # Replace the results (old ones are policy_report["results"])
+        policy_report_body["results"] = report_results
 
         # Limit the number of results to the configured maximum
-        logger.info("Max limit", max_results=settings.policy_report_max_results)
         if len(policy_report_body["results"]) > settings.policy_report_max_results:
+            logger.info("Truncating PolicyReport results", max_results=settings.policy_report_max_results)
             policy_report_body["results"] = policy_report_body["results"][-settings.policy_report_max_results :]
 
         crd_api.patch_namespaced_custom_object(
