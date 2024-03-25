@@ -6,13 +6,13 @@ icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.14
+version: 0.1.15
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "0.5.1"
+appVersion: "0.5.2"
 sources:
   - https://github.com/hardbyte/netchecks
 maintainers:
@@ -78,6 +78,6 @@ annotations:
               message: Http request to Kubernetes API should succeed.
 dependencies:
   - name: policy-reporter
-    version: 2.19.4
+    version: 2.22.4
     repository: https://kyverno.github.io/policy-reporter
     condition: policy-reporter.enabled
