@@ -61,12 +61,13 @@ ASSERTION_TEST_TIME = prometheus.Summary(
 )
 
 
+@kopf.on.resume("networkassertions.v1.netchecks.io")
 @kopf.on.create("networkassertions.v1.netchecks.io")
 def creation(body, spec, name, namespace, **kwargs):
     with ASSERTION_REQUEST_TIME.labels(name, "create").time():
         logger = get_logger(name=name, namespace=namespace)
         batch_v1 = client.BatchV1Api()
-        logger.info("NetworkAssertion on-create handler called")
+        logger.info("NetworkAssertion on-create/on-resume handler called")
         ASSERTION_COUNT.labels(name).inc()
 
         logger.debug("Requested NetworkAssertion body", body=body)
@@ -84,7 +85,7 @@ def creation(body, spec, name, namespace, **kwargs):
         # Grab any template overrides (metadata, spec->serviceAccountName)
         job_template = spec.get("template")
 
-        cm_response = create_network_assertions_config_map(name, rules, context_definitions, namespace, logger)
+        cm_response = upsert_network_assertions_config_map(name, rules, context_definitions, namespace, logger)
 
         disable_redaction = spec.get("disableRedaction", False)
 
@@ -114,10 +115,18 @@ def creation(body, spec, name, namespace, **kwargs):
                 metadata=client.V1ObjectMeta(name=name),
                 spec=cron_job_spec,
             )
-            logger.info("Creating CronJob in k8s")
+
             logger.debug("Linking CronJob with NetworkAssertion")
             kopf.adopt(cron_job)
-            api_response = batch_v1.create_namespaced_cron_job(body=cron_job, namespace=namespace)
+
+            # If exists -> replace
+            existing_cron_jobs = batch_v1.list_namespaced_cron_job(name=name, namespace=namespace, label_selector=get_common_labels(name))
+            if len(existing_cron_jobs.items):
+                logger.debug("Replacing existing cronjob")
+                api_response = batch_v1.replace_namespaced_cron_job(name=name, namespace=namespace, body=cron_job)
+            else:
+                logger.debug("Creating cronjob")
+                api_response = batch_v1.create_namespaced_cron_job(body=cron_job, namespace=namespace)
             # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
             kopf.info(
                 body,
@@ -129,8 +138,12 @@ def creation(body, spec, name, namespace, **kwargs):
             logger.info("Creating a Job")
             logger.debug("Linking job with NetworkAssertion")
             kopf.adopt(job)
-            # It is possible for this to fail as we don't validate everything from the user's input
-            api_response = batch_v1.create_namespaced_job(body=job, namespace=namespace)
+            existing_jobs = batch_v1.list_namespaced_job(namespace=namespace, label_selector=get_common_labels(name))
+            if len(existing_jobs.items):
+                logger.debug("Replacing existing job")
+                api_response = batch_v1.replace_namespaced_job(name=name, namespace=namespace, body=job)
+            else:
+                api_response = batch_v1.create_namespaced_job(body=job, namespace=namespace)
             logger.info("Pushed job object to k8s api")
             # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
             kopf.info(
@@ -185,16 +198,19 @@ def transform_context_for_config_file(context):
     return result
 
 
-def create_network_assertions_config_map(name, rules, contexts: List, namespace, logger):
+def upsert_network_assertions_config_map(name, rules, contexts: List, namespace, logger):
     core_api = client.CoreV1Api()
 
     # Transform the provided contexts into netcheck cli format
     cli_contexts = [transform_context_for_config_file(c) for c in contexts]
 
-    logger.info("transformed contexts", transformed=cli_contexts)
-    # This will inherit the name of the network assertion
+    logger.debug("Transformed contexts", transformed=cli_contexts)
+    logger.debug("Upserting network assertions configmap")
+
+    labels = get_common_labels(name)
+
     config_map = V1ConfigMap(
-        metadata=V1ObjectMeta(labels=get_common_labels(name)),
+        metadata=V1ObjectMeta(labels=labels),
         data={
             # This gets mounted at /netcheck/config.json
             # For now we create one "Assertion", with all the rules
@@ -214,12 +230,24 @@ def create_network_assertions_config_map(name, rules, contexts: List, namespace,
             )
         },
     )
-    kopf.adopt(config_map)
-    logger.info("Creating config map")
-    logger.debug("Config map spec", cm=config_map)
-    cm_response = core_api.create_namespaced_config_map(namespace=namespace, body=config_map)
-    logger.info("Created config map")
-    logger.debug("K8s response to creating config map", cm=cm_response)
+    crd_api = client.CustomObjectsApi()
+    parent_network_assertion = crd_api.get_namespaced_custom_object(
+        group=API_GROUP_NAME, version="v1", namespace=namespace, plural="networkassertions", name=name
+    )
+    kopf.adopt(config_map, owner=parent_network_assertion)
+
+    # If the config map exists patch it, otherwise create it
+    existing_config_maps = core_api.list_namespaced_config_map(namespace=namespace, label_selector=labels)
+    if len(existing_config_maps["items"]) > 0:
+        logger.debug("Existing configmap found - replacing")
+        cm_response = core_api.replace_namespaced_config_map(name, namespace=namespace, body=config_map)
+    else:
+        logger.info("Creating config map")
+        logger.debug("Config map spec", cm=config_map)
+        cm_response = core_api.create_namespaced_config_map(namespace=namespace, body=config_map)
+        logger.info("Created config map")
+
+    logger.debug("K8s response to upserting config map", cm=cm_response)
     return cm_response
 
 
@@ -284,13 +312,6 @@ def delete(name, namespace, **kwargs):
     logger = get_logger(name=name, namespace=namespace)
     logger.info("networkassertion delete handler called")
 
-
-@kopf.on.resume("networkassertions.v1.netchecks.io")
-def on_resume(spec, name, namespace, **kwargs):
-    logger = get_logger(name=name, namespace=namespace)
-    logger.info("networkassertions resume handler called")
-
-    # May need to explicitly restart daemon?
 
 
 @kopf.daemon(
