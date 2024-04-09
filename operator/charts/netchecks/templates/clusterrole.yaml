@@ -42,16 +42,18 @@ rules:
   - apiGroups: [batch, extensions]
     resources: [jobs, cronjobs]
     verbs: [create, delete]
-  # We directly create config maps. At some point we may need to patch them.
+
+  # We directly create and update config maps for probes.
   - apiGroups: [""]
     resources: [configmaps]
-    verbs: [create, delete]
+    verbs: [list, get, patch, create, update, watch]
 
-  # The can be restricted to our operator namespace:
+  # TODO: see if we can restrict this to our operator namespace
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch", "patch"]
 
+  # We need to watch our probe Pod's logs
   - apiGroups: [""]
     resources: ["pods/log"]
     verbs: ["get", "list", "watch"]
