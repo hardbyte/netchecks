@@ -120,13 +120,16 @@ def creation(body, spec, name, namespace, **kwargs):
             kopf.adopt(cron_job)
 
             # If exists -> replace
-            existing_cron_jobs = batch_v1.list_namespaced_cron_job(name=name, namespace=namespace, label_selector=get_common_labels(name))
-            if len(existing_cron_jobs.items):
+            try:
+                batch_v1.read_namespaced_cron_job(name=name, namespace=namespace)
                 logger.debug("Replacing existing cronjob")
                 api_response = batch_v1.replace_namespaced_cron_job(name=name, namespace=namespace, body=cron_job)
-            else:
-                logger.debug("Creating cronjob")
-                api_response = batch_v1.create_namespaced_cron_job(body=cron_job, namespace=namespace)
+            except ApiException as e:
+                if e.status == 404:
+                    logger.debug("Creating cronjob")
+                    api_response = batch_v1.create_namespaced_cron_job(body=cron_job, namespace=namespace)
+                else:
+                    raise e
             # Attach an event to the NetworkAssertion (visible with `kubectl describe networkassertion/xyz`)
             kopf.info(
                 body,
@@ -138,7 +141,7 @@ def creation(body, spec, name, namespace, **kwargs):
             logger.info("Creating a Job")
             logger.debug("Linking job with NetworkAssertion")
             kopf.adopt(job)
-            existing_jobs = batch_v1.list_namespaced_job(namespace=namespace, label_selector=get_common_labels(name))
+            existing_jobs = batch_v1.list_namespaced_job(namespace=namespace, label_selector=get_label_selector(name))
             if len(existing_jobs.items):
                 logger.debug("Replacing existing job")
                 api_response = batch_v1.replace_namespaced_job(name=name, namespace=namespace, body=job)
@@ -236,18 +239,21 @@ def upsert_network_assertions_config_map(name, rules, contexts: List, namespace,
     )
     kopf.adopt(config_map, owner=parent_network_assertion)
 
-    # If the config map exists patch it, otherwise create it
-    existing_config_maps = core_api.list_namespaced_config_map(namespace=namespace, label_selector=labels)
-    if len(existing_config_maps["items"]) > 0:
-        logger.debug("Existing configmap found - replacing")
-        cm_response = core_api.replace_namespaced_config_map(name, namespace=namespace, body=config_map)
-    else:
-        logger.info("Creating config map")
-        logger.debug("Config map spec", cm=config_map)
-        cm_response = core_api.create_namespaced_config_map(namespace=namespace, body=config_map)
-        logger.info("Created config map")
+    # If the config map exists replace it, otherwise create a new one
+    try:
+        existing_config_maps = core_api.read_namespaced_config_map(name=name, namespace=namespace)
+        logger.warning("Existing configmaps", existing_config_maps=existing_config_maps)
 
-    logger.debug("K8s response to upserting config map", cm=cm_response)
+        logger.debug("Existing configmap found - replacing", name=name)
+        cm_response = core_api.replace_namespaced_config_map(name, namespace=namespace, body=config_map)
+    except ApiException as e:
+        if e.status == 404:
+            logger.info("Creating config map")
+            cm_response = core_api.create_namespaced_config_map(namespace=namespace, body=config_map)
+            logger.info("Created config map")
+        else:
+            raise e
+    logger.debug("Upserted config map for NetworkAssertion", name=name)
     return cm_response
 
 
@@ -340,6 +346,9 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                 logger.info("Waiting for pod to start")
                 sleep(5)
                 continue
+            case "Failed":
+                logger.warning("Pod failed to start - check the pod logs")
+                stopped = True
             case "Succeeded":
                 # Note it is possible to get here concurrently for the same network assertion
                 # (e.g. after operator restart) so we add a random backoff to avoid contention
@@ -602,6 +611,10 @@ def get_common_labels(name):
         "app.kubernetes.io/version": NETCHECK_OPERATOR_VERSION,
         "app.kubernetes.io/instance": name,
     }
+
+
+def get_label_selector(name):
+    return f"app.kubernetes.io/instance={name},app.kubernetes.io/name=netchecks"
 
 
 def create_job_spec(
