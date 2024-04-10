@@ -41,12 +41,12 @@ rules:
   # The operator can create and delete CronJobs & Jobs
   - apiGroups: [batch, extensions]
     resources: [jobs, cronjobs]
-    verbs: [create, delete]
+    verbs: [create, list, get, update, delete]
 
-  # We directly create and update config maps for probes.
+  # We directly create, update and delete config maps for probes.
   - apiGroups: [""]
     resources: [configmaps]
-    verbs: [list, get, patch, create, update, watch]
+    verbs: [list, get, patch, create, update, delete]
 
   # TODO: see if we can restrict this to our operator namespace
   - apiGroups: [""]

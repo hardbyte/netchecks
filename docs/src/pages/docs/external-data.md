@@ -256,3 +256,30 @@ spec:
         message: Http request with header to pie.dev service should reply with header value
         pattern: "parse_json(data.body).headers['X-Netcheck-Header'] == somecontext.API_TOKEN"
 ```
+
+## Override Service Account for a 
+
+Netchecks probes run using the ``default`` service account in the target namespace. In 
+some environments you will need to create ServiceAccounts for your probes and grant permissions to the service account using RBAC. Many custom overrides for the generated
+Job/CronJob can be achieved using the Network Assertion ``template``:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: netcheck-test-probe-account
+  labels:
+    app.kubernetes.io/instance: netchecks
+---
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: custom-service-account
+  annotations:
+    description: Probe with custom service account
+spec:
+  template:
+    spec:
+      serviceAccountName: netcheck-test-probe-account
+  rules: []
+```
