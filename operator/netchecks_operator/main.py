@@ -638,7 +638,7 @@ def create_job_spec(
         context_name = context_definition["name"]
 
         # Would be great to use Kubernetes client to generate/validate this
-        # For now we assume ConfigMap, later support Secret here too
+        # For now we assume ConfigMap or Secret
         if "configMap" in context_definition:
             volumes.append(
                 V1Volume(
