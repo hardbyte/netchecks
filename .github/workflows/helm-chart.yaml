@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Helm Chart lint
         run: |
-            ct lint \
-                    --target-branch=main \
-                    --validate-maintainers=true \
-                    --chart-dirs charts
+          ct lint \
+                  --target-branch=main \
+                  --validate-maintainers=true \
+                  --chart-dirs charts

@@ -1,0 +1,10 @@
+[default]
+locale = "en-au"
+
+extend-ignore-words-re = ["Ded"]
+
+[files]
+ignore-vcs = true
+extend-exclude = [
+  ".git",
+]
