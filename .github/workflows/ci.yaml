@@ -2,17 +2,16 @@ name: CI
 
 on:
   release:
-    types: [ published ]
+    types: [published]
   pull_request:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v*'
+      - "v*"
 
 defaults:
   run:
     shell: bash
-
 
 jobs:
   probe_tests:
@@ -20,8 +19,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macOS-13]
-        python: [ "3.10", "3.11"]
+        os: [ubuntu-latest, windows-latest, macOS-13]
+        python: ["3.10", "3.11"]
       fail-fast: true
     env:
       OS: ${{ matrix.os }}
@@ -66,11 +65,11 @@ jobs:
     needs: probe_tests
     runs-on: ubuntu-latest
     steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        parallel-finished: true
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true
 
   probe_package:
     name: Probe Library Packaging
@@ -216,7 +215,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels:
+            ${{ steps.meta.outputs.labels }}
             #      - name: Install Cosign
             #        uses: sigstore/cosign-installer@main
             #      - name: Sign the images with GitHub OIDC Token
@@ -224,7 +224,6 @@ jobs:
             #        if: github.event_name != 'pull_request'
             #        env:
             #          TAGS: ${{ steps.meta.outputs.tags }}
-
 
   k8s:
     name: Kubernetes Integration Tests
@@ -294,7 +293,7 @@ jobs:
 
       - name: Install Cilium
         run: |
-          cilium install --version ${{ env.cilium_version }} 
+          cilium install --version ${{ env.cilium_version }}
 
       - name: Wait for Cilium Operator
         run: |
@@ -331,15 +330,15 @@ jobs:
           poetry run pytest
         timeout-minutes: 10
 
-#      - name: Enable Hubble Relay
-#        run: |
-#          cilium hubble enable --ui
-#
-#      - name: Relay Port Forward
-#        run: |
-#          cilium hubble port-forward&
-#          sleep 10s
-#          [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
+      #      - name: Enable Hubble Relay
+      #        run: |
+      #          cilium hubble enable --ui
+      #
+      #      - name: Relay Port Forward
+      #        run: |
+      #          cilium hubble port-forward&
+      #          sleep 10s
+      #          [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
 
       - name: Run Integration Tests (with Cilium)
         run: |

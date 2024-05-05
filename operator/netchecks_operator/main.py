@@ -95,7 +95,7 @@ def creation(body, spec, name, namespace, **kwargs):
             cm_response,
             context_definitions,
             settings,
-            template_overides=job_template,
+            template_overrides=job_template,
             disable_redaction=disable_redaction,
         )
         logger.debug("Job spec created")
@@ -622,7 +622,7 @@ def create_job_spec(
     cm: V1ConfigMap,
     context_definitions: List,
     settings: Config,
-    template_overides: dict = None,
+    template_overrides: dict = None,
     disable_redaction: bool = False,
 ):
     volumes = [
@@ -709,9 +709,9 @@ def create_job_spec(
         ),
     )
 
-    if template_overides:
-        print("Applying template overrides", template_overides)
-        pod_template = apply_overrides(pod_template, template_overides)
+    if template_overrides:
+        print("Applying template overrides", template_overrides)
+        pod_template = apply_overrides(pod_template, template_overrides)
 
         print(pod_template)
         # pod_template = client.V1PodTemplateSpec(**overridden_pod_template_dict)

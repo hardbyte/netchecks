@@ -93,7 +93,7 @@ def test_default_http_check_should_fail():
     assert data["status"] == "fail"
 
 
-def test_http_check_with_timout():
+def test_http_check_with_timeout():
     result = runner.invoke(app, ["http", "--timeout", "2.1", "--url", "https://pie.dev/status/200"])
     assert result.exit_code == 0
 
