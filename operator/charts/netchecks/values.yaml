@@ -73,6 +73,14 @@ operator:
   affinity: {}
 
 probeConfig:
+  # Default resources for created probes
+  resources:
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+    requests:
+      cpu: "20m"
+      memory: "64Mi"
   image:
     repository: ghcr.io/hardbyte/netchecks
     pullPolicy: IfNotPresent
