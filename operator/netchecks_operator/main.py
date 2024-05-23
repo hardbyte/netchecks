@@ -17,6 +17,7 @@ from kubernetes.client import (
     V1Volume,
     V1VolumeMount,
     V1SecretVolumeSource,
+    V1ResourceRequirements,
 )
 from structlog import get_logger
 from rich import print
@@ -693,6 +694,7 @@ def create_job_spec(
         image_pull_policy=settings.probe.image.pullPolicy,
         command=command,
         volume_mounts=volume_mounts,
+        resources=client.V1ResourceRequirements(limits=settings.probe.resources["limits"],requests=settings.probe.resources["requests"]),
         env=[
             # V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
         ],
