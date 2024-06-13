@@ -6,6 +6,10 @@ from json import JSONDecodeError
 from time import sleep
 from typing import List
 
+from opentelemetry import metrics
+from opentelemetry.exporter.prometheus import PrometheusMetricsExporter
+from opentelemetry.sdk.metrics.export.controller import PushController
+from opentelemetry.sdk.metrics import MeterProvider
 import prometheus_client as prometheus
 
 from kubernetes.client import (
@@ -26,24 +30,34 @@ from kubernetes import client
 from netchecks_operator.config import Config
 from importlib import metadata
 
+
 try:
     NETCHECK_OPERATOR_VERSION = metadata.version("netcheck-operator")
 except metadata.PackageNotFoundError:
     NETCHECK_OPERATOR_VERSION = "unknown"
 
 
-logger = get_logger()
 settings = Config()
+logger = get_logger()
+
 
 logger.debug("Starting operator", config=settings.json())
 if settings.metrics.enabled:
-    prometheus.start_http_server(settings.metrics.port)
+    prometheus.start_http_server(port=settings.metrics.port)
 
 
 API_GROUP_NAME = "netchecks.io"
 
-# define Prometheus metrics
-ASSERTION_COUNT = prometheus.Counter("netchecks_assertions", "Number of network assertions", ["name"])
+# Initialize metrics
+metrics.set_meter_provider(MeterProvider())
+meter = metrics.get_meter(__name__)
+metric_exporter = PrometheusMetricsExporter("netchecks")
+metric_controller = PushController(meter, metric_exporter, 5)
+
+# define metrics
+
+ASSERTION_COUNT = meter.create_counter("netchecks_assertions", description="Number of network assertions")
+#ASSERTION_COUNT = prometheus.Counter("netchecks_assertions", "Number of network assertions", ["name"])
 ASSERTION_REQUEST_TIME = prometheus.Summary(
     "netchecks_operator_assertion_processing_seconds",
     "Time spent processing network assertions by the netchecks operator",
@@ -68,7 +82,7 @@ def creation(body, spec, name, namespace, **kwargs):
         logger = get_logger(name=name, namespace=namespace)
         batch_v1 = client.BatchV1Api()
         logger.info("NetworkAssertion on-create/on-resume handler called")
-        ASSERTION_COUNT.labels(name).inc()
+        ASSERTION_COUNT.add(1, {'name': name})
 
         logger.debug("Requested NetworkAssertion body", body=body)
         logger.info("Requested NetworkAssertion spec", spec=spec)
