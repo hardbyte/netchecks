@@ -1,14 +1,16 @@
 import datetime
 import json
 import random
+import time
 from collections import defaultdict
+from contextlib import contextmanager
 from json import JSONDecodeError
 from time import sleep
 from typing import List
 
 from opentelemetry import metrics
-from opentelemetry.exporter.prometheus import PrometheusMetricsExporter
-from opentelemetry.sdk.metrics.export.controller import PushController
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.metrics import Synchronous, Counter, Histogram
 from opentelemetry.sdk.metrics import MeterProvider
 import prometheus_client as prometheus
 
@@ -22,6 +24,7 @@ from kubernetes.client import (
     V1VolumeMount,
     V1SecretVolumeSource,
 )
+from opentelemetry.sdk.resources import Attributes
 from structlog import get_logger
 from rich import print
 import kopf
@@ -43,42 +46,58 @@ logger = get_logger()
 
 logger.debug("Starting operator", config=settings.json())
 if settings.metrics.enabled:
+    logger.debug("Starting metrics", metrics_port=settings.metrics.port)
     prometheus.start_http_server(port=settings.metrics.port)
 
 
 API_GROUP_NAME = "netchecks.io"
 
 # Initialize metrics
-metrics.set_meter_provider(MeterProvider())
-meter = metrics.get_meter(__name__)
-metric_exporter = PrometheusMetricsExporter("netchecks")
-metric_controller = PushController(meter, metric_exporter, 5)
+metric_prefix = f"netchecks_"
+metrics.set_meter_provider(MeterProvider(metric_readers=[PrometheusMetricReader(metric_prefix)]))
+meter = metrics.get_meter("netchecks-operator", version=NETCHECK_OPERATOR_VERSION)
+
 
 # define metrics
 
 ASSERTION_COUNT = meter.create_counter("netchecks_assertions", description="Number of network assertions")
-#ASSERTION_COUNT = prometheus.Counter("netchecks_assertions", "Number of network assertions", ["name"])
-ASSERTION_REQUEST_TIME = prometheus.Summary(
-    "netchecks_operator_assertion_processing_seconds",
-    "Time spent processing network assertions by the netchecks operator",
-    ["name", "method"],
+
+ASSERTION_REQUEST_TIME = meter.create_histogram(
+    "assertion_processing_duration",
+    unit='s',
+    description="Time spent processing network assertions by the netchecks operator",
+
 )
-ASSERTION_RESULT_TIME = prometheus.Summary(
+ASSERTION_RESULT_TIME = meter.create_histogram(
     "netchecks_operator_assertion_results_processing_seconds",
+    's',
     "Time spent processing network assertion results by the netchecks operator",
 )
 
-ASSERTION_TEST_TIME = prometheus.Summary(
+ASSERTION_TEST_TIME = meter.create_histogram(
     "netchecks_probe_processing_seconds",
-    "Time spent testing network assertions by netchecks probe",
-    ["name", "type"],
+    unit='s',
+    description="Time spent testing network assertions by netchecks probe",
 )
+
+
+@contextmanager
+def metered_duration(instrument: Counter | Histogram, attributes: Attributes | None = None):
+    start_time = time.time()
+    try:
+        yield
+    finally:
+        duration = time.time() - start_time
+        if isinstance(instrument, Counter):
+            instrument.add(amount=duration, attributes=attributes)
+        elif isinstance(instrument, Histogram):
+            instrument.record(duration, attributes=attributes)
 
 
 @kopf.on.resume("networkassertions.v1.netchecks.io")
 @kopf.on.create("networkassertions.v1.netchecks.io")
 def creation(body, spec, name, namespace, **kwargs):
-    with ASSERTION_REQUEST_TIME.labels(name, "create").time():
+    with metered_duration(ASSERTION_REQUEST_TIME, {'name': name, 'method': 'create'}):
         logger = get_logger(name=name, namespace=namespace)
         batch_v1 = client.BatchV1Api()
         logger.info("NetworkAssertion on-create/on-resume handler called")
@@ -341,12 +360,10 @@ def delete(name, namespace, **kwargs):
         "app.kubernetes.io/component": "probe",
     },
 )
-@ASSERTION_RESULT_TIME.time()
 def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwargs):
     logger = get_logger(name=name, namespace=namespace)
     logger.info("Monitoring pod")
     core_v1 = client.api.core_v1_api.CoreV1Api()
-
     while not stopped:
         logger.debug("Getting pod status")
         pod: V1Pod = core_v1.read_namespaced_pod(name=name, namespace=namespace)
@@ -381,7 +398,8 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                     return
 
                 # Process the results, creating or updating the associated PolicyReport
-                process_probe_output(pod_log, assertion_name, namespace, name)
+                with metered_duration(ASSERTION_RESULT_TIME, {'assertion_name': assertion_name}):
+                    process_probe_output(pod_log, assertion_name, namespace, name)
 
                 break
             case _:
@@ -592,8 +610,12 @@ def process_probe_output(pod_log: str, network_assertion_name, namespace, pod_na
             test_end_iso_timestamp = datetime.datetime.fromisoformat(test_result["data"]["endTimestamp"])
             test_duration = (test_end_iso_timestamp - test_start_iso_timestamp).total_seconds()
 
-            ASSERTION_TEST_TIME.labels(name=network_assertion_name, type=test_result["spec"]["type"]).observe(
-                test_duration
+            ASSERTION_TEST_TIME.record(
+                test_duration,
+                {
+                    'name': network_assertion_name,
+                    'type': test_result["spec"]["type"],
+                }
             )
 
 
