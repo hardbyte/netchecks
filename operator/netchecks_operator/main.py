@@ -64,19 +64,18 @@ ASSERTION_COUNT = meter.create_counter("netchecks_assertions", description="Numb
 
 ASSERTION_REQUEST_TIME = meter.create_histogram(
     "assertion_processing_duration",
-    unit='s',
+    unit="s",
     description="Time spent processing network assertions by the netchecks operator",
-
 )
 ASSERTION_RESULT_TIME = meter.create_histogram(
     "netchecks_operator_assertion_results_processing_seconds",
-    's',
+    "s",
     "Time spent processing network assertion results by the netchecks operator",
 )
 
 ASSERTION_TEST_TIME = meter.create_histogram(
     "netchecks_probe_processing_seconds",
-    unit='s',
+    unit="s",
     description="Time spent testing network assertions by netchecks probe",
 )
 
@@ -97,11 +96,11 @@ def metered_duration(instrument: Counter | Histogram, attributes: Attributes | N
 @kopf.on.resume("networkassertions.v1.netchecks.io")
 @kopf.on.create("networkassertions.v1.netchecks.io")
 def creation(body, spec, name, namespace, **kwargs):
-    with metered_duration(ASSERTION_REQUEST_TIME, {'name': name, 'method': 'create'}):
+    with metered_duration(ASSERTION_REQUEST_TIME, {"name": name, "method": "create"}):
         logger = get_logger(name=name, namespace=namespace)
         batch_v1 = client.BatchV1Api()
         logger.info("NetworkAssertion on-create/on-resume handler called")
-        ASSERTION_COUNT.add(1, {'name': name})
+        ASSERTION_COUNT.add(1, {"name": name})
 
         logger.debug("Requested NetworkAssertion body", body=body)
         logger.info("Requested NetworkAssertion spec", spec=spec)
@@ -352,7 +351,6 @@ def delete(name, namespace, **kwargs):
     logger.info("networkassertion delete handler called")
 
 
-
 @kopf.daemon(
     "pod",
     labels={
@@ -398,7 +396,7 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
                     return
 
                 # Process the results, creating or updating the associated PolicyReport
-                with metered_duration(ASSERTION_RESULT_TIME, {'assertion_name': assertion_name}):
+                with metered_duration(ASSERTION_RESULT_TIME, {"assertion_name": assertion_name}):
                     process_probe_output(pod_log, assertion_name, namespace, name)
 
                 break
@@ -613,9 +611,9 @@ def process_probe_output(pod_log: str, network_assertion_name, namespace, pod_na
             ASSERTION_TEST_TIME.record(
                 test_duration,
                 {
-                    'name': network_assertion_name,
-                    'type': test_result["spec"]["type"],
-                }
+                    "name": network_assertion_name,
+                    "type": test_result["spec"]["type"],
+                },
             )
 
 

@@ -47,7 +47,6 @@ class ProbeConfig(BaseModel):
 
 
 class Config(BaseSettings):
-
     probe: ProbeConfig = ProbeConfig()
 
     metrics: MetricsConfig = MetricsConfig()
