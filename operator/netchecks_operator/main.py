@@ -10,7 +10,7 @@ from typing import List
 
 from opentelemetry import metrics
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
-from opentelemetry.metrics import Synchronous, Counter, Histogram
+from opentelemetry.metrics import Counter, Histogram
 from opentelemetry.sdk.metrics import MeterProvider
 import prometheus_client as prometheus
 
@@ -53,8 +53,8 @@ if settings.metrics.enabled:
 API_GROUP_NAME = "netchecks.io"
 
 # Initialize metrics
-metric_prefix = f"netchecks_"
-metrics.set_meter_provider(MeterProvider(metric_readers=[PrometheusMetricReader(metric_prefix)]))
+
+metrics.set_meter_provider(MeterProvider(metric_readers=[PrometheusMetricReader()]))
 meter = metrics.get_meter("netchecks-operator", version=NETCHECK_OPERATOR_VERSION)
 
 
@@ -63,7 +63,7 @@ meter = metrics.get_meter("netchecks-operator", version=NETCHECK_OPERATOR_VERSIO
 ASSERTION_COUNT = meter.create_counter("netchecks_assertions", description="Number of network assertions")
 
 ASSERTION_REQUEST_TIME = meter.create_histogram(
-    "assertion_processing_duration",
+    "netchecks_assertion_processing_duration",
     unit="s",
     description="Time spent processing network assertions by the netchecks operator",
 )
