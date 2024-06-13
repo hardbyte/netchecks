@@ -18,10 +18,10 @@ def test_internal_check(netchecks, k8s_namespace, test_file_path):
     # Assert that a CronJob gets created in the same namespace
     _assert_cronjob_created(assertion_name, k8s_namespace)
 
-    _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, 'a')
+    _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, "a")
 
     # Assert that a Job gets created in the same namespace
-    _assert_job_created(assertion_name+'-a', k8s_namespace)
+    _assert_job_created(assertion_name + "-a", k8s_namespace)
 
     # Wait for the job to complete
     subprocess.run(
@@ -52,7 +52,7 @@ def test_internal_check(netchecks, k8s_namespace, test_file_path):
     )
 
     # Manually trigger a re-evaluation of the assertion
-    suffix = 'b'
+    suffix = "b"
     _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, suffix)
 
     # Assert that a Job gets created in the same namespace
@@ -115,7 +115,7 @@ def _assert_policy_report_present(assertion_name, k8s_namespace):
         )
         if assertion_name.encode() in policy_report_response.stdout:
             break
-        time.sleep(1.5 ** i)
+        time.sleep(1.5**i)
     assert assertion_name.encode() in policy_report_response.stdout
 
 
@@ -130,7 +130,7 @@ def _assert_job_created(job_name, k8s_namespace):
         )
         if job_name.encode() in jobs_response.stdout:
             break
-        time.sleep(1.5 ** i)
+        time.sleep(1.5**i)
 
 
 def _assert_cronjob_created(assertion_name, k8s_namespace):
@@ -143,10 +143,10 @@ def _assert_cronjob_created(assertion_name, k8s_namespace):
         )
         if assertion_name.encode() in jobs_response.stdout:
             break
-        time.sleep(1.5 ** i)
+        time.sleep(1.5**i)
 
 
-def _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, manual_trigger_suffix='manual-trigger'):
+def _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, manual_trigger_suffix="manual-trigger"):
     for i in range(10):
         jobs_response = subprocess.run(
             f"kubectl create job --from=cronjob/{assertion_name} -n {k8s_namespace} {assertion_name}-{manual_trigger_suffix}",
@@ -156,4 +156,4 @@ def _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, manual_tr
         )
         if "created".encode() in jobs_response.stdout:
             break
-        time.sleep(1.5 ** i)
+        time.sleep(1.5**i)
