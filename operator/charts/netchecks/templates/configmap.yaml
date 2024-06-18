@@ -13,6 +13,7 @@ data:
           "tag":{{ .Values.probeConfig.image.tag | default .Chart.AppVersion | quote }}
         },
         "imagePullSecrets": {{ .Values.probeConfig.imagePullSecrets | toJson }},
-        "podAnnotations": {{ .Values.probeConfig.podAnnotations | toJson }}
+        "podAnnotations": {{ .Values.probeConfig.podAnnotations | toJson }},
+        "resources": {{ .Values.probeConfig.resources | toJson }}
         }
     }

@@ -23,6 +23,7 @@ from kubernetes.client import (
     V1Volume,
     V1VolumeMount,
     V1SecretVolumeSource,
+    V1ResourceRequirements
 )
 from opentelemetry.sdk.resources import Attributes
 from structlog import get_logger
@@ -719,6 +720,13 @@ def create_job_spec(
     if disable_redaction:
         command.append("--disable-redaction")
 
+    resources = None
+    if settings.probe.resources is not None:
+        resources = V1ResourceRequirements(
+            requests=settings.probe.resources.requests,
+            limits=settings.probe.resources.limits,
+        )
+
     logger.info("Probe command", command=command)
     container = client.V1Container(
         name="netcheck",
@@ -730,6 +738,7 @@ def create_job_spec(
         env=[
             # V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
         ],
+        resources=resources,
     )
     # Create and configure a pod spec section
     labels = get_common_labels(name)

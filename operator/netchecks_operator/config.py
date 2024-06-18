@@ -38,11 +38,17 @@ class ImageConfig(BaseModel):
     tag: str = "main"
 
 
+class Resources(BaseModel):
+    claims: any = None
+    limits: dict[str, str] | None = None
+    requests: dict[str, str] | None = None
+
+
 class ProbeConfig(BaseModel):
     imagePullSecrets: list[str] = []
     podAnnotations: dict[str, str] = {}
     image: ImageConfig = ImageConfig()
-    resources: dict[str, dict] = {}
+    resources: Resources | None = None
     verbose: bool = False  # Don't enable until the operator has been modified to split stdout and stderr
 
 
