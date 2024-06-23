@@ -12,16 +12,15 @@ data:
           "repository":{{ .Values.probeConfig.image.repository | quote }},
           "tag":{{ .Values.probeConfig.image.tag | default .Chart.AppVersion | quote }}
         },
-        "resources": {
-          "limits": {
-             "cpu":{{ .Values.probeConfig.resources.limits.cpu | quote }},
-             "memory":{{ .Values.probeConfig.resources.limits.memory | quote }}
-           },
-            "requests": {
-             "cpu":{{ .Values.probeConfig.resources.requests.cpu | quote }},
-             "memory":{{ .Values.probeConfig.resources.requests.memory | quote }}
-           }
-        },   
+        {{- if .Values.probeConfig.resources }}
+        "resources": {{ .Values.probeConfig.resources | toJson }},
+        {{- end }}
+        {{- if .Values.probeConfig.tolerations }}
+        "tolerations": {{ .Values.probeConfig.tolerations| toJson }},
+        {{- end }}
+        {{- if .Values.probeConfig.affinity }}
+        "affinity": {{ .Values.probeConfig.affinity | toJson }},
+        {{- end }}        
         "imagePullSecrets": {{ .Values.probeConfig.imagePullSecrets | toJson }},
         "podAnnotations": {{ .Values.probeConfig.podAnnotations | toJson }}
         }
