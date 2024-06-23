@@ -18,6 +18,7 @@ from kubernetes.client import (
     V1VolumeMount,
     V1SecretVolumeSource,
     V1ResourceRequirements,
+    V1Toleration
 )
 from structlog import get_logger
 from rich import print
