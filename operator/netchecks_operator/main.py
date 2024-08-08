@@ -23,6 +23,8 @@ from kubernetes.client import (
     V1Volume,
     V1VolumeMount,
     V1SecretVolumeSource,
+    V1ResourceRequirements,
+    V1Toleration
 )
 from opentelemetry.sdk.resources import Attributes
 from structlog import get_logger
@@ -718,7 +720,29 @@ def create_job_spec(
 
     if disable_redaction:
         command.append("--disable-redaction")
+        
+    resources1 = {}
 
+    try:
+      str1={}
+      resource=settings.probe.resources
+
+      if "limits" in resource:
+          str1["limits"]=resource["limits"]
+      else:
+          str1["limits"]=None
+
+      if "requests" in resource:
+          str1["requests"]=resource["requests"]
+      else:
+          str1["requests"]=None
+
+      print(str1)
+      resources1=client.V1ResourceRequirements(requests=str1["requests"],limits=str1["limits"])
+
+    except:
+      pass
+        
     logger.info("Probe command", command=command)
     container = client.V1Container(
         name="netcheck",
@@ -727,10 +751,61 @@ def create_job_spec(
         image_pull_policy=settings.probe.image.pullPolicy,
         command=command,
         volume_mounts=volume_mounts,
+        resources=resources1,
         env=[
             # V1EnvVar(name="NETCHECK_CONFIG", value="/netcheck/")
         ],
     )
+
+    # Tolerations
+    tolerations = []
+    try:
+      for i in settings.probe.tolerations:
+        if "key" in i:
+            key = i["key"]
+        else:
+            key = None
+        if "operator" in i:
+            operator=i["operator"]
+        else:
+            operator = None
+        if "effect" in i:
+            effect=i["effect"]
+        else:
+            effect = None
+        if "value" in i:
+            value=i["value"]
+        else:
+            value = None
+        if "toleration_seconds" in i:
+            toleration_seconds=i["tolerationSeconds"]
+        else:
+            toleration_seconds = None
+        tolerations.append(client.V1Toleration(effect,key,operator,toleration_seconds,value))
+    except:
+        pass
+
+    # NodeAffinity
+    print(settings.probe.affinity)
+    node_selector_terms=[]
+    match_expressions=[]
+    affinity={}
+
+    try:
+      for i in settings.probe.affinity["nodeAffinity"]["requiredDuringSchedulingIgnoredDuringExecution"]["nodeSelectorTerms"]:
+          for x in i["matchExpressions"]:
+             match_expressions.append(client.V1NodeSelectorRequirement(key=x["key"],operator=x["operator"],values=x["values"]))
+          node_selector_terms.append(client.V1NodeSelectorTerm(match_expressions=match_expressions))
+          match_expressions=[]
+
+      required_during = client.V1NodeSelector(node_selector_terms=node_selector_terms)
+      node_affinity = client.V1NodeAffinity(required_during_scheduling_ignored_during_execution=required_during)
+      affinity = client.V1Affinity(node_affinity=node_affinity)
+      print(affinity)
+    except:
+        pass
+
+    
     # Create and configure a pod spec section
     labels = get_common_labels(name)
     labels["app.kubernetes.io/component"] = "probe"

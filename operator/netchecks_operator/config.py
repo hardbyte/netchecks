@@ -44,6 +44,8 @@ class ProbeConfig(BaseModel):
     image: ImageConfig = ImageConfig()
     resources: dict[str, dict] = {}
     verbose: bool = False  # Don't enable until the operator has been modified to split stdout and stderr
+    tolerations: list[dict] = []
+    affinity: dict[str, dict] = {}
 
 
 class Config(BaseSettings):
