@@ -19,7 +19,7 @@ def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     settings_environment_variable_name = settings.__config__.settings_environment_variable_name
 
     if settings_environment_variable_name in os.environ:
-        config_file_path = Path(os.environ.get("JSON_CONFIG"))
+        config_file_path = Path(os.environ.get(settings_environment_variable_name))
         logger.debug("Setting config from file", config_file_path=config_file_path)
         return json.loads(config_file_path.read_text())
     else:
@@ -39,7 +39,7 @@ class ImageConfig(BaseModel):
 
 
 class Resources(BaseModel):
-    claims: any = None
+    claims: Any = None
     limits: dict[str, str] | None = None
     requests: dict[str, str] | None = None
 
@@ -49,6 +49,9 @@ class ProbeConfig(BaseModel):
     podAnnotations: dict[str, str] = {}
     image: ImageConfig = ImageConfig()
     resources: Resources | None = None
+    tolerations: list[dict] | None = None
+    affinity: dict[str, dict] | None = None
+
     verbose: bool = False  # Don't enable until the operator has been modified to split stdout and stderr
 
 

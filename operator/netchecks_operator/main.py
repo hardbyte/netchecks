@@ -23,7 +23,7 @@ from kubernetes.client import (
     V1Volume,
     V1VolumeMount,
     V1SecretVolumeSource,
-    V1ResourceRequirements
+    V1ResourceRequirements,
 )
 from opentelemetry.sdk.resources import Attributes
 from structlog import get_logger
@@ -740,6 +740,7 @@ def create_job_spec(
         ],
         resources=resources,
     )
+
     # Create and configure a pod spec section
     labels = get_common_labels(name)
     labels["app.kubernetes.io/component"] = "probe"

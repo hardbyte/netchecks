@@ -73,6 +73,13 @@ operator:
   affinity: {}
 
 probeConfig:
+
+  image:
+    repository: ghcr.io/hardbyte/netchecks
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+
   # Default resources for created probes
   resources: {}
 #    limits:
@@ -81,11 +88,6 @@ probeConfig:
 #    requests:
 #      cpu: "20m"
 #      memory: "64Mi"
-  image:
-    repository: ghcr.io/hardbyte/netchecks
-    pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: ""
 
   imagePullSecrets: []
 
@@ -99,8 +101,6 @@ probeConfig:
 #    name: "netcheck-probe-account"
 
   podAnnotations: {}
-
-  resources: {}
 
   nodeSelector: {}
 
