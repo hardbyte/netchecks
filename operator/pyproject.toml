@@ -10,19 +10,19 @@ packages = [{include = "netchecks_operator"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 kopf = "^1.37.1"
-kubernetes = "^29.0"
-rich = "^13.3"
-structlog = "^23.1.0"
-prometheus-client = "^0.16.0"
-pydantic = "^1.10.7"
+kubernetes = "^30.1"
+rich = "^13.8"
+structlog = "^24.4.0"
+prometheus-client = "^0.20.0"
+pydantic = "^2.9.1"
 opentelemetry-sdk = "^1.24.0"
 opentelemetry-exporter-otlp = "^1.24.0"
 opentelemetry-exporter-prometheus = "^0.46b0"
 
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.1"
-ruff = "^0.3"
+pytest = "^8.3"
+ruff = "^0.6"
 
 [build-system]
 requires = ["poetry-core"]
