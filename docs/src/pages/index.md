@@ -87,7 +87,7 @@ The `PolicyReport` contains information about the test run and the results of th
 
 {% quick-link title="Architecture guide" icon="presets" href="/" description="Learn how the internals work and contribute." /%}
 
-{% quick-link title="API reference" icon="theming" href="/" description="Learn to easily customize and modify your app's visual design to fit your brand." /%}
+{% quick-link title="API reference" icon="theming" href="/" description="Learn to easily customise and modify your app's visual design to fit your brand." /%}
 
 {% quick-link title="Examples" icon="plugins" href="/" description="See how others are using the library in their projects." /%}
 
