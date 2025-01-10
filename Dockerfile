@@ -1,49 +1,48 @@
-FROM python:3.12 AS build
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS build
 
 # Stage 1: Build stage
 
 # Install system dependencies
-RUN <<EOT
-apt-get update -qy
-apt-get install -qyy \
-    -o APT::Install-Recommends=false \
-    -o APT::Install-Suggests=false \
-    build-essential \
-    ca-certificates
-rm -rf /var/lib/apt/lists/*
-EOT
+#RUN <<EOT
+#apt-get update -qy
+#apt-get install -qyy \
+#    -o APT::Install-Recommends=false \
+#    -o APT::Install-Suggests=false \
+#    build-essential \
+#    ca-certificates
+#rm -rf /var/lib/apt/lists/*
+#EOT
 
 # Install UV
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+#COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Set environment variables
 ENV UV_LINK_MODE=copy \
-    UV_COMPILE_BYTECODE=1 \
-    UV_PYTHON_DOWNLOADS=never \
-    UV_PYTHON=python3.12 \
-    UV_PROJECT_ENVIRONMENT=/app
+    UV_COMPILE_BYTECODE=1
+#    UV_PYTHON_DOWNLOADS=never \
+#    UV_PYTHON=python3.12 \
+#    UV_PROJECT_ENVIRONMENT=/app
 
-# Set working directory
-WORKDIR /app
 
-# Copy pyproject.toml and uv.lock to install dependencies
-COPY pyproject.toml /_lock/
-COPY uv.lock /_lock/
+
 
 # Sync dependencies using UV, but don't install the project yet
+# Mount pyproject.toml and uv.lock to install dependencies
+WORKDIR /app
 RUN --mount=type=cache,target=/root/.cache \
-    cd /_lock && \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-dev --no-install-project
 
 # Copy the application code to the build stage
-COPY . /app
+ADD . /app
 
 # Install only the application (without dependencies)
 RUN --mount=type=cache,target=/root/.cache \
-    uv pip install --no-deps /app
+    uv sync --frozen --no-dev
 
 # Runtime Stage
-FROM python:3.12
+FROM python:3.12-slim-bookworm
 LABEL org.opencontainers.image.source=https://github.com/hardbyte/netchecks
 
 # Set environment variables for Python
