@@ -309,7 +309,7 @@ jobs:
         run: |
           cd operator
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
-          poetry run pytest
+          poetry run pytest -v -x
         timeout-minutes: 10
 
       #      - name: Enable Hubble Relay
