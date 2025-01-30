@@ -709,12 +709,10 @@ def create_job_spec(
             pass
 
     command = [
-        "poetry",
-        "run",
-        "netcheck",
-        "run",
-        "--config",
-        "/netcheck/config.json",
+    "netcheck",
+    "run",
+    "--config",
+    "/netcheck/config.json",
     ]
 
     if disable_redaction:
