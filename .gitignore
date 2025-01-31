@@ -4,3 +4,4 @@ netcheck/__pycache__/
 poetry.lock
 
 .idea
+.aider*
