@@ -23,9 +23,27 @@ def test_dns_check_with_installed_operator(netchecks, k8s_namespace, test_file_p
             break
         time.sleep(1.5**i)
 
+    subprocess.run(
+        f"kubectl wait Job/{name} -n {k8s_namespace} --for condition=complete --timeout=120s || true",
+        shell=True,
+        check=True,
+    )
+
     # Wait for the job to complete
     subprocess.run(
-        f"kubectl wait Job/{name} -n {k8s_namespace} --for condition=complete --timeout=120s",
+        f"kubectl logs -n {k8s_namespace} job/{name} -f",
+        shell=True,
+        check=True,
+    )
+
+    subprocess.run(
+        f"kubectl describe job/{name} -n {k8s_namespace}",
+        shell=True,
+        check=True,
+    )
+
+    subprocess.run(
+        f"kubectl get events -n {k8s_namespace}",
         shell=True,
         check=True,
     )
