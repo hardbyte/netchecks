@@ -20,8 +20,8 @@ dependencies = [
 [tool.ruff]
 line-length = 120
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest<9.0,>=7.2",
     "coveralls<4.0.0,>=3.3.1",
     "pytest-cov<5.0.0,>=4.0.0",
