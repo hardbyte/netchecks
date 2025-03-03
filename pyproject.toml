@@ -1,6 +1,6 @@
 [project]
 name = "netcheck"
-version = "0.5.5"
+version = "0.5.6"
 description = "Netchecks is a cloud native tool for specifying and regularly checking assertions about network conditions. Use netchecks to proactively verify whether security controls are working as intended, alerting on misconfiguration."
 readme = "README.md"
 authors = [
@@ -33,7 +33,7 @@ netcheck = "netcheck.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["netcheck"]
+include = ["netcheck", "netcheck.*"]
 exclude = ["operator", "scripts", "tests", "docs"]
 
 
