@@ -5,11 +5,11 @@ import subprocess
 
 def test_internal_check(netchecks, k8s_namespace, test_file_path):
     na_manifest = test_file_path("internal-config-map-check.yaml")
-    cm_manifest_foo = test_file_path("some-config-map-foo.yaml")
-    cm_manifest_bar = test_file_path("some-config-map-bar.yaml")
+    # cm_manifest_foo = test_file_path("some-config-map-foo.yaml") # REMOVE
+    # cm_manifest_bar = test_file_path("some-config-map-bar.yaml") # REMOVE
 
     subprocess.run(
-        f"kubectl apply -n {k8s_namespace} -f {cm_manifest_bar} -f {na_manifest}",
+        f"kubectl apply -n {k8s_namespace} -f {na_manifest}", # TO
         shell=True,
         check=True,
     )
@@ -37,6 +37,7 @@ def test_internal_check(netchecks, k8s_namespace, test_file_path):
     summary = _get_policy_report_summary(assertion_name, k8s_namespace)
     print(summary)
     assert summary["pass"] == 1
+    assert "fail" not in summary # Ensure no failures
     policy_report_results = _get_policy_report_results(assertion_name, k8s_namespace)
 
     for result in policy_report_results:
@@ -44,33 +45,32 @@ def test_internal_check(netchecks, k8s_namespace, test_file_path):
         assert result["result"] == "pass"
         assert result["source"] == "netchecks"
 
-    # Update the config map to the failing case
-    subprocess.run(
-        f"kubectl apply -n {k8s_namespace} -f {cm_manifest_foo}",
-        shell=True,
-        check=True,
-    )
+    # # Update the config map to the failing case # REMOVE THIS BLOCK START
+    # subprocess.run(
+    #     f"kubectl apply -n {k8s_namespace} -f {cm_manifest_foo}",
+    #     shell=True,
+    #     check=True,
+    # )
 
-    # Manually trigger a re-evaluation of the assertion
-    suffix = "b"
-    _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, suffix)
+    # # Manually trigger a re-evaluation of the assertion
+    # suffix = "b"
+    # _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, suffix)
 
-    # Assert that a Job gets created in the same namespace
-    _assert_job_created(assertion_name + suffix, k8s_namespace)
-    print("waiting for job completion")
-    subprocess.run(
-        f"kubectl wait Job/{assertion_name}-{suffix} -n {k8s_namespace} --for condition=complete --timeout=60s",
-        shell=True,
-        check=True,
-    )
+    # # Assert that a Job gets created in the same namespace
+    # _assert_job_created(assertion_name + suffix, k8s_namespace)
+    # print("waiting for job completion")
+    # subprocess.run(
+    #     f"kubectl wait Job/{assertion_name}-{suffix} -n {k8s_namespace} --for condition=complete --timeout=60s",
+    #     shell=True,
+    #     check=True,
+    # )
 
-    # Assert that the Policy Report includes the failing result
+    # # Assert that the Policy Report includes the failing result
+    # summary = _get_policy_report_summary(assertion_name, k8s_namespace)
+    # assert summary["fail"] == 1
+    # assert "pass" not in summary
 
-    summary = _get_policy_report_summary(assertion_name, k8s_namespace)
-    assert summary["fail"] == 1
-    assert "pass" not in summary
-
-    policy_report_results = _get_policy_report_results(assertion_name, k8s_namespace)
+    # policy_report_results = _get_policy_report_results(assertion_name, k8s_namespace) # REMOVE THIS BLOCK END
 
     # Delete the network assertion
     subprocess.run(

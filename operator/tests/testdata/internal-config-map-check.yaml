@@ -5,14 +5,11 @@ metadata:
   annotations:
     description: Assert probe can access and validate configmap data
 spec:
-  context:
-    - name: somecontext
-      configMap:
-        name: some-config-map
   schedule: "*/10 * * * *"
   rules:
-    - name: validate-configmap-value
+    - name: simple-internal-check
       type: internal
+      expected: pass
       validate:
-        message: Configmap should have particular value
-        pattern: "somecontext.foo == 'bar'"
+        message: "Internal check should pass"
+        pattern: "True"

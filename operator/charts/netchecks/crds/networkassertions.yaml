@@ -29,7 +29,78 @@ spec:
           properties:
             spec:
               type: object
-              x-kubernetes-preserve-unknown-fields: true
+              required:
+                - rules
+              properties:
+                schedule:
+                  type: string
+                rules:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - type
+                    properties:
+                      name:
+                        type: string
+                      type:
+                        type: string
+                        enum:
+                          - dns
+                          - http
+                          - internal
+                      server:
+                        type: string
+                      host:
+                        type: string
+                      port:
+                        type: integer
+                      path:
+                        type: string
+                      expected:
+                        type: string
+                      configMapName:
+                        type: string
+                      configMapKey:
+                        type: string
+                    oneOf:
+                      - properties:
+                          type:
+                            enum: ["dns"]
+                          host:
+                            type: string
+                        required: ["host"]
+                      - properties:
+                          type:
+                            enum: ["http", "internal"]
             status:
               type: object
-              x-kubernetes-preserve-unknown-fields: true
+              properties:
+                lastCheckTime:
+                  type: string
+                  format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - status
+                      - lastTransitionTime
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
