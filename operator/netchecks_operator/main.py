@@ -446,7 +446,7 @@ def convert_results_for_policy_report(probe_results, logger):
                 "timestamp": convert_iso_timestamp_to_k8s_timestamp(test_result_iso_timestamp),
                 "result": test_result.get("status", "skip"),
                 # "scored": True,
-                "message": test_result.get("message", f'Rule from {assertion_result["name"]}'),
+                "message": test_result.get("message", f"Rule from {assertion_result['name']}"),
                 # Properties have to be str -> str
                 "properties": policy_report_data,
                 # "resources": [
@@ -709,10 +709,10 @@ def create_job_spec(
             pass
 
     command = [
-    "netcheck",
-    "run",
-    "--config",
-    "/netcheck/config.json",
+        "netcheck",
+        "run",
+        "--config",
+        "/netcheck/config.json",
     ]
 
     if disable_redaction:
