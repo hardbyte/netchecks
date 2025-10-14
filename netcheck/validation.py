@@ -45,9 +45,22 @@ def evaluate_cel_with_context(context: Dict, validation_rule: str):
     # Evaluate the CEL expression
     try:
         result = cel.evaluate(validation_rule, env)
-    except Exception as e:
-        # Note this can fail if the context is missing a key e.g. the probe
-        # failed to return a value for a key that the validation rule expects
+    except ValueError as e:
+        error_msg = str(e)
+        # Distinguish between parse errors (config bugs) and execution errors (validation failures)
+        if "Failed to parse" in error_msg:
+            # Parse/syntax errors indicate invalid CEL configuration - raise to surface
+            logger.error(f"Invalid CEL expression syntax: {e}")
+            raise ValueError(f"Invalid CEL expression: {e}") from e
+        else:
+            # Execution errors (type mismatches, etc.) indicate validation failure
+            # These can happen with valid expressions that fail at runtime
+            logger.debug(f"CEL execution failed: {e}")
+            return False
+    except RuntimeError as e:
+        # Runtime errors (undefined variables) indicate validation failure
+        # This can happen if the probe failed to return expected values
+        logger.debug(f"CEL evaluation failed: {e}")
         return False
 
     return result
