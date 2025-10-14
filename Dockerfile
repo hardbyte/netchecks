@@ -24,7 +24,7 @@ LABEL org.opencontainers.image.source=https://github.com/hardbyte/netchecks
 # Set environment variables for Python
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-#    VIRTUAL_ENV=/app/.venv \
+    VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
     USERNAME=netchecks \
     USER_UID=1000 \
