@@ -1,7 +1,7 @@
 [default]
 locale = "en-us"
 
-[default.extend-identifiers]
+[default.extend-words]
 # Pydantic uses British spelling for this method name
 customise = "customise"
 
