@@ -85,7 +85,21 @@ class LazyFileLoadingDict(dict):
             self[filename] = None
 
     def __getitem__(self, key):
+        # Prevent path traversal attacks by checking if key contains path separators
+        if os.path.sep in key or (os.altsep and os.altsep in key) or key.startswith('.'):
+            raise KeyError(f"Invalid key: {key}. Path separators and relative paths are not allowed.")
+
         filepath = os.path.join(self.directory, key)
+
+        # Additional safety check: ensure the resolved path is within the directory
+        try:
+            filepath = os.path.realpath(filepath)
+            directory = os.path.realpath(self.directory)
+            if not filepath.startswith(directory + os.path.sep):
+                raise KeyError(f"Path traversal detected: {key}")
+        except (OSError, ValueError) as e:
+            raise KeyError(f"Invalid path: {key}") from e
+
         if super().__getitem__(key) is None and os.path.isfile(filepath):
             # If the value is None (our placeholder), replace it with the actual file contents
             with open(filepath, "rt") as f:
