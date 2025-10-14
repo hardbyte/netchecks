@@ -2,7 +2,8 @@
 locale = "en-us"
 
 [default.extend-identifiers]
-# No custom identifiers needed - US spelling is default
+# Pydantic uses British spelling for this method name
+customise = "customise"
 
 [files]
 ignore-vcs = true
