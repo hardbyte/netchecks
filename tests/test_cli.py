@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 
 from netcheck.cli import app
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 # To write the stderr and stdout to separate files use:
