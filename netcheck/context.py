@@ -96,3 +96,11 @@ class LazyFileLoadingDict(dict):
         # Override items() to call __getitem__ for each key
         return [(key, self[key]) for key in self]
 
+    def materialize(self):
+        """
+        Force load all lazy-loaded file contents and return a regular dict.
+        This is needed for compatibility with the Rust CEL library which doesn't
+        properly handle dict subclasses.
+        """
+        return {key: self[key] for key in self}
+
