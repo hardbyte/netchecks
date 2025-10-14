@@ -3,11 +3,10 @@
 import json
 import os
 import tempfile
-from pathlib import Path
 
 import pytest
 
-from netchecks_operator.config import Config, JsonConfigSettingsSource, MetricsConfig, ProbeConfig
+from netchecks_operator.config import Config, JsonConfigSettingsSource
 
 
 class TestJsonConfigSettingsSource:
@@ -18,8 +17,6 @@ class TestJsonConfigSettingsSource:
         # Ensure the env var is not set
         monkeypatch.delenv("JSON_CONFIG", raising=False)
 
-        # Create a settings instance
-        config = Config()
         source = JsonConfigSettingsSource(Config)
 
         result = source()

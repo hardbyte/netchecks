@@ -1,7 +1,7 @@
 """Unit tests for context loading and LazyFileLoadingDict."""
 
-import os
 import tempfile
+
 import pytest
 from pathlib import Path
 
@@ -68,8 +68,8 @@ class TestLazyFileLoadingDict:
         # Materialize should return a regular dict
         regular_dict = lazy_dict.materialize()
 
-        # Check type
-        assert type(regular_dict) is dict
+        # Check type - must be exact dict type, not a subclass
+        assert type(regular_dict) is dict  # noqa: E721
         assert not isinstance(regular_dict, LazyFileLoadingDict)
 
         # Check contents

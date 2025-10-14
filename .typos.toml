@@ -1,9 +1,8 @@
 [default]
-locale = "en-au"
+locale = "en-us"
 
 [default.extend-identifiers]
-center = "center" # Due to CSS usage
-authorization = "authorization" # due to rbac.authorization.k8s.io usage
+# No custom identifiers needed - US spelling is default
 
 [files]
 ignore-vcs = true
