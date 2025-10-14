@@ -32,7 +32,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
     )
     if wait_result.returncode != 0:
         # Get pod logs to help debug the failure
-        print(f"\n=== Job wait failed. Capturing pod logs for debugging ===")
+        print("\n=== Job wait failed. Capturing pod logs for debugging ===")
         print(f"Wait command stderr: {wait_result.stderr.decode()}")
 
         # Get all pods for this job
