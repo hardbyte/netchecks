@@ -80,7 +80,11 @@ class LazyFileLoadingDict(dict):
         self.directory = directory
         super().__init__(*args, **kwargs)
         # Pre-populate the dictionary with keys for each file in the directory
+        # Skip Kubernetes ConfigMap metadata files (symlinks starting with '..')
         for filename in os.listdir(directory):
+            # Skip hidden files and Kubernetes ConfigMap symlinks (..data, ..2025_*, etc.)
+            if filename.startswith('.'):
+                continue
             # We'll use None as a placeholder for the file contents
             self[filename] = None
 
