@@ -3,7 +3,7 @@ kind: NetworkAssertion
 metadata:
   name: cluster-dns-should-work
   annotations:
-    description: Check cluster dns behaviour
+    description: Check cluster dns behavior
 spec:
   rules:
     - name: external-dns-host-lookup-should-work

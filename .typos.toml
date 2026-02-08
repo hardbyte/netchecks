@@ -1,9 +1,9 @@
 [default]
-locale = "en-au"
+locale = "en-us"
 
-[default.extend-identifiers]
-center = "center" # Due to CSS usage
-authorization = "authorization" # due to rbac.authorization.k8s.io usage
+[default.extend-words]
+# Pydantic uses British spelling for this method name
+customise = "customise"
 
 [files]
 ignore-vcs = true

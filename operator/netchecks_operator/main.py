@@ -53,7 +53,7 @@ if settings.metrics.enabled:
 
 API_GROUP_NAME = "netchecks.io"
 
-# Initialise metrics
+# Initialize metrics
 
 metrics.set_meter_provider(MeterProvider(metric_readers=[PrometheusMetricReader()]))
 meter = metrics.get_meter("netchecks-operator", version=NETCHECK_OPERATOR_VERSION)
@@ -407,12 +407,12 @@ def monitor_selected_netcheck_pods(name, namespace, spec, status, stopped, **kwa
     logger.info("Pod monitoring complete", name=name, namespace=namespace)
 
 
-def summarise_results(probe_results):
+def summarize_results(probe_results):
     """
-    Summarise the results of the probe run
+    Summarize the results of the probe run
     """
     logger = get_logger()
-    logger.debug("Summarising probe results")
+    logger.debug("Summarizing probe results")
     logger.debug("Current probe results", probe_results=probe_results)
     # Dict of pass/fail/warn/error counts defaulting to 0
     summary = defaultdict(int)
@@ -446,7 +446,7 @@ def convert_results_for_policy_report(probe_results, logger):
                 "timestamp": convert_iso_timestamp_to_k8s_timestamp(test_result_iso_timestamp),
                 "result": test_result.get("status", "skip"),
                 # "scored": True,
-                "message": test_result.get("message", f'Rule from {assertion_result["name"]}'),
+                "message": test_result.get("message", f"Rule from {assertion_result['name']}"),
                 # Properties have to be str -> str
                 "properties": policy_report_data,
                 # "resources": [
@@ -490,7 +490,7 @@ def upsert_policy_report(probe_results, assertion_name, namespace, pod_name):
     labels = get_common_labels(name=assertion_name)
     labels["policy.kubernetes.io/engine"] = "netcheck"
     report_results = convert_results_for_policy_report(probe_results, logger)
-    report_summary = summarise_results(probe_results)
+    report_summary = summarize_results(probe_results)
     logger.debug("Probe Summary", data=report_summary)
     policy_report_body = {
         "apiVersion": "wgpolicyk8s.io/v1alpha2",
@@ -709,10 +709,10 @@ def create_job_spec(
             pass
 
     command = [
-    "netcheck",
-    "run",
-    "--config",
-    "/netcheck/config.json",
+        "netcheck",
+        "run",
+        "--config",
+        "/netcheck/config.json",
     ]
 
     if disable_redaction:

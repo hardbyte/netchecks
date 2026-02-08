@@ -133,7 +133,7 @@ metadata:
   name: cluster-dns-should-work
   namespace: default
   annotations:
-    description: Check cluster dns behaviour
+    description: Check cluster dns behavior
 spec:
   # Every 20 minutes
   schedule: "*/20 * * * *"

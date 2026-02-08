@@ -25,11 +25,48 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
         time.sleep(1.5**i)
 
     # Wait for the job to complete
-    subprocess.run(
+    wait_result = subprocess.run(
         f"kubectl wait Job/{assertion_name} -n {k8s_namespace} --for condition=complete --timeout=120s",
         shell=True,
-        check=True,
+        capture_output=True,
     )
+    if wait_result.returncode != 0:
+        # Get pod logs to help debug the failure
+        print("\n=== Job wait failed. Capturing pod logs for debugging ===")
+        print(f"Wait command stderr: {wait_result.stderr.decode()}")
+
+        # Get all pods for this job
+        pods_result = subprocess.run(
+            f"kubectl get pods -n {k8s_namespace} -l job-name={assertion_name} -o name",
+            shell=True,
+            capture_output=True,
+        )
+        pod_names = pods_result.stdout.decode().strip().split('\n')
+
+        for pod_name in pod_names:
+            if pod_name:
+                pod_name = pod_name.replace('pod/', '')
+                print(f"\n=== Logs from {pod_name} ===")
+                logs_result = subprocess.run(
+                    f"kubectl logs {pod_name} -n {k8s_namespace}",
+                    shell=True,
+                    capture_output=True,
+                )
+                print(logs_result.stdout.decode())
+                if logs_result.stderr:
+                    print(f"Stderr: {logs_result.stderr.decode()}")
+
+                # Also get pod describe for more details
+                print(f"\n=== Describe {pod_name} ===")
+                describe_result = subprocess.run(
+                    f"kubectl describe pod {pod_name} -n {k8s_namespace}",
+                    shell=True,
+                    capture_output=True,
+                )
+                print(describe_result.stdout.decode())
+
+        # Re-raise the error
+        wait_result.check_returncode()
 
     # Assert that a PolicyReport gets created in the same namespace
     for i in range(10):

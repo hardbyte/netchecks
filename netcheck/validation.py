@@ -2,10 +2,10 @@ import base64
 import json
 import logging
 from typing import Dict
-
-import celpy
 import yaml
-from celpy import CELParseError, CELEvalError, json_to_cel
+
+from cel import cel
+
 
 logger = logging.getLogger("netcheck.validation")
 
@@ -31,35 +31,36 @@ def evaluate_cel_with_context(context: Dict, validation_rule: str):
     Raises:
         ValueError: If the CEL expression is invalid.
     """
-
-    env = celpy.Environment()
-
-    # Validate the CEL validation rule and compile to ast
-    try:
-        ast = env.compile(validation_rule)
-    except CELParseError:
-        print("Invalid CEL expression. Treating as error.")
-        raise ValueError("Invalid CEL expression")
-
-    # create the CEL program
     functions = {
-        "parse_json": lambda s: json_to_cel(json.loads(s)),
-        "parse_yaml": lambda s: json_to_cel(yaml.safe_load(s)),
+        "parse_json": lambda s: json.loads(s),
+        "parse_yaml": lambda s: yaml.safe_load(s),
         "b64decode": lambda s: base64.b64decode(s).decode("utf-8"),
         "b64encode": lambda s: base64.b64encode(s.encode()).decode(),
     }
-    prgm = env.program(ast, functions=functions)
-
-    # Set up the context
-    activation = celpy.json_to_cel(context)
+    env = cel.Context(
+        variables=context,
+        functions=functions,
+    )
 
     # Evaluate the CEL expression
     try:
-        context = prgm.evaluate(activation)
-    except CELEvalError:
-        # Note this can fail if the context is missing a key e.g. the probe
-        # failed to return a value for a key that the validation rule expects
-
+        result = cel.evaluate(validation_rule, env)
+    except ValueError as e:
+        error_msg = str(e)
+        # Distinguish between parse errors (config bugs) and execution errors (validation failures)
+        if "Failed to parse" in error_msg:
+            # Parse/syntax errors indicate invalid CEL configuration - raise to surface
+            logger.error(f"Invalid CEL expression syntax: {e}")
+            raise ValueError(f"Invalid CEL expression: {e}") from e
+        else:
+            # Execution errors (type mismatches, etc.) indicate validation failure
+            # These can happen with valid expressions that fail at runtime
+            logger.debug(f"CEL execution failed: {e}")
+            return False
+    except RuntimeError as e:
+        # Runtime errors (undefined variables) indicate validation failure
+        # This can happen if the probe failed to return expected values
+        logger.debug(f"CEL evaluation failed: {e}")
         return False
 
-    return context
+    return result
