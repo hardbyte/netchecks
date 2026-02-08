@@ -19,7 +19,7 @@ Each probe pod uses the `netchecks` docker image to run the tests that make up a
 
 ---
 
-The `netchecks` image is based on the [python:3.11-slim](https://hub.docker.com/_/python) image.
+The `netchecks` image is based on the [python:3.12-slim-bookworm](https://hub.docker.com/_/python) image.
 
 [Kyverno's PolicyReporter](https://kyverno.github.io/policy-reporter/) is optionally installed alongside Netchecks to
 provide a convenient way to expose metrics, view the results, and generate notifications.

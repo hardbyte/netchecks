@@ -44,7 +44,7 @@ metadata:
   annotations:
     category: Network
     created-by: netcheck
-    netcheck-operator-version: 0.1.0
+    netcheck-operator-version: 0.6.0
   creationTimestamp: '2023-01-08T04:14:07Z'
   generation: 2
   labels:
