@@ -151,13 +151,14 @@ poetry run ruff check .
 
 ## Release Process
 
-1. Update version in `pyproject.toml` (CLI) and `operator/pyproject.toml` (operator)
+1. Update version in `pyproject.toml` (CLI), `operator/pyproject.toml` (operator), and `operator/charts/netchecks/Chart.yaml` (chart `version` + `appVersion`)
 2. Push to main branch
-3. Create GitHub release
+3. Create GitHub release with a `v*` tag (e.g. `v0.6.0`)
 4. CI automatically:
    - Publishes package to PyPI
    - Builds and pushes Docker images to ghcr.io
    - Runs integration tests with Kind + Cilium
+   - Releases helm chart via chart-releaser (creates a `netchecks-*` release)
 
 ## CEL Validation Examples
 
