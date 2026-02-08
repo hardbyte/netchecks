@@ -82,7 +82,7 @@ metadata:
   annotations:
     category: Network
     created-by: netcheck
-    netcheck-operator-version: 0.1.0
+    netcheck-operator-version: 0.6.0
   labels:
     app.kubernetes.io/component: probe
     app.kubernetes.io/instance: http-should-work
