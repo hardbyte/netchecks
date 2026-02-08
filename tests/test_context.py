@@ -61,31 +61,14 @@ class TestLazyFileLoadingDict:
         assert ("secret2.txt", "secret-value-2") in items
         assert ("config.json", '{"key": "value"}') in items
 
-    def test_materialize(self, temp_dir):
-        """Test materialize() converts to regular dict."""
-        lazy_dict = LazyFileLoadingDict(temp_dir)
-
-        # Materialize should return a regular dict
-        regular_dict = lazy_dict.materialize()
-
-        # Check type - must be exact dict type, not a subclass
-        assert type(regular_dict) is dict  # noqa: E721
-        assert not isinstance(regular_dict, LazyFileLoadingDict)
-
-        # Check contents
-        assert regular_dict["secret1.txt"] == "secret-value-1"
-        assert regular_dict["secret2.txt"] == "secret-value-2"
-        assert regular_dict["config.json"] == '{"key": "value"}'
-
-    def test_materialize_with_cel(self, temp_dir):
-        """Test that materialized dict works with CEL evaluation."""
+    def test_lazy_dict_with_cel(self, temp_dir):
+        """Test that LazyFileLoadingDict works directly with CEL evaluation."""
         from cel import cel
 
         lazy_dict = LazyFileLoadingDict(temp_dir)
-        regular_dict = lazy_dict.materialize()
 
-        # Test CEL can access the materialized dict
-        context = {"data": regular_dict}
+        # CEL should be able to access the lazy dict subclass directly
+        context = {"data": lazy_dict}
         env = cel.Context(variables=context)
         result = cel.evaluate('data["secret1.txt"]', env)
 
@@ -98,7 +81,6 @@ class TestLazyFileLoadingDict:
 
             assert len(lazy_dict) == 0
             assert list(lazy_dict.items()) == []
-            assert lazy_dict.materialize() == {}
 
     def test_nonexistent_key(self, temp_dir):
         """Test accessing a non-existent key raises KeyError."""

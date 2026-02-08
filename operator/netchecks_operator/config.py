@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
+from pydantic.fields import FieldInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource
 from structlog import get_logger
 
@@ -18,8 +19,8 @@ class JsonConfigSettingsSource(PydanticBaseSettingsSource):
     The environment variable name is loaded from the default config.
     """
 
-    def get_field_value(self, field_name: str) -> tuple[Any, str, bool]:
-        # Not used for our implementation
+    def get_field_value(self, field: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
+        # Not used for our implementation — we override __call__ directly
         return None, field_name, False
 
     def __call__(self) -> dict[str, Any]:

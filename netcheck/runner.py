@@ -49,11 +49,9 @@ def run_from_config(
             inline_context = replace_template(inline_context, context)
             context[c["name"]] = inline_context
         elif c["type"] == "directory":
-            # Load a LazyFileLoadingDict and immediately materialize it to a regular dict
-            # The Rust CEL library doesn't properly handle dict subclasses, so we need
-            # to convert it to a regular dict before using it in CEL expressions
-            lazy_dict = LazyFileLoadingDict(c["path"])
-            context[c["name"]] = lazy_dict.materialize()
+            # Return a Dict like object that lazy loads individual files
+            # from the directory (with caching) and add them to the context
+            context[c["name"]] = LazyFileLoadingDict(c["path"])
         else:
             logger.warning(f"Unknown context type '{c['type']}'")
 

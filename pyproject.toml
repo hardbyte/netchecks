@@ -13,7 +13,7 @@ dependencies = [
     "typer<1.0,>=0.9",
     "pydantic>=2.0,<3.0",
     "rich<14.0.0,>=10.11.0",
-    "common-expression-language>=0.5.3",
+    "common-expression-language>=0.5.6",
     "pyyaml>=6.0.2",
 ]
 

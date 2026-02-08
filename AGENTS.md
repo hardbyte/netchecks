@@ -11,14 +11,14 @@ Netchecks is a cloud native tool for testing network conditions and asserting th
 - **Entry point**: `netcheck/cli.py` - Uses Typer for CLI interface with commands `run`, `http`, `dns`
 - **Core logic**: `netcheck/runner.py` - Contains `run_from_config()` for running multiple assertions and `check_individual_assertion()` for individual tests
 - **Check implementations**: `netcheck/checks/` - Separate modules for DNS (`dns.py`), HTTP (`http.py`), and internal checks
-- **Validation**: `netcheck/validation.py` - CEL expression evaluation for custom validation rules
-- **Context system**: `netcheck/context.py` - Template replacement using external data from files, inline data, or directories (with lazy loading via `LazyFileLoadingDict`)
+- **Validation**: `netcheck/validation.py` - CEL expression evaluation using the Rust `common-expression-language` library (via `cel.Context` and `cel.evaluate`). Custom functions: `parse_json`, `parse_yaml`, `b64decode`, `b64encode`
+- **Context system**: `netcheck/context.py` - Template replacement using external data from files, inline data, or directories. `LazyFileLoadingDict` is a dict subclass that lazy-loads file contents on access with caching
 
 Test results include `spec` (test configuration), `data` (results), and `status` (pass/fail). Custom validation rules can reference both `data` and `spec` in CEL expressions.
 
 ### Netchecks Operator (Kubernetes)
 - **Main operator**: `operator/netchecks_operator/main.py` - Kopf-based operator with handlers for NetworkAssertion CRD lifecycle
-- **Configuration**: `operator/netchecks_operator/config.py` - Settings loaded from environment variables
+- **Configuration**: `operator/netchecks_operator/config.py` - Pydantic v2 `BaseSettings` with custom `JsonConfigSettingsSource` that loads config from a JSON file via the `JSON_CONFIG` environment variable. Priority: init > JSON file > env vars > file secrets
 - **Flow**:
   1. NetworkAssertion CRD created → operator creates ConfigMap with rules + Job/CronJob with probe pod
   2. Probe pod runs netcheck CLI with mounted config
@@ -67,16 +67,34 @@ cd operator
 poetry install --with dev
 ```
 
-Run operator tests (requires running Kubernetes cluster):
+Run operator unit tests (no cluster required):
 ```bash
 cd operator
-pytest -v
+poetry run pytest tests/test_config.py -v
 ```
 
 Integration tests require:
-- Kind cluster with Cilium CNI (see `.github/workflows/ci.yaml:269-282`)
-- PolicyReport CRD installed
+- Kind cluster (Cilium CNI optional — Cilium-specific tests are skipped without it)
+- PolicyReport CRD installed (via helm chart dependency)
 - Netcheck operator and probe images loaded into cluster
+
+Run integration tests locally with kind:
+```bash
+# Create cluster and build images
+kind create cluster --name netchecks-test
+docker build -t ghcr.io/hardbyte/netchecks:local .
+docker build -t ghcr.io/hardbyte/netchecks-operator:local operator/
+kind load docker-image ghcr.io/hardbyte/netchecks:local --name netchecks-test
+kind load docker-image ghcr.io/hardbyte/netchecks-operator:local --name netchecks-test
+helm dependency build operator/charts/netchecks
+
+# Run tests
+cd operator
+NETCHECKS_IMAGE_TAG=local poetry run pytest -v -x
+
+# Cleanup
+kind delete cluster --name netchecks-test
+```
 
 Run operator locally (outside cluster):
 ```bash
@@ -162,6 +180,7 @@ parse_json(data.body).headers['X-Header'] == 'expected-value'
 
 ## Important Notes
 
+- CEL evaluation uses the Rust `common-expression-language` library (PyPI: `common-expression-language`), not the Python `celpy` library
 - Operator uses Kopf framework for handling Kubernetes CRD lifecycle events
 - Template strings in NetworkAssertion specs use `{{ variable }}` syntax and are replaced via `netcheck/context.py:replace_template()`
 - Sensitive fields (headers) are redacted from output unless `--disable-redaction` flag is used
