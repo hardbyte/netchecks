@@ -140,7 +140,7 @@ poetry run ruff check .
 
 - **Unit tests** in `tests/` test the CLI and library functions
 - **Integration tests** in `operator/tests/` deploy NetworkAssertion resources to a real Kubernetes cluster and verify PolicyReport results
-- CI runs tests on ubuntu-latest, windows-latest, and macOS-13 with Python 3.11 and 3.12
+- CI runs tests on ubuntu-latest, windows-latest, and macos-latest with Python 3.11 and 3.12
 
 ## Key Configuration Files
 
