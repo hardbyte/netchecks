@@ -7,7 +7,7 @@ description: Annotate NetworkAssertions with compliance framework control IDs fo
 
 Netchecks supports compliance annotations on `NetworkAssertion` resources. These annotations map
 your active network tests to specific compliance framework controls, enabling automated generation
-of audit-ready compliance reports via the **netchecks-compliance** add-on.
+of audit-ready compliance reports via [netchecks-compliance](/docs/compliance-reporting).
 
 ## Supported Annotations
 
@@ -76,7 +76,7 @@ Multiple NetworkAssertions can map to the same control — all results are aggre
 
 ## Generating Reports
 
-Install the **netchecks-compliance** CLI:
+Install the [netchecks-compliance](/docs/compliance-reporting) CLI:
 
 ```bash
 pip install netchecks-compliance

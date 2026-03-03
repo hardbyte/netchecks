@@ -27,7 +27,7 @@ provide a convenient way to expose metrics, view the results, and generate notif
 ## Compliance Reporting
 
 For organizations that need to map active network test results to compliance framework controls,
-the **netchecks-compliance** add-on reads
+the [netchecks-compliance](/docs/compliance-reporting) add-on reads
 `PolicyReport` results and `NetworkAssertion` annotations to generate audit-ready compliance
 reports (PDF/HTML/JSON) for frameworks including PCI-DSS v4.0, SOC 2, and CIS Kubernetes Benchmark.
 

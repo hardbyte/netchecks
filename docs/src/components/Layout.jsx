@@ -30,6 +30,7 @@ const navigation = [
             {title: 'Custom Validation Rules', href: '/docs/custom-validation-rules'},
             {title: 'External Data', href: '/docs/external-data'},
             {title: 'Alerting', href: '/docs/alerting'},
+            {title: 'Compliance Reporting', href: '/docs/compliance-reporting'},
             {title: 'Compliance Annotations', href: '/docs/compliance-annotations'},
         ],
     },
