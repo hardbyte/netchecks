@@ -8,6 +8,7 @@ import typer
 from typing import List, Optional
 
 from netcheck.checks.dns import DEFAULT_DNS_VALIDATION_RULE
+from netcheck.checks.tcp import DEFAULT_TCP_VALIDATION_RULE
 from netcheck.checks.http import NetcheckHttpMethod
 from netcheck.runner import run_from_config, check_individual_assertion
 from netcheck.version import NETCHECK_VERSION
@@ -28,6 +29,7 @@ class NetcheckOutputType(str, Enum):
 class NetcheckTestType(str, Enum):
     dns = "dns"
     http = "http"
+    tcp = "tcp"
     internal = "internal"
 
 
@@ -170,6 +172,45 @@ def dns(
 
     result = check_individual_assertion(
         NetcheckTestType.dns,
+        test_config,
+        err_console,
+        validation_rule=validation_rule,
+        verbose=verbose,
+        include_context=True,
+    )
+
+    output_result(result, should_fail, verbose)
+
+
+@app.command()
+def tcp(
+    host: str = typer.Option("github.com", help="Host to connect to", rich_help_panel="tcp test"),
+    port: int = typer.Option(443, help="Port to connect to", rich_help_panel="tcp test"),
+    timeout: float = typer.Option(5.0, "-t", "--timeout", help="Timeout in seconds"),
+    should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+    validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
+    verbose: bool = typer.Option(False, "-v", "--verbose"),
+):
+    """Carry out a tcp connectivity check"""
+
+    test_config = {
+        "host": host,
+        "port": port,
+        "timeout": timeout,
+        "expected": "fail" if should_fail else None,
+    }
+    if verbose:
+        err_console.print("netcheck tcp")
+        err_console.print("Options")
+        err_console.print_json(data=test_config)
+
+    if validation_rule is None:
+        validation_rule = DEFAULT_TCP_VALIDATION_RULE
+    else:
+        err_console.print("Validating result against custom validation rule")
+
+    result = check_individual_assertion(
+        NetcheckTestType.tcp,
         test_config,
         err_console,
         validation_rule=validation_rule,

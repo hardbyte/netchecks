@@ -1,0 +1,10 @@
+{
+  "assertions": [
+    {"name": "tcp-pass", "rules": [
+      {"type": "tcp", "host": "github.com", "port": 443}
+    ]},
+    {"name": "tcp-expected-fail", "rules": [
+      {"type": "tcp", "host": "localhost", "port": 1, "expected": "fail"}
+    ]}
+  ]
+}

@@ -1,0 +1,25 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: tcp-should-work
+  namespace: default
+  annotations:
+    description: Assert pod can establish TCP connections to expected services.
+spec:
+  schedule: "*/10 * * * *"
+  rules:
+    - name: tcp-to-k8s-api
+      type: tcp
+      host: kubernetes.default.svc
+      port: 443
+      expected: pass
+      validate:
+        message: TCP connection to Kubernetes API should succeed.
+    - name: tcp-to-blocked-port
+      type: tcp
+      host: kubernetes.default.svc
+      port: 9999
+      timeout: 3
+      expected: fail
+      validate:
+        message: TCP connection to non-listening port should fail.

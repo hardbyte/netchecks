@@ -1,0 +1,30 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: boundary-protection-web-tier
+  namespace: production
+  annotations:
+    netchecks.io/controls: "soc2/CC6.6, soc2/CC6.7"
+    netchecks.io/description: >
+      Verify web tier boundary protection is effective. Web pods
+      should reach the API tier but not the database tier directly.
+      SOC 2 CC6.6 requires boundary protection mechanisms to be
+      in place and monitored.
+    netchecks.io/severity: high
+spec:
+  schedule: "@hourly"
+  rules:
+    - name: web-to-api-allowed
+      type: tcp
+      host: api.backend
+      port: 8080
+      expected: pass
+      validate:
+        message: Web tier should reach the API tier
+    - name: web-to-db-blocked
+      type: tcp
+      host: postgres.database
+      port: 5432
+      expected: fail
+      validate:
+        message: Web tier must not directly access database tier
