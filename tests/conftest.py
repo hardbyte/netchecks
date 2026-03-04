@@ -61,3 +61,8 @@ def valid_config_unexpected_fail_filename():
 @fixture()
 def http_headers_config_filename():
     return os.path.join(TEST_DATA_DIR, "http-with-headers.json")
+
+
+@fixture()
+def tcp_config_filename():
+    return os.path.join(TEST_DATA_DIR, "tcp-config.json")

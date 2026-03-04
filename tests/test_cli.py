@@ -316,3 +316,66 @@ def test_run_internal_config_default(internal_config_filename):
 
     assert expected_pass_result["status"] == "pass"
     assert expected_fail_result["status"] == "fail"
+
+
+def test_default_tcp_check():
+    result = runner.invoke(app, ["tcp"])
+    assert result.exit_code == 0
+    assert len(result.stderr) == 0
+    data = json.loads(result.stdout)
+    assert data["status"] == "pass"
+    assert data["spec"]["type"] == "tcp"
+    assert data["data"]["connected"] is True
+
+
+def test_verbose_tcp_check():
+    result = runner.invoke(app, ["tcp", "-v"])
+    assert result.exit_code == 0
+    assert "TCP" in result.stderr
+    assert "Passed" in result.stderr
+    data = json.loads(result.stdout)
+    assert data["status"] == "pass"
+
+
+def test_tcp_check_should_fail():
+    result = runner.invoke(app, ["tcp", "--should-fail"])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["status"] == "fail"
+
+
+def test_tcp_check_connection_refused():
+    result = runner.invoke(app, ["tcp", "--host", "localhost", "--port", "1"])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["data"]["connected"] is False
+    assert data["data"]["error"] is not None
+    assert data["status"] == "fail"
+
+
+def test_tcp_check_with_custom_validation():
+    result = runner.invoke(
+        app,
+        [
+            "tcp",
+            "--validation-rule",
+            "data.connected == true && data.error == null",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["status"] == "pass"
+
+
+def test_run_tcp_config(tcp_config_filename):
+    result = runner.invoke(app, ["run", "--config", tcp_config_filename])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+
+    tcp_pass = data["assertions"][0]["results"][0]
+    assert tcp_pass["status"] == "pass"
+    assert tcp_pass["spec"]["type"] == "tcp"
+    assert tcp_pass["data"]["connected"] is True
+
+    tcp_fail = data["assertions"][1]["results"][0]
+    assert tcp_fail["status"] == "pass"  # expected: fail + connection refused = pass

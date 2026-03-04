@@ -1,0 +1,24 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: tcp-egress-restrictions-should-work
+  annotations:
+    description: Verify TCP egress restrictions are enforced by Cilium network policy
+spec:
+  schedule: "*/1 * * * *"
+  rules:
+    - name: tcp-to-k8s-api-allowed
+      type: tcp
+      host: kubernetes.default.svc
+      port: 443
+      expected: pass
+      validate:
+        message: TCP to Kubernetes API port 443 should be allowed by policy.
+    - name: tcp-to-blocked-port
+      type: tcp
+      host: kubernetes.default.svc
+      port: 8080
+      timeout: 5
+      expected: fail
+      validate:
+        message: TCP to port 8080 should be blocked by Cilium egress policy.

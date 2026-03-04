@@ -11,6 +11,7 @@ from netcheck.version import NETCHECK_VERSION
 from netcheck.checks.internal import internal_check
 from netcheck.checks.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
 from netcheck.checks.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
+from netcheck.checks.tcp import tcp_check, DEFAULT_TCP_VALIDATION_RULE
 from netcheck.context import replace_template, LazyFileLoadingDict
 
 logger = logging.getLogger("netcheck.runner")
@@ -108,6 +109,14 @@ def check_individual_assertion(
                 timeout=test_config.get("timeout"),
                 verify=test_config.get("verify-tls-cert", True),
             )
+        case "tcp":
+            if verbose:
+                err_console.print(f"TCP check connecting to {test_config['host']}:{test_config['port']}")
+            test_detail = tcp_check(
+                host=test_config["host"],
+                port=int(test_config["port"]),
+                timeout=test_config.get("timeout", 5),
+            )
         case "internal":
             if verbose:
                 err_console.print(f"Internal check with command '{test_config['command']}'")
@@ -125,6 +134,8 @@ def check_individual_assertion(
                 validation_rule = DEFAULT_HTTP_VALIDATION_RULE
             case "dns":
                 validation_rule = DEFAULT_DNS_VALIDATION_RULE
+            case "tcp":
+                validation_rule = DEFAULT_TCP_VALIDATION_RULE
             case "internal":
                 validation_rule = "true"
             case _:
