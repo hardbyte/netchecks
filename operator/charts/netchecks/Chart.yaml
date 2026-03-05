@@ -6,13 +6,13 @@ icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.20
+version: 0.1.21
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "0.6.0"
+appVersion: "0.7.0"
 sources:
   - https://github.com/hardbyte/netchecks
 maintainers:
@@ -23,25 +23,19 @@ annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   artifacthub.io/changes: |
     - kind: added
-      description: Support to update Probes on operator update.
-    - kind: fixed
-      description: Fixed issue where PolicyReport was owned by the probe Pod.
+      description: TCP probe type for raw TCP connectivity checks.
       links:
-        - name: GitHub Issue
-          url: https://github.com/hardbyte/netchecks/issues/91
+        - name: Pull Request
+          url: https://github.com/hardbyte/netchecks/pull/315
     - kind: added
-      description: Updated versions, added K8s Events on probe run.
-    - kind: added
-      description: Support for CEL templated variables, injecting context from ConfigMaps and Secrets.
+      description: Compliance annotations for mapping NetworkAssertions to framework controls (PCI-DSS, SOC 2, CIS).
       links:
-        - name: GitHub Issue
-          url: https://github.com/hardbyte/netchecks/issues/33
-        - name: Inject Context PR
-          url: https://github.com/hardbyte/netchecks/pull/34
-        - name: Context from Secrets PR
-          url: https://github.com/hardbyte/netchecks/pull/37
+        - name: Pull Request
+          url: https://github.com/hardbyte/netchecks/pull/314
     - kind: added
-      description: Updated documentation, support multiple architectures.
+      description: Cilium TCP egress restriction example and E2E test.
+    - kind: added
+      description: Compliance reporting documentation and example NetworkAssertions.
   artifacthub.io/category: security
   artifacthub.io/operator: "true"
   artifacthub.io/prerelease: "false"
