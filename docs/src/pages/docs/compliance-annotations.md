@@ -43,8 +43,9 @@ spec:
   schedule: "*/30 * * * *"
   rules:
     - name: block-egress-to-internet
-      type: http
-      url: https://example.com
+      type: tcp
+      host: example.com
+      port: 443
       expected: fail
       validate:
         message: CDE pods must not reach arbitrary external hosts
