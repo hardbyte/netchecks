@@ -48,6 +48,10 @@ Reports include:
   last tested timestamp, mapped NetworkAssertions, finding details
 - **Attestation footer** — tool version, SHA-256 integrity hash, automation statement
 
+## Example Report
+
+![CIS Kubernetes Benchmark Compliance Report](/images/compliance/cis-report-example.png)
+
 ## Quick Start
 
 ```bash
@@ -77,11 +81,11 @@ netchecks-compliance frameworks
 
 | Tier | What's Included |
 |---|---|
-| **Community (Free)** | CIS Kubernetes Benchmark reports. JSON output. CLI generation. |
-| **Pro ($500/cluster/month)** | All frameworks. PDF + HTML + JSON. Up to 5 clusters. |
+| **Community (Free)** | CIS Kubernetes Benchmark reports. PDF + HTML + JSON output. CLI generation. |
+| **Pro ($99/month or $999/year)** | All frameworks. PDF + HTML + JSON. Up to 5 clusters. |
 | **Enterprise (custom)** | Unlimited clusters. Custom frameworks. OSCAL output. |
 
-Contact [brian@hardbyte.nz](mailto:brian@hardbyte.nz) for Pro and Enterprise licenses.
+Contact [brian@hardbyte.nz](mailto:brian@hardbyte.nz) for Enterprise licenses.
 
 ## Next Steps
 
