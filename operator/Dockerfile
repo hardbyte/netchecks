@@ -14,7 +14,7 @@ RUN cargo install cargo-chef --locked
 WORKDIR /build
 
 # ---------------------------------------------------------------------------
-# Stage 2: Planner — analyse dependencies and produce a recipe
+# Stage 2: Planner — analyze dependencies and produce a recipe
 # ---------------------------------------------------------------------------
 FROM chef AS planner
 
