@@ -1,29 +1,45 @@
 # syntax=docker/dockerfile:1.7
 
 # Multi-stage build for netchecks-operator from Rust source.
+# Uses cargo-chef to cache dependency compilation as a separate Docker layer.
 
 # ---------------------------------------------------------------------------
-# Stage 1: Build
+# Stage 1: Chef base (shared toolchain for planner + builder)
 # ---------------------------------------------------------------------------
-FROM rust:1-alpine AS builder
+FROM rust:1-alpine AS chef
 
 RUN apk add --no-cache musl-dev
+RUN cargo install cargo-chef --locked
 
 WORKDIR /build
 
-# Copy source
+# ---------------------------------------------------------------------------
+# Stage 2: Planner — analyse dependencies and produce a recipe
+# ---------------------------------------------------------------------------
+FROM chef AS planner
+
 COPY Cargo.toml Cargo.lock ./
 COPY src/ src/
 
-ARG TARGETPLATFORM
-RUN --mount=type=cache,id=cargo-registry-${TARGETPLATFORM},target=/usr/local/cargo/registry \
-    --mount=type=cache,id=cargo-git-${TARGETPLATFORM},target=/usr/local/cargo/git \
-    --mount=type=cache,id=cargo-target-${TARGETPLATFORM},target=/build/target \
-    cargo build --release && \
+RUN cargo chef prepare --recipe-path recipe.json
+
+# ---------------------------------------------------------------------------
+# Stage 3: Builder — cook dependencies (cached), then compile source
+# ---------------------------------------------------------------------------
+FROM chef AS builder
+
+# Cook dependencies — this layer is cached until Cargo.toml/Cargo.lock change
+COPY --from=planner /build/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+# Now copy source and build the actual binary (only this recompiles on changes)
+COPY Cargo.toml Cargo.lock ./
+COPY src/ src/
+RUN cargo build --release && \
     install -Dm755 /build/target/release/netchecks-operator /out/netchecks-operator
 
 # ---------------------------------------------------------------------------
-# Stage 2: Runtime (distroless)
+# Stage 4: Runtime (distroless)
 # ---------------------------------------------------------------------------
 FROM cgr.dev/chainguard/static AS runtime
 

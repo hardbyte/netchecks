@@ -141,26 +141,40 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=probe
+          cache-to: type=gha,mode=max,scope=probe
 
+  # ---------------------------------------------------------------------------
+  # Operator Docker — build each platform natively, then merge manifests.
+  # This avoids QEMU emulation for Rust (which is extremely slow).
+  # ---------------------------------------------------------------------------
   operator_docker:
-    name: Build Operator Image
-    runs-on: ubuntu-latest
+    name: Build Operator Image (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
-      id-token: write # needed for signing the images with GitHub OIDC Token
+      id-token: write
     env:
       IMAGE_NAME: netchecks-operator
       IMAGE_REGISTRY: ghcr.io
@@ -169,6 +183,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
@@ -180,24 +195,94 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build and push
-        uses: docker/build-push-action@v4
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
         with:
           context: operator
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,"name=${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}",push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=operator-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=operator-${{ matrix.platform }}
+
+      - name: Export digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  operator_docker_merge:
+    name: Merge Operator Manifests
+    needs: operator_docker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    env:
+      IMAGE_NAME: netchecks-operator
+      IMAGE_REGISTRY: ghcr.io
+      IMAGE_REPOSITORY: hardbyte
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: operator-digests-*
+          merge-multiple: true
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect \
+            ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.IMAGE_NAME}}:${{ steps.meta.outputs.version }}
 
   operator_tests:
     name: Operator Unit Tests
@@ -207,13 +292,9 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo
-        uses: actions/cache@v3
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            operator/target
-          key: cargo-${{ runner.os }}-${{ hashFiles('operator/Cargo.lock') }}
+          workspaces: operator -> target
       - name: Check formatting
         run: cargo fmt --all -- --check
         working-directory: operator
@@ -226,7 +307,7 @@ jobs:
 
   k8s:
     name: Kubernetes Integration Tests
-    needs: [probe_docker, operator_docker]
+    needs: [probe_docker, operator_docker_merge]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -312,24 +393,15 @@ jobs:
         run: |
           cd operator
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
-          pytest -v -x         timeout-minutes: 10
-
-      #      - name: Enable Hubble Relay
-      #        run: |
-      #          cilium hubble enable --ui
-      #
-      #      - name: Relay Port Forward
-      #        run: |
-      #          cilium hubble port-forward&
-      #          sleep 10s
-      #          [[ $(pgrep -f "cilium.*hubble.*port-forward|kubectl.*port-forward.*hubble-relay" | wc -l) == 2 ]]
+          pytest -v -x
+        timeout-minutes: 10
 
       - name: Run Integration Tests (with Cilium)
         run: |
           cd operator
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
           export INCLUDE_CILIUM_TESTS=1
-          pytest -x 
+          pytest -x
         timeout-minutes: 10
 
       - name: Cleanup
