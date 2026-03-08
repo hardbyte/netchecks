@@ -24,7 +24,7 @@ rules:
   # Jobs and CronJobs: create probe workloads
   - apiGroups: [batch]
     resources: [jobs, cronjobs]
-    verbs: [create, list, get, update, delete, watch]
+    verbs: [create, list, get, update, patch, delete, watch]
 
   # ConfigMaps: store probe configuration
   - apiGroups: [""]

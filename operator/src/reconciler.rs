@@ -81,6 +81,8 @@ pub async fn reconcile(
         .await?;
     } else {
         ensure_job(&ctx.kube_client, &resource, &namespace, &ctx.config).await?;
+        // Clean up any stale CronJob left from a previous scheduled config
+        delete_stale_cronjob(&ctx.kube_client, &name, &namespace).await?;
     }
 
     // Step 3: Process completed probe pods
@@ -304,6 +306,28 @@ async fn ensure_cron_job(
     Ok(())
 }
 
+/// Delete any stale CronJob left when a scheduled assertion becomes one-shot.
+async fn delete_stale_cronjob(
+    client: &Client,
+    name: &str,
+    namespace: &str,
+) -> Result<(), ReconcileError> {
+    let cronjobs_api: Api<CronJob> = Api::namespaced(client.clone(), namespace);
+
+    match cronjobs_api.get(name).await {
+        Ok(_) => {
+            tracing::info!(name, namespace, "deleting stale CronJob (schedule removed)");
+            cronjobs_api.delete(name, &DeleteParams::default()).await?;
+        }
+        Err(kube::Error::Api(err)) if err.code == 404 => {
+            // No stale CronJob — nothing to do
+        }
+        Err(err) => return Err(err.into()),
+    }
+
+    Ok(())
+}
+
 /// Build a one-time Job for a NetworkAssertion.
 fn build_job(na: &NetworkAssertion, config: &OperatorConfig) -> Job {
     let name = na.name_any();
@@ -391,12 +415,25 @@ fn build_job_spec(na: &NetworkAssertion, config: &OperatorConfig) -> JobSpec {
                 .get("name")
                 .and_then(|v| v.as_str())
                 .unwrap_or(&ctx.name);
+            let mut cm_source = ConfigMapVolumeSource {
+                name: cm_name.to_string(),
+                ..Default::default()
+            };
+            // Preserve optional ConfigMap volume fields (items, optional, defaultMode)
+            if let Some(optional) = cm_ref.get("optional").and_then(|v| v.as_bool()) {
+                cm_source.optional = Some(optional);
+            }
+            if let Some(default_mode) = cm_ref.get("defaultMode").and_then(|v| v.as_i64()) {
+                cm_source.default_mode = Some(default_mode as i32);
+            }
+            if let Some(items) = cm_ref.get("items") {
+                if let Ok(key_to_paths) = serde_json::from_value(items.clone()) {
+                    cm_source.items = Some(key_to_paths);
+                }
+            }
             volumes.push(Volume {
                 name: ctx.name.clone(),
-                config_map: Some(ConfigMapVolumeSource {
-                    name: cm_name.to_string(),
-                    ..Default::default()
-                }),
+                config_map: Some(cm_source),
                 ..Default::default()
             });
             volume_mounts.push(VolumeMount {
@@ -409,12 +446,25 @@ fn build_job_spec(na: &NetworkAssertion, config: &OperatorConfig) -> JobSpec {
                 .get("name")
                 .and_then(|v| v.as_str())
                 .unwrap_or(&ctx.name);
+            let mut secret_source = SecretVolumeSource {
+                secret_name: Some(secret_name.to_string()),
+                ..Default::default()
+            };
+            // Preserve optional Secret volume fields (items, optional, defaultMode)
+            if let Some(optional) = secret_ref.get("optional").and_then(|v| v.as_bool()) {
+                secret_source.optional = Some(optional);
+            }
+            if let Some(default_mode) = secret_ref.get("defaultMode").and_then(|v| v.as_i64()) {
+                secret_source.default_mode = Some(default_mode as i32);
+            }
+            if let Some(items) = secret_ref.get("items") {
+                if let Ok(key_to_paths) = serde_json::from_value(items.clone()) {
+                    secret_source.items = Some(key_to_paths);
+                }
+            }
             volumes.push(Volume {
                 name: ctx.name.clone(),
-                secret: Some(SecretVolumeSource {
-                    secret_name: Some(secret_name.to_string()),
-                    ..Default::default()
-                }),
+                secret: Some(secret_source),
                 ..Default::default()
             });
             volume_mounts.push(VolumeMount {
