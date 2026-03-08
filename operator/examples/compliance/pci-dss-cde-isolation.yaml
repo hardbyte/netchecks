@@ -1,0 +1,49 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: cde-isolation-egress
+  namespace: payments
+  annotations:
+    netchecks.io/controls: "pci-dss-v4/1.3.2, pci-dss-v4/11.3.4"
+    netchecks.io/description: >
+      Verify CDE namespace cannot reach external networks except
+      whitelisted payment processor endpoints. PCI-DSS v4.0 requires
+      that outbound CDE traffic is restricted and segmentation is
+      actively tested.
+    netchecks.io/severity: critical
+spec:
+  schedule: "*/30 * * * *"
+  rules:
+    - name: block-egress-to-internet
+      type: http
+      url: https://example.com
+      expected: fail
+      validate:
+        message: CDE pods must not reach arbitrary external hosts
+    - name: allow-payment-processor
+      type: http
+      url: https://api.stripe.com/v1/health
+      expected: pass
+      validate:
+        message: CDE pods must be able to reach payment processor
+---
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: cde-isolation-ingress
+  namespace: payments
+  annotations:
+    netchecks.io/controls: "pci-dss-v4/1.2.1, pci-dss-v4/11.3.4"
+    netchecks.io/description: >
+      Verify only authorized services can reach the CDE namespace.
+      Unauthorized ingress to the CDE must be blocked.
+    netchecks.io/severity: critical
+spec:
+  schedule: "*/30 * * * *"
+  rules:
+    - name: block-ingress-from-public
+      type: http
+      url: http://cde-service.payments:8080
+      expected: fail
+      validate:
+        message: Public namespace pods should not reach CDE services
