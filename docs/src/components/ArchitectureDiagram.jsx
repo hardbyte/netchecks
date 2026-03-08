@@ -125,7 +125,7 @@ export function ArchitectureDiagram() {
           />
           <DiagramTerminal
             title="Grafana dashboards"
-            subtitle="visualise assertion results"
+            subtitle="visualize assertion results"
             tone="slate"
           />
           <DiagramTerminal
