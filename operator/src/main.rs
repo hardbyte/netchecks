@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use futures::StreamExt;
-use k8s_openapi::api::batch::v1::Job;
+use k8s_openapi::api::batch::v1::{CronJob, Job};
 use kube::runtime::{watcher, Controller};
 use kube::{Api, Client};
 use tracing::info;
@@ -65,7 +65,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Watch all NetworkAssertion resources across all namespaces.
     let network_assertions: Api<NetworkAssertion> = Api::all(client.clone());
-    let jobs: Api<Job> = Api::all(client);
+    let jobs: Api<Job> = Api::all(client.clone());
+    let cronjobs: Api<CronJob> = Api::all(client);
 
     info!("starting controller");
     observability.mark_ready();
@@ -73,6 +74,9 @@ async fn main() -> anyhow::Result<()> {
     Controller::new(network_assertions, watcher::Config::default())
         // Re-reconcile when owned Jobs change (e.g. when a probe Job completes).
         .owns(jobs, watcher::Config::default())
+        // Re-reconcile when owned CronJobs change (e.g. when a scheduled Job
+        // is spawned or completes, the CronJob status is updated).
+        .owns(cronjobs, watcher::Config::default())
         .shutdown_on_signal()
         .run(reconcile, error_policy, ctx)
         .for_each(|result| async move {

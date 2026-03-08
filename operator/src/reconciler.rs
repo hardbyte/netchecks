@@ -23,7 +23,7 @@ use kube::{Client, Resource, ResourceExt};
 use tracing::info;
 
 use crate::context::{OperatorConfig, OperatorContext};
-use crate::crd::{common_labels, ContextSpec, NetworkAssertion, Rule};
+use crate::crd::{common_labels, ContextSpec, NetworkAssertion, Rule, StatusCondition};
 
 /// Errors that can occur during reconciliation.
 #[derive(Debug, thiserror::Error)]
@@ -45,10 +45,39 @@ pub enum ReconcileError {
 }
 
 /// Main reconcile entry point, called by the kube-rs controller.
+///
+/// Wraps the inner reconciliation logic so that status conditions are always
+/// updated on the NetworkAssertion, regardless of success or failure.
 pub async fn reconcile(
     resource: Arc<NetworkAssertion>,
     ctx: Arc<OperatorContext>,
 ) -> Result<Action, ReconcileError> {
+    let result = reconcile_inner(resource.clone(), ctx.clone()).await;
+
+    // Update status conditions on the NetworkAssertion — best effort.
+    let status_update = match &result {
+        Ok(outcome) => update_status_success(&ctx.kube_client, &resource, outcome).await,
+        Err(err) => update_status_error(&ctx.kube_client, &resource, err).await,
+    };
+    if let Err(status_err) = status_update {
+        tracing::warn!(%status_err, "failed to update NetworkAssertion status");
+    }
+
+    result.map(|outcome| outcome.action)
+}
+
+/// Outcome of a successful reconciliation, carrying data needed for status.
+struct ReconcileOutcome {
+    action: Action,
+    job_name: String,
+    summary: Option<serde_json::Value>,
+}
+
+/// Inner reconciliation logic.
+async fn reconcile_inner(
+    resource: Arc<NetworkAssertion>,
+    ctx: Arc<OperatorContext>,
+) -> Result<ReconcileOutcome, ReconcileError> {
     let name = resource.name_any();
     let namespace = resource
         .namespace()
@@ -86,7 +115,7 @@ pub async fn reconcile(
     }
 
     // Step 3: Process completed probe pods
-    let processed = process_completed_jobs(
+    let summary = process_completed_jobs(
         &ctx.kube_client,
         &resource,
         &namespace,
@@ -98,17 +127,24 @@ pub async fn reconcile(
     guard.record_result("success", "Reconciled");
 
     // Determine requeue interval
-    if resource.spec.schedule.is_some() {
-        // Scheduled assertion — requeue to pick up new CronJob results
-        Ok(Action::requeue(Duration::from_secs(60)))
-    } else if processed {
+    let action = if resource.spec.schedule.is_some() {
+        // Scheduled assertion — owns(cronjobs) provides event-driven updates;
+        // this requeue is a safety net.
+        Action::requeue(Duration::from_secs(300))
+    } else if summary.is_some() {
         // One-time job completed and results processed — slow requeue
-        Ok(Action::requeue(Duration::from_secs(3600)))
+        Action::requeue(Duration::from_secs(3600))
     } else {
         // One-time job still running — requeue to check again
         // (also triggered earlier via owns() on Job changes)
-        Ok(Action::requeue(Duration::from_secs(60)))
-    }
+        Action::requeue(Duration::from_secs(60))
+    };
+
+    Ok(ReconcileOutcome {
+        action,
+        job_name: name,
+        summary,
+    })
 }
 
 /// Error policy: determines requeue delay after reconciliation failure.
@@ -123,6 +159,123 @@ pub fn error_policy(
         ReconcileError::ResultParse(_) => Action::requeue(Duration::from_secs(60)),
         _ => Action::requeue(Duration::from_secs(30)),
     }
+}
+
+// ---------------------------------------------------------------------------
+// Status updates
+// ---------------------------------------------------------------------------
+
+/// Build a `StatusCondition` with the current timestamp.
+fn build_condition(status: &str, reason: &str, message: &str) -> StatusCondition {
+    StatusCondition {
+        condition_type: "Reconciled".to_string(),
+        status: status.to_string(),
+        reason: reason.to_string(),
+        message: message.to_string(),
+        last_transition_time: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+    }
+}
+
+/// Format a summary map into a human-readable message like "3 passed, 1 failed".
+fn format_summary_message(summary: &serde_json::Value) -> String {
+    let map = match summary.as_object() {
+        Some(m) if !m.is_empty() => m,
+        _ => return "No results yet".to_string(),
+    };
+
+    let parts: Vec<String> = ["pass", "fail", "warn", "error", "skip"]
+        .iter()
+        .filter_map(|key| {
+            map.get(*key)
+                .and_then(|v| v.as_i64())
+                .filter(|&count| count > 0)
+                .map(|count| format!("{count} {key}"))
+        })
+        .collect();
+
+    if parts.is_empty() {
+        "No results yet".to_string()
+    } else {
+        parts.join(", ")
+    }
+}
+
+/// Update the NetworkAssertion status after a successful reconciliation.
+async fn update_status_success(
+    client: &Client,
+    na: &NetworkAssertion,
+    outcome: &ReconcileOutcome,
+) -> Result<(), ReconcileError> {
+    let name = na.name_any();
+    let namespace = na.namespace().ok_or(ReconcileError::MissingNamespace)?;
+    let generation = na.metadata.generation;
+
+    let (condition_status, reason, message) = match &outcome.summary {
+        Some(summary) => ("True", "ProbeComplete", format_summary_message(summary)),
+        None => (
+            "Unknown",
+            "Progressing",
+            "Probe job created, waiting for results".to_string(),
+        ),
+    };
+
+    let condition = build_condition(condition_status, reason, &message);
+
+    let status_patch = serde_json::json!({
+        "status": {
+            "observedGeneration": generation,
+            "jobName": outcome.job_name,
+            "conditions": [condition],
+            "summary": outcome.summary,
+        }
+    });
+
+    let na_api: Api<NetworkAssertion> = Api::namespaced(client.clone(), &namespace);
+    na_api
+        .patch_status(&name, &PatchParams::default(), &Patch::Merge(status_patch))
+        .await?;
+
+    tracing::debug!(name, namespace, reason, "updated NetworkAssertion status");
+    Ok(())
+}
+
+/// Update the NetworkAssertion status after a reconciliation error.
+async fn update_status_error(
+    client: &Client,
+    na: &NetworkAssertion,
+    error: &ReconcileError,
+) -> Result<(), ReconcileError> {
+    let name = na.name_any();
+    let Some(namespace) = na.namespace() else {
+        return Ok(()); // Can't update status without namespace
+    };
+
+    let reason = match error {
+        ReconcileError::InvalidSpec(_) => "InvalidSpec",
+        ReconcileError::ResultParse(_) => "ResultParseError",
+        _ => "ReconcileError",
+    };
+
+    let condition = build_condition("False", reason, &error.to_string());
+
+    let status_patch = serde_json::json!({
+        "status": {
+            "conditions": [condition],
+        }
+    });
+
+    let na_api: Api<NetworkAssertion> = Api::namespaced(client.clone(), &namespace);
+    na_api
+        .patch_status(&name, &PatchParams::default(), &Patch::Merge(status_patch))
+        .await?;
+
+    tracing::debug!(
+        name,
+        namespace,
+        reason,
+        "updated NetworkAssertion status (error)"
+    );
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -591,14 +744,15 @@ fn apply_template_overrides(pod_template: &mut PodTemplateSpec, overrides: &serd
 
 /// Check for completed probe pods and process their results into a PolicyReport.
 ///
-/// Returns `true` if results were successfully processed.
+/// Returns `Some(summary)` with pass/fail/etc counts if results were processed,
+/// or `None` if no completed pod was found yet.
 async fn process_completed_jobs(
     client: &Client,
     na: &NetworkAssertion,
     namespace: &str,
     config: &OperatorConfig,
     observability: &crate::observability::OperatorObservability,
-) -> Result<bool, ReconcileError> {
+) -> Result<Option<serde_json::Value>, ReconcileError> {
     let name = na.name_any();
     let pods_api: Api<Pod> = Api::namespaced(client.clone(), namespace);
 
@@ -627,7 +781,7 @@ async fn process_completed_jobs(
         if has_failed {
             tracing::warn!(name, namespace, "probe pod(s) failed");
         }
-        return Ok(false);
+        return Ok(None);
     };
 
     let pod_name = pod.name_any();
@@ -637,20 +791,21 @@ async fn process_completed_jobs(
 
     if log.starts_with("unable to retrieve container logs") {
         tracing::warn!(pod = %pod_name, "unable to retrieve container logs");
-        return Ok(false);
+        return Ok(None);
     }
 
     let probe_results: serde_json::Value = serde_json::from_str(&log).map_err(|err| {
         ReconcileError::ResultParse(format!("failed to parse probe output as JSON: {err}"))
     })?;
 
-    upsert_policy_report(client, &probe_results, na, namespace, config).await?;
+    let summary = summarize_results(&probe_results);
+    upsert_policy_report(client, &probe_results, na, namespace, config, &summary).await?;
 
     // Record probe duration metrics
     record_probe_metrics(&probe_results, &name, observability);
 
     observability.record_policy_report_updated();
-    Ok(true)
+    Ok(Some(summary))
 }
 
 /// Record probe timing metrics from the results.
@@ -701,6 +856,7 @@ async fn upsert_policy_report(
     na: &NetworkAssertion,
     namespace: &str,
     config: &OperatorConfig,
+    report_summary: &serde_json::Value,
 ) -> Result<(), ReconcileError> {
     let assertion_name = na.name_any();
 
@@ -709,7 +865,6 @@ async fn upsert_policy_report(
         .ok_or_else(|| ReconcileError::InvalidSpec("cannot create owner reference".into()))?;
 
     let mut report_results = convert_results_for_policy_report(probe_results);
-    let report_summary = summarize_results(probe_results);
 
     // Truncate results if necessary
     if report_results.len() > config.policy_report_max_results {
@@ -1444,5 +1599,86 @@ mod tests {
             template.spec.as_ref().unwrap().service_account_name,
             Some("my-sa".to_string())
         );
+    }
+
+    #[test]
+    fn build_condition_sets_all_fields() {
+        let condition = build_condition("True", "ProbeComplete", "3 pass, 1 fail");
+
+        assert_eq!(condition.condition_type, "Reconciled");
+        assert_eq!(condition.status, "True");
+        assert_eq!(condition.reason, "ProbeComplete");
+        assert_eq!(condition.message, "3 pass, 1 fail");
+        // Timestamp should be a valid RFC 3339 string
+        assert!(chrono::DateTime::parse_from_rfc3339(&condition.last_transition_time).is_ok());
+    }
+
+    #[test]
+    fn format_summary_message_with_results() {
+        let summary = serde_json::json!({"pass": 5, "fail": 2});
+        assert_eq!(format_summary_message(&summary), "5 pass, 2 fail");
+    }
+
+    #[test]
+    fn format_summary_message_all_pass() {
+        let summary = serde_json::json!({"pass": 3});
+        assert_eq!(format_summary_message(&summary), "3 pass");
+    }
+
+    #[test]
+    fn format_summary_message_mixed() {
+        let summary = serde_json::json!({"pass": 1, "fail": 1, "warn": 2, "skip": 1});
+        assert_eq!(
+            format_summary_message(&summary),
+            "1 pass, 1 fail, 2 warn, 1 skip"
+        );
+    }
+
+    #[test]
+    fn format_summary_message_empty() {
+        let summary = serde_json::json!({});
+        assert_eq!(format_summary_message(&summary), "No results yet");
+    }
+
+    #[test]
+    fn format_summary_message_null() {
+        let summary = serde_json::Value::Null;
+        assert_eq!(format_summary_message(&summary), "No results yet");
+    }
+
+    #[test]
+    fn status_condition_serializes_correctly() {
+        let condition = StatusCondition {
+            condition_type: "Reconciled".to_string(),
+            status: "True".to_string(),
+            reason: "ProbeComplete".to_string(),
+            message: "5 pass".to_string(),
+            last_transition_time: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        let json = serde_json::to_value(&condition).unwrap();
+        assert_eq!(json["type"], "Reconciled");
+        assert_eq!(json["status"], "True");
+        assert_eq!(json["reason"], "ProbeComplete");
+        assert_eq!(json["message"], "5 pass");
+        assert_eq!(json["lastTransitionTime"], "2024-01-01T00:00:00Z");
+        // Ensure the field is named "type" not "condition_type"
+        assert!(json.get("condition_type").is_none());
+    }
+
+    #[test]
+    fn status_condition_deserializes_correctly() {
+        let json = serde_json::json!({
+            "type": "Reconciled",
+            "status": "False",
+            "reason": "InvalidSpec",
+            "message": "rules must not be empty",
+            "lastTransitionTime": "2024-01-01T00:00:00Z"
+        });
+
+        let condition: StatusCondition = serde_json::from_value(json).unwrap();
+        assert_eq!(condition.condition_type, "Reconciled");
+        assert_eq!(condition.status, "False");
+        assert_eq!(condition.reason, "InvalidSpec");
     }
 }

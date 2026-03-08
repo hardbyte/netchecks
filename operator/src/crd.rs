@@ -15,7 +15,10 @@ use serde::{Deserialize, Serialize};
     namespaced,
     status = "NetworkAssertionStatus",
     shortname = "nas",
-    printcolumn = r#"{"name": "Schedule", "type": "string", "jsonPath": ".spec.schedule"}"#
+    printcolumn = r#"{"name": "Schedule", "type": "string", "jsonPath": ".spec.schedule"}"#,
+    printcolumn = r#"{"name": "Ready", "type": "string", "jsonPath": ".status.conditions[?(@.type==\"Reconciled\")].status"}"#,
+    printcolumn = r#"{"name": "Reason", "type": "string", "jsonPath": ".status.conditions[?(@.type==\"Reconciled\")].reason"}"#,
+    printcolumn = r#"{"name": "Status", "type": "string", "jsonPath": ".status.conditions[?(@.type==\"Reconciled\")].message", "priority": 1}"#
 )]
 pub struct NetworkAssertionSpec {
     /// Network assertion rules to evaluate.
@@ -71,20 +74,54 @@ pub struct ContextSpec {
     pub inline: Option<serde_json::Value>,
 }
 
-/// Status of a NetworkAssertion (informational only — primary status is via PolicyReport).
+/// Status of a NetworkAssertion — updated by the operator on each reconciliation.
+///
+/// Conditions follow the standard Kubernetes convention:
+/// - `Reconciled=True`  — operator successfully reconciled; results may be available
+/// - `Reconciled=False` — reconciliation failed (see reason/message)
+/// - `Reconciled=Unknown` — probe running, waiting for results
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
 pub struct NetworkAssertionStatus {
     /// Generation that was last successfully reconciled.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "observedGeneration"
+    )]
     pub observed_generation: Option<i64>,
 
     /// Name of the Job or CronJob managing this assertion.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "jobName")]
     pub job_name: Option<String>,
 
-    /// Last error message from reconciliation.
+    /// Standard Kubernetes-style conditions.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub conditions: Vec<StatusCondition>,
+
+    /// Summary of the latest probe results (pass/fail/warn/error/skip counts).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub last_error: Option<String>,
+    pub summary: Option<serde_json::Value>,
+}
+
+/// A Kubernetes-style status condition.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct StatusCondition {
+    /// Condition type, e.g. "Reconciled".
+    #[serde(rename = "type")]
+    pub condition_type: String,
+
+    /// "True", "False", or "Unknown".
+    pub status: String,
+
+    /// Machine-readable reason (PascalCase).
+    pub reason: String,
+
+    /// Human-readable description.
+    pub message: String,
+
+    /// RFC 3339 timestamp of the last status transition.
+    #[serde(rename = "lastTransitionTime")]
+    pub last_transition_time: String,
 }
 
 /// Standard labels applied to all resources created by the operator.
