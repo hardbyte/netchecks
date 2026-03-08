@@ -34,21 +34,15 @@ operator:
     # If not set and create is true, a name is generated using the fullname template
     name: "netcheck-operator"
 
-  podAnnotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: /metrics
-    prometheus.io/port: "9090"
+  podAnnotations: {}
 
   podSecurityContext: {}
-    # fsGroup: 2000
 
-  securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 65534
 
   service:
     type: ClusterIP

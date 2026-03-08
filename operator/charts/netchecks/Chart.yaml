@@ -6,13 +6,13 @@ icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.20
+version: 0.2.1
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "0.6.0"
+appVersion: "0.7.0"
 sources:
   - https://github.com/hardbyte/netchecks
 maintainers:
@@ -22,26 +22,30 @@ maintainers:
 annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   artifacthub.io/changes: |
+    - kind: changed
+      description: Operator rewritten from Python/Kopf to Rust/kube-rs for lower resource usage and faster startup.
+      links:
+        - name: Pull Request
+          url: https://github.com/hardbyte/netchecks/pull/317
     - kind: added
-      description: Support to update Probes on operator update.
+      description: TCP probe type for raw socket connectivity checks.
+      links:
+        - name: Pull Request
+          url: https://github.com/hardbyte/netchecks/pull/315
+    - kind: added
+      description: Status conditions on NetworkAssertion — reconciliation status visible via kubectl describe.
+    - kind: added
+      description: Controller watches CronJob changes for event-driven scheduled assertion processing.
+    - kind: changed
+      description: Distroless container image (chainguard/static) replaces python:3.12 for the operator.
+    - kind: added
+      description: Structured JSON logging with optional OTLP metrics export.
+    - kind: added
+      description: Health endpoints at /livez and /readyz.
     - kind: fixed
-      description: Fixed issue where PolicyReport was owned by the probe Pod.
-      links:
-        - name: GitHub Issue
-          url: https://github.com/hardbyte/netchecks/issues/91
-    - kind: added
-      description: Updated versions, added K8s Events on probe run.
-    - kind: added
-      description: Support for CEL templated variables, injecting context from ConfigMaps and Secrets.
-      links:
-        - name: GitHub Issue
-          url: https://github.com/hardbyte/netchecks/issues/33
-        - name: Inject Context PR
-          url: https://github.com/hardbyte/netchecks/pull/34
-        - name: Context from Secrets PR
-          url: https://github.com/hardbyte/netchecks/pull/37
-    - kind: added
-      description: Updated documentation, support multiple architectures.
+      description: PolicyReport server-side apply compatibility with v1alpha2 CRD schema.
+    - kind: fixed
+      description: Multi-platform Docker build cache isolation for arm64/amd64.
   artifacthub.io/category: security
   artifacthub.io/operator: "true"
   artifacthub.io/prerelease: "false"

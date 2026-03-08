@@ -1,36 +1,52 @@
-FROM python:3.12-slim-bookworm
+# syntax=docker/dockerfile:1.7
+
+# Multi-stage build for netchecks-operator from Rust source.
+# Uses cargo-chef to cache dependency compilation as a separate Docker layer.
+
+# ---------------------------------------------------------------------------
+# Stage 1: Chef base (shared toolchain for planner + builder)
+# ---------------------------------------------------------------------------
+FROM rust:1-alpine AS chef
+
+RUN apk add --no-cache musl-dev
+RUN cargo install cargo-chef --locked
+
+WORKDIR /build
+
+# ---------------------------------------------------------------------------
+# Stage 2: Planner — analyze dependencies and produce a recipe
+# ---------------------------------------------------------------------------
+FROM chef AS planner
+
+COPY Cargo.toml Cargo.lock ./
+COPY src/ src/
+
+RUN cargo chef prepare --recipe-path recipe.json
+
+# ---------------------------------------------------------------------------
+# Stage 3: Builder — cook dependencies (cached), then compile source
+# ---------------------------------------------------------------------------
+FROM chef AS builder
+
+# Cook dependencies — this layer is cached until Cargo.toml/Cargo.lock change
+COPY --from=planner /build/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+# Now copy source and build the actual binary (only this recompiles on changes)
+COPY Cargo.toml Cargo.lock ./
+COPY src/ src/
+RUN cargo build --release && \
+    install -Dm755 /build/target/release/netchecks-operator /out/netchecks-operator
+
+# ---------------------------------------------------------------------------
+# Stage 4: Runtime (distroless)
+# ---------------------------------------------------------------------------
+FROM cgr.dev/chainguard/static AS runtime
+
 LABEL org.opencontainers.image.source=https://github.com/hardbyte/netchecks
+LABEL org.opencontainers.image.description="Netchecks Operator — Kubernetes controller for NetworkAssertion CRDs"
 
-# Configure Poetry
-ENV USERNAME=netchecks \
-    USER_UID=1000 \
-    USER_GID=1000 \
-    POETRY_VERSION=1.7.1 \
-    POETRY_HOME=/home/netchecks/bin/poetry \
-    POETRY_VENV=/home/netchecks/bin/poetry-venv \
-    POETRY_CACHE_DIR=/home/netchecks/bin/.cache \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+COPY --from=builder /out/netchecks-operator /usr/local/bin/netchecks-operator
 
-RUN groupadd --gid ${USER_GID} ${USERNAME} \
-    && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME}
-
-USER ${USERNAME}
-
-# Install poetry separated from system interpreter
-RUN python3 -m venv ${POETRY_VENV} \
-    && ${POETRY_VENV}/bin/pip install -U pip setuptools --no-cache-dir \
-    && ${POETRY_VENV}/bin/pip install poetry==${POETRY_VERSION} --no-cache-dir
-
-# Add `poetry` to PATH
-ENV PATH="${PATH}:${POETRY_VENV}/bin"
-
-WORKDIR /app
-
-# Install dependencies
-COPY --chown=${USERNAME}:${USER_GID} poetry.lock* pyproject.toml README.md ./
-RUN poetry install --no-root --no-cache
-
-COPY --chown=${USERNAME}:${USER_GID} ./netchecks_operator/ /app/netchecks_operator/
-RUN poetry install --no-cache
-CMD ["poetry", "run", "kopf", "run", "/app/netchecks_operator/main.py", "--all-namespaces", "--liveness=http://0.0.0.0:8080/healthz"]
+USER 65534
+ENTRYPOINT ["netchecks-operator"]

@@ -18,10 +18,22 @@ spec:
     - name: v1
       served: true
       storage: true
+      subresources:
+        status: {}
       additionalPrinterColumns:
         - jsonPath: .spec.schedule
           name: Schedule
           type: string
+        - jsonPath: '.status.conditions[?(@.type=="Reconciled")].status'
+          name: Ready
+          type: string
+        - jsonPath: '.status.conditions[?(@.type=="Reconciled")].reason'
+          name: Reason
+          type: string
+        - jsonPath: '.status.conditions[?(@.type=="Reconciled")].message'
+          name: Status
+          type: string
+          priority: 1
       schema:
         openAPIV3Schema:
           type: object

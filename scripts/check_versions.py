@@ -19,7 +19,7 @@ def read_yaml(file: str) -> dict:
 if __name__ == "__main__":
     git_root_path = Path(__file__).resolve().parent.parent
     cli_toml_path = git_root_path / "pyproject.toml"
-    operator_toml_path = git_root_path / "operator" / "pyproject.toml"
+    operator_toml_path = git_root_path / "operator" / "Cargo.toml"
     operator_chart_path = git_root_path / "operator" / "charts" / "netchecks" / "Chart.yaml"
 
     cli_toml = read_toml(cli_toml_path)
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     operator_chart_yaml = read_yaml(operator_chart_path)
 
     cli_version = cli_toml["project"]["version"]
-    operator_version = operator_toml["tool"]["poetry"]["version"]
+    operator_version = operator_toml["package"]["version"]
     operator_chart_version = operator_chart_yaml["appVersion"]
 
     if len(set((cli_version, operator_version, operator_chart_version))) == 1:
