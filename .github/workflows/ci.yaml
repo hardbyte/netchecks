@@ -191,21 +191,38 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: operator
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
-          labels:
-            ${{ steps.meta.outputs.labels }}
-            #      - name: Install Cosign
-            #        uses: sigstore/cosign-installer@main
-            #      - name: Sign the images with GitHub OIDC Token
-            #        run: cosign sign --yes ${TAGS}
-            #        if: github.event_name != 'pull_request'
-            #        env:
-            #          TAGS: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  operator_tests:
+    name: Operator Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            operator/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('operator/Cargo.lock') }}
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+        working-directory: operator
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+        working-directory: operator
+      - name: Run tests
+        run: cargo test
+        working-directory: operator
 
   k8s:
     name: Kubernetes Integration Tests
@@ -232,22 +249,8 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
-      - name: Install poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install Python Dependencies
-        run: |
-          cd operator
-          poetry install --no-interaction --with dev
+      - name: Install Python test dependencies
+        run: pip install pytest
       - name: Install kubectl
         run: |
           curl -sLO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
@@ -309,7 +312,7 @@ jobs:
         run: |
           cd operator
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
-          poetry run pytest -v -x
+          pytest -v -x --ignore=tests/test_config.py
         timeout-minutes: 10
 
       #      - name: Enable Hubble Relay
@@ -327,7 +330,7 @@ jobs:
           cd operator
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
           export INCLUDE_CILIUM_TESTS=1
-          poetry run pytest -x
+          pytest -x --ignore=tests/test_config.py
 
         timeout-minutes: 10
 

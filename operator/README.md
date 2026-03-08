@@ -1,6 +1,6 @@
 # Netchecks Operator
 
-The **Netchecks Operator** provides a cloud native way to dynamically declare a set of statements about 
+The **Netchecks Operator** provides a cloud native way to dynamically declare a set of statements about
 the network (what should work and what shouldn't).
 
 
@@ -85,7 +85,7 @@ For more examples see the [examples folder](examples/)
 
 The PolicyReport CRD is required to be installed before the operator. The CRD can be installed by running:
 
-```shell 
+```shell
 kubectl apply -f https://github.com/kubernetes-sigs/wg-policy-prototypes/raw/master/policy-report/crd/v1alpha2/wgpolicyk8s.io_policyreports.yaml
 ```
 
@@ -113,6 +113,26 @@ Then apply your `NetworkAssertions` as any other resource.
 
 ## Development
 
+The operator is written in Rust using [kube-rs](https://kube.rs/).
+
+### Build
+
+```shell
+cargo build
+```
+
+### Run unit tests
+
+```shell
+cargo test
+```
+
+### Format and lint
+
+```shell
+cargo fmt --all
+cargo clippy --all-targets --all-features -- -D warnings
+```
 
 ### Generate the static manifests (manually)
 
@@ -137,17 +157,11 @@ Manual CRD installation:
 kubectl apply -f charts/netchecks/crds
 ```
 
-### Start the operator outside of Kubernetes
+### Building and loading a local operator Docker container
 
 ```shell
-poetry install
-poetry run kopf run netchecks_operator/main.py --liveness=http://0.0.0.0:8080/healthz
-```
-
-### Building and loading a local probe Docker container
-
-```shell
-kind load docker-image ghcr.io/hardbyte/netchecks:main
+docker build -t ghcr.io/hardbyte/netchecks-operator:local operator/
+kind load docker-image ghcr.io/hardbyte/netchecks-operator:local
 ```
 
 ### Create a NetworkAssertion
@@ -158,6 +172,9 @@ kubectl apply -f examples/default-k8s/http.yaml
 
 ### Run integration tests
 
+Integration tests use Python/pytest and interact with the cluster via kubectl:
+
 ```shell
-pytest
+pip install pytest
+pytest --ignore=tests/test_config.py
 ```

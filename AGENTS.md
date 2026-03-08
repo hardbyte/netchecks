@@ -3,7 +3,7 @@
 Netchecks is a cloud native tool for testing network conditions and asserting that they meet expectations. The repository contains two main components:
 
 1. **Netcheck CLI/Python Library** - Command line tool and Python library for running network checks (DNS, HTTP) with customizable validation rules written in CEL (Common Expression Language)
-2. **Netchecks Operator** - Kubernetes Operator that schedules and runs network checks, reporting results as PolicyReport resources
+2. **Netchecks Operator** - Kubernetes Operator (Rust, using kube-rs) that schedules and runs network checks, reporting results as PolicyReport resources
 
 ## Architecture
 
@@ -16,22 +16,25 @@ Netchecks is a cloud native tool for testing network conditions and asserting th
 
 Test results include `spec` (test configuration), `data` (results), and `status` (pass/fail). Custom validation rules can reference both `data` and `spec` in CEL expressions.
 
-### Netchecks Operator (Kubernetes)
-- **Main operator**: `operator/netchecks_operator/main.py` - Kopf-based operator with handlers for NetworkAssertion CRD lifecycle
-- **Configuration**: `operator/netchecks_operator/config.py` - Pydantic v2 `BaseSettings` with custom `JsonConfigSettingsSource` that loads config from a JSON file via the `JSON_CONFIG` environment variable. Priority: init > JSON file > env vars > file secrets
+### Netchecks Operator (Rust / kube-rs)
+- **Entry point**: `operator/src/main.rs` - Tokio-based async main with Controller setup
+- **CRD types**: `operator/src/crd.rs` - NetworkAssertion CRD definition using kube-rs `CustomResource` derive
+- **Reconciler**: `operator/src/reconciler.rs` - Core reconciliation logic: ConfigMap creation, Job/CronJob management, PolicyReport updates
+- **Configuration**: `operator/src/context.rs` - `OperatorConfig` loaded from env vars (PROBE_IMAGE_REPOSITORY, PROBE_IMAGE_TAG, etc.)
+- **Observability**: `operator/src/observability.rs` - Health endpoints (/livez, /readyz) and optional OTLP metrics
 - **Flow**:
   1. NetworkAssertion CRD created → operator creates ConfigMap with rules + Job/CronJob with probe pod
   2. Probe pod runs netcheck CLI with mounted config
-  3. Operator daemon monitors probe pod completion
+  3. Controller re-reconciles when owned Jobs complete (via `Controller.owns(jobs)`)
   4. Results extracted from pod logs and transformed into PolicyReport CRD
-  5. Prometheus metrics updated with test duration and results
+  5. Optional OTLP metrics export for reconciliation and probe durations
 - **Helm chart**: `operator/charts/netchecks/` - Includes NetworkAssertion and PolicyReport CRDs
 
-Key transformation: K8s concepts (ConfigMap/Secret contexts) are mapped to CLI format (directory/file/inline contexts) via `transform_context_for_config_file()` at operator/netchecks_operator/main.py:208.
+Key transformation: K8s concepts (ConfigMap/Secret contexts) are mapped to CLI format (directory/file/inline contexts) via `transform_context_for_config()` in `operator/src/reconciler.rs`.
 
 ## Development Setup
 
-The project uses **uv** for Python dependency management (not pip or poetry for the CLI).
+The project uses **uv** for Python dependency management (CLI) and **cargo** for Rust (operator).
 
 ### CLI/Library Development
 
@@ -59,18 +62,25 @@ uv run netcheck run --config example-config.json -v
 
 ### Operator Development
 
-The operator uses **Poetry** for dependency management (separate from CLI).
+The operator is written in Rust using kube-rs.
 
-Install operator dependencies:
+Build the operator:
 ```bash
 cd operator
-poetry install --with dev
+cargo build
 ```
 
-Run operator unit tests (no cluster required):
+Run unit tests:
 ```bash
 cd operator
-poetry run pytest tests/test_config.py -v
+cargo test
+```
+
+Format and lint (required before committing):
+```bash
+cd operator
+cargo fmt --all
+cargo clippy --all-targets --all-features -- -D warnings
 ```
 
 Integration tests require:
@@ -88,18 +98,12 @@ kind load docker-image ghcr.io/hardbyte/netchecks:local --name netchecks-test
 kind load docker-image ghcr.io/hardbyte/netchecks-operator:local --name netchecks-test
 helm dependency build operator/charts/netchecks
 
-# Run tests
+# Run tests (integration tests are Python/pytest using kubectl subprocess calls)
 cd operator
-NETCHECKS_IMAGE_TAG=local poetry run pytest -v -x
+NETCHECKS_IMAGE_TAG=local pytest -v -x --ignore=tests/test_config.py
 
 # Cleanup
 kind delete cluster --name netchecks-test
-```
-
-Run operator locally (outside cluster):
-```bash
-cd operator
-poetry run kopf run netchecks_operator/main.py --liveness=http://0.0.0.0:8080/healthz
 ```
 
 ### Docker Build
@@ -116,44 +120,38 @@ docker build -t ghcr.io/hardbyte/netchecks-operator:main operator/
 
 ### Code Quality
 
-Format code with ruff (CLI uses uv, operator uses poetry):
+Format and lint CLI code (Python):
 ```bash
-# CLI
 uv run ruff format .
-
-# Operator
-cd operator
-poetry run ruff format .
+uv run ruff check .
 ```
 
-Lint with ruff:
+Format and lint operator code (Rust):
 ```bash
-# CLI
-uv run ruff check .
-
-# Operator
 cd operator
-poetry run ruff check .
+cargo fmt --all
+cargo clippy --all-targets --all-features -- -D warnings
 ```
 
 ## Testing Philosophy
 
-- **Unit tests** in `tests/` test the CLI and library functions
-- **Integration tests** in `operator/tests/` deploy NetworkAssertion resources to a real Kubernetes cluster and verify PolicyReport results
-- CI runs tests on ubuntu-latest, windows-latest, and macos-latest with Python 3.11 and 3.12
+- **Unit tests** in `tests/` test the CLI and library functions (Python)
+- **Unit tests** in `operator/src/` test the operator logic (Rust, inline `#[cfg(test)]` modules)
+- **Integration tests** in `operator/tests/` deploy NetworkAssertion resources to a real Kubernetes cluster and verify PolicyReport results (Python/pytest using kubectl)
+- CI runs CLI tests on ubuntu-latest, windows-latest, and macos-latest with Python 3.11 and 3.12
 
 ## Key Configuration Files
 
 - `pyproject.toml` - CLI package metadata and dependencies (using uv)
-- `operator/pyproject.toml` - Operator package metadata and dependencies (using poetry)
+- `operator/Cargo.toml` - Operator package metadata and dependencies (Rust)
 - `operator/charts/netchecks/values.yaml` - Helm chart configuration
 - `operator/manifests/deploy.yaml` - Static Kubernetes manifests
 
 ## Release Process
 
-1. Update version in `pyproject.toml` (CLI), `operator/pyproject.toml` (operator), and `operator/charts/netchecks/Chart.yaml` (chart `version` + `appVersion`)
+1. Update `version` in `pyproject.toml` (CLI), `operator/Cargo.toml` (operator), and `operator/charts/netchecks/Chart.yaml` (chart `version` + `appVersion`)
 2. Push to main branch
-3. Create GitHub release with a `v*` tag (e.g. `v0.6.0`)
+3. Create GitHub release with a `v*` tag (e.g. `v0.7.0`)
 4. CI automatically:
    - Publishes package to PyPI
    - Builds and pushes Docker images to ghcr.io
@@ -182,8 +180,8 @@ parse_json(data.body).headers['X-Header'] == 'expected-value'
 ## Important Notes
 
 - CEL evaluation uses the Rust `common-expression-language` library (PyPI: `common-expression-language`), not the Python `celpy` library
-- Operator uses Kopf framework for handling Kubernetes CRD lifecycle events
+- Operator uses kube-rs Controller framework with `Controller.owns(jobs)` for Job lifecycle tracking
 - Template strings in NetworkAssertion specs use `{{ variable }}` syntax and are replaced via `netcheck/context.py:replace_template()`
 - Sensitive fields (headers) are redacted from output unless `--disable-redaction` flag is used
 - PolicyReport CRD must be installed before operator (from wg-policy-prototypes)
-- Operator metrics exposed on port 9090 (configurable) using OpenTelemetry + Prometheus
+- Operator metrics optionally exported via OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set
