@@ -819,13 +819,25 @@ fn summarize_results(probe_results: &serde_json::Value) -> serde_json::Value {
         }
     }
 
-    serde_json::json!({
-        "pass": pass,
-        "fail": fail,
-        "warn": warn,
-        "error": error,
-        "skip": skip,
-    })
+    // Only include non-zero counts (matches PolicyReport convention and
+    // existing integration test expectations).
+    let mut summary = serde_json::Map::new();
+    if pass > 0 {
+        summary.insert("pass".to_string(), serde_json::json!(pass));
+    }
+    if fail > 0 {
+        summary.insert("fail".to_string(), serde_json::json!(fail));
+    }
+    if warn > 0 {
+        summary.insert("warn".to_string(), serde_json::json!(warn));
+    }
+    if error > 0 {
+        summary.insert("error".to_string(), serde_json::json!(error));
+    }
+    if skip > 0 {
+        summary.insert("skip".to_string(), serde_json::json!(skip));
+    }
+    serde_json::Value::Object(summary)
 }
 
 /// Convert probe results to PolicyReport result entries.
@@ -1130,15 +1142,14 @@ mod tests {
     fn summarize_results_empty_assertions() {
         let probe_results = serde_json::json!({"assertions": []});
         let summary = summarize_results(&probe_results);
-        assert_eq!(summary["pass"], 0);
-        assert_eq!(summary["fail"], 0);
+        assert!(summary.as_object().unwrap().is_empty());
     }
 
     #[test]
     fn summarize_results_missing_assertions_key() {
         let probe_results = serde_json::json!({});
         let summary = summarize_results(&probe_results);
-        assert_eq!(summary["pass"], 0);
+        assert!(summary.as_object().unwrap().is_empty());
     }
 
     #[test]
@@ -1288,8 +1299,8 @@ mod tests {
         assert_eq!(summary["pass"], 2);
         assert_eq!(summary["fail"], 1);
         assert_eq!(summary["warn"], 1);
-        assert_eq!(summary["error"], 0);
-        assert_eq!(summary["skip"], 0);
+        assert!(summary.get("error").is_none());
+        assert!(summary.get("skip").is_none());
     }
 
     #[test]
