@@ -15,9 +15,10 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY src/ src/
 
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/build/target \
+ARG TARGETPLATFORM
+RUN --mount=type=cache,id=cargo-registry-${TARGETPLATFORM},target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-git-${TARGETPLATFORM},target=/usr/local/cargo/git \
+    --mount=type=cache,id=cargo-target-${TARGETPLATFORM},target=/build/target \
     cargo build --release && \
     install -Dm755 /build/target/release/netchecks-operator /out/netchecks-operator
 
