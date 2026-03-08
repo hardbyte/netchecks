@@ -1,7 +1,7 @@
 [package]
 name = "netchecks-operator"
 description = "Kubernetes operator for NetworkAssertion CRDs — reconciles network assertions into probe Jobs and PolicyReports"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 authors = ["Brian Thorne <brian@hardbyte.nz>"]
 license = "Apache-2.0"
