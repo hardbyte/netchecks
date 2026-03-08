@@ -737,11 +737,6 @@ async fn upsert_policy_report(
     let api: Api<DynamicObject> = Api::namespaced_with(client.clone(), namespace, &api_resource);
 
     let report_data = serde_json::json!({
-        "scope": {
-            "kind": "Namespace",
-            "name": namespace,
-            "apiGroup": "v1",
-        },
         "results": report_results,
         "summary": report_summary,
     });
@@ -769,12 +764,14 @@ async fn upsert_policy_report(
         Ok(_) => {
             tracing::info!(assertion = %assertion_name, "upserted PolicyReport");
         }
-        Err(kube::Error::Api(err)) if err.code == 422 => {
-            // Server-side apply may fail if the resource has conflicts from
-            // a previous manager. Fall back to get-then-create-or-replace.
+        Err(kube::Error::Api(err)) if err.code == 422 || err.code == 500 => {
+            // Server-side apply may fail with 422 (field conflicts) or 500
+            // (schema validation on CRDs like PolicyReport). Fall back to
+            // get-then-create-or-replace.
             tracing::warn!(
                 assertion = %assertion_name,
-                "server-side apply failed (422), falling back to create/replace"
+                code = err.code,
+                "server-side apply failed, falling back to create/replace"
             );
             match api.get(&assertion_name).await {
                 Ok(existing) => {
