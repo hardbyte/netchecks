@@ -1,0 +1,54 @@
+[package]
+name = "netchecks-operator"
+description = "Kubernetes operator for NetworkAssertion CRDs — reconciles network assertions into probe Jobs and PolicyReports"
+version = "0.7.0"
+edition = "2021"
+authors = ["Brian Thorne <brian@hardbyte.nz>"]
+license = "Apache-2.0"
+repository = "https://github.com/hardbyte/netchecks"
+
+[lib]
+name = "netchecks_operator"
+path = "src/lib.rs"
+
+[[bin]]
+name = "netchecks-operator"
+path = "src/main.rs"
+
+[dependencies]
+# Kubernetes
+kube = { version = "3.0", features = ["runtime", "derive", "client", "unstable-runtime"] }
+k8s-openapi = { version = "0.27", features = ["latest", "schemars"] }
+schemars = "1"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Logging / tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Health endpoints
+axum = "0.8"
+
+# Observability
+opentelemetry = { version = "0.31", features = ["metrics"] }
+opentelemetry_sdk = { version = "0.31", features = ["metrics", "rt-tokio", "testing"] }
+opentelemetry-otlp = { version = "0.31", features = ["metrics", "grpc-tonic"] }
+
+# Timestamp parsing
+chrono = { version = "0.4", features = ["serde"] }
+
+[profile.release]
+strip = "symbols"
+lto = "thin"
+codegen-units = 1

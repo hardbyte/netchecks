@@ -3,61 +3,38 @@ kind: ClusterRole
 metadata:
   name: {{ include "netchecks.fullname" . }}
 rules:
-  # Kopf Framework: knowing which other operators are running (i.e. peering).
-  - apiGroups: [kopf.dev]
-    resources: [clusterkopfpeerings]
-    verbs: [list, watch, patch, get]
-
-  # Kopf Framework: runtime observation of namespaces & CRDs (addition/deletion).
-  - apiGroups: [apiextensions.k8s.io]
-    resources: [customresourcedefinitions]
-    verbs: [list, watch]
-  - apiGroups: [""]
-    resources: [namespaces]
-    verbs: [list, watch]
-
-  # Kopf Framework: admission webhook configuration management.
-  - apiGroups: [admissionregistration.k8s.io/v1, admissionregistration.k8s.io/v1beta1]
-    resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
-    verbs: [create, patch]
-
-  # This could be restricted to our operator namespace
-  # Framework: posting the events about the handlers progress/errors.
+  # Events: posting events about reconciliation progress
   - apiGroups: [""]
     resources: [events]
     verbs: [create]
 
-  # Application: Access to our NetworkAssertions cluster-wide
-  # Note we don't create or delete them - that's up to the user.
+  # NetworkAssertions: watch and reconcile across all namespaces
   - apiGroups: [netchecks.io]
     resources: [networkassertions]
     verbs: [list, get, watch, patch, update]
+  - apiGroups: [netchecks.io]
+    resources: [networkassertions/status]
+    verbs: [patch, update]
 
+  # PolicyReports: create and update from probe results
   - apiGroups: [wgpolicyk8s.io]
     resources: [policyreports]
     verbs: [list, get, patch, create, update, watch]
 
-  # Application: other resources we produce and manipulate
-  # The operator can create and delete CronJobs & Jobs
-  - apiGroups: [batch, extensions]
+  # Jobs and CronJobs: create probe workloads
+  - apiGroups: [batch]
     resources: [jobs, cronjobs]
-    verbs: [create, list, get, update, delete]
+    verbs: [create, list, get, update, delete, watch]
 
-  # We directly create, update and delete config maps for probes.
+  # ConfigMaps: store probe configuration
   - apiGroups: [""]
     resources: [configmaps]
     verbs: [list, get, patch, create, update, delete]
 
-  # TODO: see if we can restrict this to our operator namespace
+  # Pods: read probe pod status and logs
   - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list", "watch", "patch"]
-
-  # We need to watch our probe Pod's logs
+    resources: [pods]
+    verbs: [get, list, watch]
   - apiGroups: [""]
-    resources: ["pods/log"]
-    verbs: ["get", "list", "watch"]
-
-  - apiGroups: [""]
-    resources: ["pods/status"]
-    verbs: ["get", "patch"]
+    resources: [pods/log]
+    verbs: [get, list]

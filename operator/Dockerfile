@@ -1,36 +1,35 @@
-FROM python:3.12-slim-bookworm
+# syntax=docker/dockerfile:1.7
+
+# Multi-stage build for netchecks-operator from Rust source.
+
+# ---------------------------------------------------------------------------
+# Stage 1: Build
+# ---------------------------------------------------------------------------
+FROM rust:1-alpine AS builder
+
+RUN apk add --no-cache musl-dev
+
+WORKDIR /build
+
+# Copy source
+COPY Cargo.toml Cargo.lock ./
+COPY src/ src/
+
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/build/target \
+    cargo build --release && \
+    install -Dm755 /build/target/release/netchecks-operator /out/netchecks-operator
+
+# ---------------------------------------------------------------------------
+# Stage 2: Runtime (distroless)
+# ---------------------------------------------------------------------------
+FROM cgr.dev/chainguard/static AS runtime
+
 LABEL org.opencontainers.image.source=https://github.com/hardbyte/netchecks
+LABEL org.opencontainers.image.description="Netchecks Operator — Kubernetes controller for NetworkAssertion CRDs"
 
-# Configure Poetry
-ENV USERNAME=netchecks \
-    USER_UID=1000 \
-    USER_GID=1000 \
-    POETRY_VERSION=1.7.1 \
-    POETRY_HOME=/home/netchecks/bin/poetry \
-    POETRY_VENV=/home/netchecks/bin/poetry-venv \
-    POETRY_CACHE_DIR=/home/netchecks/bin/.cache \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+COPY --from=builder /out/netchecks-operator /usr/local/bin/netchecks-operator
 
-RUN groupadd --gid ${USER_GID} ${USERNAME} \
-    && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME}
-
-USER ${USERNAME}
-
-# Install poetry separated from system interpreter
-RUN python3 -m venv ${POETRY_VENV} \
-    && ${POETRY_VENV}/bin/pip install -U pip setuptools --no-cache-dir \
-    && ${POETRY_VENV}/bin/pip install poetry==${POETRY_VERSION} --no-cache-dir
-
-# Add `poetry` to PATH
-ENV PATH="${PATH}:${POETRY_VENV}/bin"
-
-WORKDIR /app
-
-# Install dependencies
-COPY --chown=${USERNAME}:${USER_GID} poetry.lock* pyproject.toml README.md ./
-RUN poetry install --no-root --no-cache
-
-COPY --chown=${USERNAME}:${USER_GID} ./netchecks_operator/ /app/netchecks_operator/
-RUN poetry install --no-cache
-CMD ["poetry", "run", "kopf", "run", "/app/netchecks_operator/main.py", "--all-namespaces", "--liveness=http://0.0.0.0:8080/healthz"]
+USER 65534
+ENTRYPOINT ["netchecks-operator"]
