@@ -274,7 +274,7 @@ async fn ensure_job(
         Err(err) => return Err(err.into()),
     }
 
-    let job = build_job(na, config);
+    let job = build_job(na, config)?;
     jobs_api.create(&PostParams::default(), &job).await?;
 
     tracing::info!(name, namespace, "created Job");
@@ -292,7 +292,7 @@ async fn ensure_cron_job(
     let name = na.name_any();
     let cronjobs_api: Api<CronJob> = Api::namespaced(client.clone(), namespace);
 
-    let cron_job = build_cron_job(na, config, schedule);
+    let cron_job = build_cron_job(na, config, schedule)?;
 
     cronjobs_api
         .patch(
@@ -329,7 +329,7 @@ async fn delete_stale_cronjob(
 }
 
 /// Build a one-time Job for a NetworkAssertion.
-fn build_job(na: &NetworkAssertion, config: &OperatorConfig) -> Job {
+fn build_job(na: &NetworkAssertion, config: &OperatorConfig) -> Result<Job, ReconcileError> {
     let name = na.name_any();
     let labels = common_labels(&name);
 
@@ -339,9 +339,9 @@ fn build_job(na: &NetworkAssertion, config: &OperatorConfig) -> Job {
 
     let owner_ref = na
         .controller_owner_ref(&())
-        .expect("NetworkAssertion must have UID for owner reference");
+        .ok_or_else(|| ReconcileError::InvalidSpec("cannot create owner reference".into()))?;
 
-    Job {
+    Ok(Job {
         metadata: ObjectMeta {
             name: Some(name),
             namespace: na.namespace(),
@@ -352,19 +352,23 @@ fn build_job(na: &NetworkAssertion, config: &OperatorConfig) -> Job {
         },
         spec: Some(build_job_spec(na, config)),
         ..Default::default()
-    }
+    })
 }
 
 /// Build a CronJob for a scheduled NetworkAssertion.
-fn build_cron_job(na: &NetworkAssertion, config: &OperatorConfig, schedule: &str) -> CronJob {
+fn build_cron_job(
+    na: &NetworkAssertion,
+    config: &OperatorConfig,
+    schedule: &str,
+) -> Result<CronJob, ReconcileError> {
     let name = na.name_any();
     let labels = common_labels(&name);
 
     let owner_ref = na
         .controller_owner_ref(&())
-        .expect("NetworkAssertion must have UID for owner reference");
+        .ok_or_else(|| ReconcileError::InvalidSpec("cannot create owner reference".into()))?;
 
-    CronJob {
+    Ok(CronJob {
         metadata: ObjectMeta {
             name: Some(name),
             namespace: na.namespace(),
@@ -381,7 +385,7 @@ fn build_cron_job(na: &NetworkAssertion, config: &OperatorConfig, schedule: &str
             ..Default::default()
         }),
         ..Default::default()
-    }
+    })
 }
 
 /// Build the JobSpec (shared between Job and CronJob).
@@ -931,6 +935,232 @@ fn convert_iso_timestamp(iso: &str) -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::crd::NetworkAssertionSpec;
+
+    /// Create a test NetworkAssertion with realistic metadata (including UID).
+    fn test_network_assertion(name: &str, rules: Vec<Rule>) -> NetworkAssertion {
+        NetworkAssertion {
+            metadata: ObjectMeta {
+                name: Some(name.to_string()),
+                namespace: Some("default".to_string()),
+                uid: Some("test-uid-12345".to_string()),
+                generation: Some(1),
+                ..Default::default()
+            },
+            spec: NetworkAssertionSpec {
+                rules,
+                schedule: None,
+                context: vec![],
+                template: None,
+                disable_redaction: false,
+            },
+            status: None,
+        }
+    }
+
+    fn test_config() -> OperatorConfig {
+        OperatorConfig {
+            probe_image_repository: "ghcr.io/hardbyte/netchecks".to_string(),
+            probe_image_tag: "test".to_string(),
+            probe_image_pull_policy: "IfNotPresent".to_string(),
+            policy_report_max_results: 100,
+        }
+    }
+
+    fn simple_http_rule() -> Rule {
+        Rule {
+            name: "http-check".to_string(),
+            fields: BTreeMap::from([
+                ("type".to_string(), serde_json::json!("http")),
+                ("url".to_string(), serde_json::json!("https://example.com")),
+                ("expected".to_string(), serde_json::json!("pass")),
+            ]),
+        }
+    }
+
+    #[test]
+    fn build_job_creates_valid_job_with_owner_ref() {
+        let na = test_network_assertion("my-job", vec![simple_http_rule()]);
+        let config = test_config();
+        let job = build_job(&na, &config).expect("should build job");
+
+        assert_eq!(job.metadata.name.as_deref(), Some("my-job"));
+        assert_eq!(job.metadata.namespace.as_deref(), Some("default"));
+
+        let owner_refs = job.metadata.owner_references.as_ref().unwrap();
+        assert_eq!(owner_refs.len(), 1);
+        assert_eq!(owner_refs[0].name, "my-job");
+
+        let annotations = job.metadata.annotations.as_ref().unwrap();
+        assert_eq!(annotations["netchecks.io/spec-generation"], "1");
+    }
+
+    #[test]
+    fn build_cron_job_creates_valid_cronjob() {
+        let na = test_network_assertion("scheduled", vec![simple_http_rule()]);
+        let config = test_config();
+        let cron = build_cron_job(&na, &config, "*/5 * * * *").expect("should build cronjob");
+
+        assert_eq!(cron.metadata.name.as_deref(), Some("scheduled"));
+        let spec = cron.spec.as_ref().unwrap();
+        assert_eq!(spec.schedule, "*/5 * * * *");
+        assert!(spec.job_template.spec.is_some());
+    }
+
+    #[test]
+    fn build_job_spec_mounts_config_volume() {
+        let na = test_network_assertion("test", vec![simple_http_rule()]);
+        let config = test_config();
+        let job_spec = build_job_spec(&na, &config);
+
+        let volumes = job_spec
+            .template
+            .spec
+            .as_ref()
+            .unwrap()
+            .volumes
+            .as_ref()
+            .unwrap();
+        assert!(volumes.iter().any(|v| v.name == "netcheck-rules"));
+
+        let container = &job_spec.template.spec.as_ref().unwrap().containers[0];
+        assert_eq!(container.name, "netcheck");
+        assert_eq!(
+            container.image.as_deref(),
+            Some("ghcr.io/hardbyte/netchecks:test")
+        );
+
+        let mounts = container.volume_mounts.as_ref().unwrap();
+        assert!(mounts
+            .iter()
+            .any(|m| m.name == "netcheck-rules" && m.mount_path == "/netcheck"));
+    }
+
+    #[test]
+    fn build_job_spec_with_context_volumes() {
+        let mut na = test_network_assertion("ctx-test", vec![simple_http_rule()]);
+        na.spec.context = vec![
+            ContextSpec {
+                name: "my-cm".to_string(),
+                config_map: Some(serde_json::json!({"name": "source-cm", "optional": true})),
+                secret: None,
+                inline: None,
+            },
+            ContextSpec {
+                name: "my-secret".to_string(),
+                config_map: None,
+                secret: Some(serde_json::json!({"name": "source-secret"})),
+                inline: None,
+            },
+            ContextSpec {
+                name: "my-inline".to_string(),
+                config_map: None,
+                secret: None,
+                inline: Some(serde_json::json!({"key": "val"})),
+            },
+        ];
+        let config = test_config();
+        let job_spec = build_job_spec(&na, &config);
+
+        let volumes = job_spec
+            .template
+            .spec
+            .as_ref()
+            .unwrap()
+            .volumes
+            .as_ref()
+            .unwrap();
+        // netcheck-rules + my-cm + my-secret = 3 (inline doesn't get a volume)
+        assert_eq!(volumes.len(), 3);
+        assert!(volumes.iter().any(|v| v.name == "my-cm"));
+        assert!(volumes.iter().any(|v| v.name == "my-secret"));
+
+        // Check optional flag was preserved on ConfigMap volume
+        let cm_vol = volumes.iter().find(|v| v.name == "my-cm").unwrap();
+        assert_eq!(cm_vol.config_map.as_ref().unwrap().optional, Some(true));
+
+        let mounts = job_spec.template.spec.as_ref().unwrap().containers[0]
+            .volume_mounts
+            .as_ref()
+            .unwrap();
+        assert!(mounts.iter().any(|m| m.mount_path == "/mnt/my-cm"));
+        assert!(mounts.iter().any(|m| m.mount_path == "/mnt/my-secret"));
+    }
+
+    #[test]
+    fn build_job_spec_disable_redaction_flag() {
+        let mut na = test_network_assertion("redact-test", vec![simple_http_rule()]);
+        na.spec.disable_redaction = true;
+        let config = test_config();
+        let job_spec = build_job_spec(&na, &config);
+
+        let command = job_spec.template.spec.as_ref().unwrap().containers[0]
+            .command
+            .as_ref()
+            .unwrap();
+        assert!(command.contains(&"--disable-redaction".to_string()));
+    }
+
+    #[test]
+    fn template_overrides_node_selector() {
+        let mut template = PodTemplateSpec {
+            metadata: None,
+            spec: Some(PodSpec {
+                containers: vec![],
+                ..Default::default()
+            }),
+        };
+
+        let overrides = serde_json::json!({
+            "spec": {
+                "nodeSelector": {"disktype": "ssd", "region": "us-east"}
+            }
+        });
+
+        apply_template_overrides(&mut template, &overrides);
+        let node_selector = template
+            .spec
+            .as_ref()
+            .unwrap()
+            .node_selector
+            .as_ref()
+            .unwrap();
+        assert_eq!(node_selector["disktype"], "ssd");
+        assert_eq!(node_selector["region"], "us-east");
+    }
+
+    #[test]
+    fn summarize_results_empty_assertions() {
+        let probe_results = serde_json::json!({"assertions": []});
+        let summary = summarize_results(&probe_results);
+        assert_eq!(summary["pass"], 0);
+        assert_eq!(summary["fail"], 0);
+    }
+
+    #[test]
+    fn summarize_results_missing_assertions_key() {
+        let probe_results = serde_json::json!({});
+        let summary = summarize_results(&probe_results);
+        assert_eq!(summary["pass"], 0);
+    }
+
+    #[test]
+    fn convert_results_multiple_assertions() {
+        let probe_results = serde_json::json!({
+            "assertions": [
+                {"name": "a1", "results": [{"status": "pass", "spec": {"type": "http"}, "data": {}}]},
+                {"name": "a2", "results": [
+                    {"status": "fail", "spec": {"type": "dns"}, "data": {}},
+                    {"status": "pass", "spec": {"type": "dns"}, "data": {}}
+                ]}
+            ]
+        });
+        let results = convert_results_for_policy_report(&probe_results);
+        assert_eq!(results.len(), 3);
+        assert_eq!(results[0]["policy"], "a1");
+        assert_eq!(results[1]["policy"], "a2");
+        assert_eq!(results[2]["policy"], "a2");
+    }
 
     #[test]
     fn transform_rule_preserves_fields() {

@@ -59,20 +59,61 @@ impl OperatorContext {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Mutex;
+
     use super::*;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn config_defaults_are_reasonable() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
         // Clear relevant env vars for test isolation
-        let config = OperatorConfig {
-            probe_image_repository: "ghcr.io/hardbyte/netchecks".to_string(),
-            probe_image_tag: "main".to_string(),
-            probe_image_pull_policy: "IfNotPresent".to_string(),
-            policy_report_max_results: 1000,
-        };
+        unsafe {
+            std::env::remove_var("PROBE_IMAGE_REPOSITORY");
+            std::env::remove_var("PROBE_IMAGE_TAG");
+            std::env::remove_var("PROBE_IMAGE_PULL_POLICY");
+            std::env::remove_var("POLICY_REPORT_MAX_RESULTS");
+        }
+        let config = OperatorConfig::from_env();
         assert_eq!(config.probe_image_repository, "ghcr.io/hardbyte/netchecks");
         assert_eq!(config.probe_image_tag, "main");
         assert_eq!(config.probe_image_pull_policy, "IfNotPresent");
         assert_eq!(config.policy_report_max_results, 1000);
+    }
+
+    #[test]
+    fn config_from_env_uses_overrides() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
+        unsafe {
+            std::env::set_var("PROBE_IMAGE_REPOSITORY", "custom/repo");
+            std::env::set_var("PROBE_IMAGE_TAG", "v1.2.3");
+            std::env::set_var("PROBE_IMAGE_PULL_POLICY", "Always");
+            std::env::set_var("POLICY_REPORT_MAX_RESULTS", "50");
+        }
+        let config = OperatorConfig::from_env();
+        assert_eq!(config.probe_image_repository, "custom/repo");
+        assert_eq!(config.probe_image_tag, "v1.2.3");
+        assert_eq!(config.probe_image_pull_policy, "Always");
+        assert_eq!(config.policy_report_max_results, 50);
+        unsafe {
+            std::env::remove_var("PROBE_IMAGE_REPOSITORY");
+            std::env::remove_var("PROBE_IMAGE_TAG");
+            std::env::remove_var("PROBE_IMAGE_PULL_POLICY");
+            std::env::remove_var("POLICY_REPORT_MAX_RESULTS");
+        }
+    }
+
+    #[test]
+    fn config_invalid_max_results_falls_back_to_default() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
+        unsafe {
+            std::env::set_var("POLICY_REPORT_MAX_RESULTS", "not-a-number");
+        }
+        let config = OperatorConfig::from_env();
+        assert_eq!(config.policy_report_max_results, 1000);
+        unsafe {
+            std::env::remove_var("POLICY_REPORT_MAX_RESULTS");
+        }
     }
 }
