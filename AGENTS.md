@@ -100,8 +100,7 @@ helm dependency build operator/charts/netchecks
 
 # Run tests (integration tests are Python/pytest using kubectl subprocess calls)
 cd operator
-NETCHECKS_IMAGE_TAG=local pytest -v -x --ignore=tests/test_config.py
-
+NETCHECKS_IMAGE_TAG=local pytest -v -x
 # Cleanup
 kind delete cluster --name netchecks-test
 ```

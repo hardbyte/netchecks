@@ -176,5 +176,4 @@ Integration tests use Python/pytest and interact with the cluster via kubectl:
 
 ```shell
 pip install pytest
-pytest --ignore=tests/test_config.py
-```
+pytest```

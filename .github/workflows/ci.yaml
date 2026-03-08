@@ -312,8 +312,7 @@ jobs:
         run: |
           cd operator
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
-          pytest -v -x --ignore=tests/test_config.py
-        timeout-minutes: 10
+          pytest -v -x         timeout-minutes: 10
 
       #      - name: Enable Hubble Relay
       #        run: |
@@ -330,8 +329,7 @@ jobs:
           cd operator
           export NETCHECKS_IMAGE_TAG=sha-${GITHUB_SHA::7}
           export INCLUDE_CILIUM_TESTS=1
-          pytest -x --ignore=tests/test_config.py
-
+          pytest -x 
         timeout-minutes: 10
 
       - name: Cleanup
