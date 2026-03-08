@@ -15,7 +15,7 @@ The netchecks operator:
 Each probe pod uses the `netchecks` docker image to run the tests that make up a particular network assertion.
 
 
-![](/images/architecture/Netcheck-High-Level-Lifecycle.png)
+{% architecture-diagram /%}
 
 ---
 

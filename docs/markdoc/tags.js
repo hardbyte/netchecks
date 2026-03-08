@@ -1,3 +1,4 @@
+import { ArchitectureDiagram } from '@/components/ArchitectureDiagram'
 import { Callout } from '@/components/Callout'
 import { QuickLink, QuickLinks } from '@/components/QuickLinks'
 
@@ -41,8 +42,11 @@ const tags = {
       icon: { type: String },
       href: { type: String },
     },
-  }
-
+  },
+  'architecture-diagram': {
+    selfClosing: true,
+    render: ArchitectureDiagram,
+  },
 }
 
 export default tags
