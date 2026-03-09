@@ -31,5 +31,5 @@ on GitHub.
 
 ### Netcheck Operator
 
-The netchecks operator is implemented in Python using the [kopf](https://kopf.readthedocs.io/en/stable) framework
-and is available in the [operator](https://github.com/hardbyte/netchecks/tree/main/operator) folder on GitHub.
+The netchecks operator is implemented in Rust using [kube-rs](https://kube.rs/) and is available in the
+[operator](https://github.com/hardbyte/netchecks/tree/main/operator) folder on GitHub.

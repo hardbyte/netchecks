@@ -7,7 +7,7 @@ Netchecks is written and maintained by Brian Thorne [@hardbyte](https://github.c
 
 ## Documentation
 
-The full documentation can be found at [docs.netchecks.io](https://docs.netchecks.io/) and the [GitHub repository](https://github.com/hardbyte/netchecks/tree/main/operator).
+The full documentation can be found at [netchecks.io](https://netchecks.io/) and the [GitHub repository](https://github.com/hardbyte/netchecks/tree/main/operator).
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@ The full documentation can be found at [docs.netchecks.io](https://docs.netcheck
 
 ## Installing the Chart
 
-Full installation instructions can be found in the [documentation installation page](https://docs.netchecks.io/docs/installation).
+Full installation instructions can be found in the [documentation installation page](https://netchecks.io/docs/installation).
 
 To install the chart
 

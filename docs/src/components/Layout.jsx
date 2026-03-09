@@ -3,7 +3,6 @@ import Link from 'next/link'
 import {useRouter} from 'next/router'
 import clsx from 'clsx'
 
-import {Hero} from '@/components/Hero'
 import {Logo, Logomark} from '@/components/Logo'
 import {MobileNavigation} from '@/components/MobileNavigation'
 import {Navigation} from '@/components/Navigation'
@@ -15,7 +14,7 @@ const navigation = [
     {
         title: 'Introduction',
         links: [
-            {title: 'Getting started', href: '/'},
+            {title: 'Getting started', href: '/docs/getting-started'},
             {title: 'Validating HTTP Controls', href: '/docs/http'},
             {title: 'Validating DNS Controls', href: '/docs/dns'},
             {title: 'Validating TCP Connectivity', href: '/docs/tcp'},
@@ -26,24 +25,17 @@ const navigation = [
         title: 'User Guide',
         links: [
             {title: 'Installation', href: '/docs/installation'},
-
             {title: 'Custom Validation Rules', href: '/docs/custom-validation-rules'},
             {title: 'External Data', href: '/docs/external-data'},
             {title: 'Alerting', href: '/docs/alerting'},
+            {title: 'Compliance', href: '/docs/compliance'},
         ],
     },
-    // {
-    //     title: 'Examples',
-    //     links: [
-    //
-    //     ],
-    // },
-
     {
         title: 'Contributor Guide',
         links: [
             {title: 'How to contribute', href: '/docs/how-to-contribute'},
-            {title: 'Development', href: '/docs/development',},
+            {title: 'Development', href: '/docs/development'},
             {title: 'Architecture guide', href: '/docs/architecture-guide'},
             {title: 'Testing', href: '/docs/testing'},
             {title: 'Design principles', href: '/docs/design-principles'},
@@ -55,13 +47,9 @@ const navigation = [
     {
       title: 'Reference',
       links: [
-        {title: 'Core concepts', href: '/docs/core-concepts'}
-        // { title: 'http', href: '/docs/http' },
-        // { title: 'dns', href: '/docs/dns' },
-        // { title: 'ping', href: '/docs/ping' },
+        {title: 'Core concepts', href: '/docs/core-concepts'},
       ],
     },
-
 ]
 
 function GitHubIcon(props) {
@@ -167,7 +155,6 @@ function useTableOfContents(tableOfContents) {
 
 export function Layout({children, title, tableOfContents}) {
     let router = useRouter()
-    let isHomePage = router.pathname === '/'
     let allLinks = navigation.flatMap((section) => section.links)
     let linkIndex = allLinks.findIndex((link) => link.href === router.pathname)
     let previousPage = allLinks[linkIndex - 1]
@@ -190,8 +177,6 @@ export function Layout({children, title, tableOfContents}) {
     return (
         <>
             <Header navigation={navigation}/>
-
-            {isHomePage && <Hero/>}
 
             <div className="relative mx-auto flex max-w-8xl justify-center sm:px-2 lg:px-8 xl:px-12">
                 <div className="hidden lg:relative lg:block lg:flex-none">
