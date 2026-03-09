@@ -1,7 +1,7 @@
 ---
 title: Getting started
-pageTitle: Netchecks - Verifying your security controls
-description: A cloud native tool to dynamically declare a set of statements about the network (what should work and what shouldn't)
+pageTitle: Netchecks - Getting Started
+description: Learn how to get Netchecks set up in your own Kubernetes cluster.
 ---
 
 Learn how to get Netchecks set up in your own Kubernetes cluster. {% .lead %}
@@ -9,8 +9,8 @@ Learn how to get Netchecks set up in your own Kubernetes cluster. {% .lead %}
 ---
 ## Why does this exist?
 
-Like all software, security controls such as firewalls and network policies need validation to ensure they are working as intended. This is often done manually 
-as part of a one-off cyber-security review. Best practice is to configure automated checks that notify team members when a security control is not working as expected. 
+Like all software, security controls such as firewalls and network policies need validation to ensure they are working as intended. This is often done manually
+as part of a one-off cyber-security review. Best practice is to configure automated checks that notify team members when a security control is not working as expected.
 These can be as simple as a curl command in a cron job that tries to access a service that should be blocked and alerts if it succeeds. With Netchecks, you
 declare these checks declaratively and have them run automatically on a schedule, Netchecks will create PolicyReports that can be used for audit purposes, to trigger
 actions, alerts and notifications.
@@ -75,7 +75,7 @@ spec:
 
 {% callout title="What happens next?" %}
 Once you have applied the `NetworkAssertion`, Netchecks reacts by creating a `CronJob` in the
-same namespace to probe the network according to your schedule. After the first test has run 
+same namespace to probe the network according to your schedule. After the first test has run
 Netchecks creates a `PolicyReport` resource with the same name in the same namespace as the `NetworkAssertion`.
 The `PolicyReport` contains information about the test run and the results of the test.
 {% /callout %}
@@ -85,10 +85,10 @@ The `PolicyReport` contains information about the test run and the results of th
 
 {% quick-link title="Installation" icon="installation" href="/docs/installation" description="Step-by-step guides to setting up your system and installing the library." /%}
 
-{% quick-link title="Architecture guide" icon="presets" href="/" description="Learn how the internals work and contribute." /%}
+{% quick-link title="Architecture guide" icon="presets" href="/docs/architecture-guide" description="Learn how the internals work and contribute." /%}
 
-{% quick-link title="API reference" icon="theming" href="/" description="Learn to easily customize and modify your app's visual design to fit your brand." /%}
+{% quick-link title="HTTP Probes" icon="theming" href="/docs/http" description="Validate HTTP connectivity and security controls." /%}
 
-{% quick-link title="Examples" icon="plugins" href="/" description="See how others are using the library in their projects." /%}
+{% quick-link title="DNS Probes" icon="plugins" href="/docs/dns" description="Validate DNS resolution policies." /%}
 
 {% /quick-links %}

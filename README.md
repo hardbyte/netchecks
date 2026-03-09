@@ -18,7 +18,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/netcheck?style=flat-square&logo=python)
 [![Coverage Status](https://img.shields.io/coverallsCoverage/github/hardbyte/netchecks?branch=main&style=flat-square&logo=coveralls)](https://coveralls.io/github/hardbyte/netcheck?branch=main)
 [![CI status](https://img.shields.io/github/actions/workflow/status/hardbyte/netchecks/ci.yaml?branch=main&style=flat-square&logo=github)](https://github.com/hardbyte/netchecks/actions?query=branch%3Amain)
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Fdocs.netchecks.io%2F&style=flat-square&label=docs.netchecks.io)](https://docs.netchecks.io/)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fnetchecks.io%2F&style=flat-square&label=netchecks.io)](https://netchecks.io/)
 [![Linting: ruff](https://img.shields.io/badge/linting-ruff-261230.svg?style=flat-square)](https://github.com/astral-sh/ruff)
 [![PyPI Downloads](https://static.pepy.tech/badge/netcheck)](https://pypi.org/project/netcheck?style=flat-square)
 [![License](https://img.shields.io/github/license/hardbyte/netchecks?style=flat-square)](/LICENSE)
@@ -28,7 +28,7 @@
 **Netchecks** is a set of tools for testing network conditions and asserting that they are as expected.
 
 There are two main components:
-- **Netchecks Operator** - Kubernetes Operator (Rust/kube-rs) that runs network checks and reports results as `PolicyReport` resources. See the [operator README](https://github.com/hardbyte/netchecks/blob/main/operator/README.md) for more details and the full documentation can be found at [https://docs.netchecks.io](https://docs.netchecks.io)
+- **Netchecks Operator** - Kubernetes Operator (Rust/kube-rs) that runs network checks and reports results as `PolicyReport` resources. See the [operator README](https://github.com/hardbyte/netchecks/blob/main/operator/README.md) for more details and the full documentation can be found at [https://netchecks.io](https://netchecks.io)
 - **Netcheck CLI and Python Library** - Command line tool for running network checks and asserting that they are as expected. Keep reading for the quickstart guide.
 
 

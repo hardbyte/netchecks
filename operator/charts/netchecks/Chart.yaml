@@ -53,7 +53,7 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/links: |
     - name: Documentation
-      url: https://docs.netchecks.io
+      url: https://netchecks.io
   artifacthub.io/crds: |
     - kind: NetworkAssertion
       version: v1

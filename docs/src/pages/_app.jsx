@@ -61,6 +61,14 @@ export default function App({ Component, pageProps }) {
     ? collectHeadings(pageProps.markdoc.content)
     : []
 
+  let getLayout =
+    Component.getLayout ??
+    ((page) => (
+      <Layout title={title} tableOfContents={tableOfContents}>
+        {page}
+      </Layout>
+    ))
+
   return (
     <>
       <Head>
@@ -79,9 +87,7 @@ export default function App({ Component, pageProps }) {
         <meta name="theme-color" content="#ffffff"/>
 
       </Head>
-      <Layout title={title} tableOfContents={tableOfContents}>
-        <Component {...pageProps} />
-      </Layout>
+      {getLayout(<Component {...pageProps} />)}
     </>
   )
 }
