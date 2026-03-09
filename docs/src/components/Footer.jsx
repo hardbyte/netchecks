@@ -25,7 +25,7 @@ export function Footer() {
             </Link>
           </nav>
           <p className="text-sm text-slate-500 dark:text-slate-500">
-            &copy; {new Date().getFullYear()} Netchecks
+            &copy; {new Date().getFullYear()} Hardbyte Ltd
           </p>
         </div>
       </Container>
