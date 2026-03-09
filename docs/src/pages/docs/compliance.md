@@ -68,6 +68,6 @@ spec:
 
 Compliance Pro includes exportable reports, framework-specific assertion templates, and priority support.
 
-[Get Compliance Pro](https://buy.stripe.com/cN25or9rA8Ur6xa4gi) to start generating automated compliance evidence for your Kubernetes clusters.
+[Get Compliance Pro](https://buy.stripe.com/7sY4gA8HQ3VMeOF3TuaMU03) to start generating automated compliance evidence for your Kubernetes clusters.
 
 For questions, [contact us](https://calendly.com/brian-thorne-netchecks/30min) to discuss your compliance requirements.
