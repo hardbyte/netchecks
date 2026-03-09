@@ -40,10 +40,10 @@ const plans = [
   },
   {
     name: 'Compliance Pro',
-    price: 'Contact us',
+    price: '',
     description:
       'Automated compliance reporting for regulated environments.',
-    href: 'https://buy.stripe.com/cN25or9rA8Ur6xa4gi',
+    href: '/docs/compliance',
     cta: 'Get Compliance Pro',
     featured: false,
     features: [
@@ -89,9 +89,11 @@ export function Pricing() {
               >
                 {plan.description}
               </p>
-              <p className="mt-6 font-display text-4xl font-light tracking-tight text-white">
-                {plan.price}
-              </p>
+              {plan.price && (
+                <p className="mt-6 font-display text-4xl font-light tracking-tight text-white">
+                  {plan.price}
+                </p>
+              )}
               <ul className="mt-8 space-y-3 text-sm text-white">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex">
