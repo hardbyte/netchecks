@@ -41,9 +41,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 axum = "0.8"
 
 # Observability
-opentelemetry = { version = "0.31", features = ["metrics"] }
-opentelemetry_sdk = { version = "0.31", features = ["metrics", "rt-tokio", "testing"] }
-opentelemetry-otlp = { version = "0.31", features = ["metrics", "grpc-tonic"] }
+opentelemetry = { version = "0.32", features = ["metrics"] }
+opentelemetry_sdk = { version = "0.32", features = ["metrics", "rt-tokio", "testing"] }
+opentelemetry-otlp = { version = "0.32", features = ["metrics", "grpc-tonic"] }
 
 # Timestamp parsing
 chrono = { version = "0.4", features = ["serde"] }
