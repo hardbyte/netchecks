@@ -4,6 +4,72 @@ entries:
   - annotations:
       artifacthub.io/category: security
       artifacthub.io/changes: |
+        - kind: added
+          description: Default probe resource requests/limits via probeConfig.resources, applied to every probe Job.
+          links:
+            - name: GitHub Issue
+              url: https://github.com/hardbyte/netchecks/issues/147
+      artifacthub.io/crds: |
+        - kind: NetworkAssertion
+          version: v1
+          name: networkassertions.netchecks.io
+          displayName: Network Assertion
+          description: NetworkAssertion is the Schema for the networkassertions API
+      artifacthub.io/crdsExamples: |
+        - apiVersion: netchecks.io/v1
+          kind: NetworkAssertion
+          metadata:
+            name: http-should-work
+            annotations:
+              description: Assert pod can connect to k8s API
+          spec:
+            template:
+              metadata:
+                labels:
+                  optional-label: applied-to-test-pod
+                annotations:
+                  my: override-annotation
+            rules:
+              - name: kubernetes-version
+                type: http
+                url: https://kubernetes.default.svc/version
+                verify-tls-cert: false
+                expected: pass
+                validate:
+                  message: Http request to Kubernetes API should succeed.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://netchecks.io
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Deep Insights
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.8.0
+    created: "2026-05-12T07:43:46.28498369Z"
+    dependencies:
+    - condition: policy-reporter.enabled
+      name: policy-reporter
+      repository: https://kyverno.github.io/policy-reporter
+      version: 2.22.4
+    description: Netchecks proactively verifies whether your security controls are
+      working as intended.
+    digest: ec8b1c3f2f28c3f0d34b53d8a5ff340505aaa3e7c1850da6a86be8891343354a
+    icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
+    maintainers:
+    - email: brian@hardbyte.nz
+      name: Brian Thorne
+      url: hardbyte.nz
+    name: netchecks
+    sources:
+    - https://github.com/hardbyte/netchecks
+    type: application
+    urls:
+    - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.2.2/netchecks-0.2.2.tgz
+    version: 0.2.2
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
         - kind: changed
           description: Operator rewritten from Python/Kopf to Rust/kube-rs for lower resource usage and faster startup.
           links:
@@ -1145,4 +1211,4 @@ entries:
     urls:
     - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.2/netchecks-0.1.2.tgz
     version: 0.1.2
-generated: "2026-03-08T20:09:30.347933282Z"
+generated: "2026-05-12T07:43:46.285102346Z"
