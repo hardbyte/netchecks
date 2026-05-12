@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.0
+
+### Features
+
+- **Default probe resource requests/limits** — The operator now applies a configurable `resources` block to every probe Job it creates. Set `probeConfig.resources` in the Helm chart values and the chart wires it through to the operator via the new `PROBE_RESOURCES` env var. Closes [#147](https://github.com/hardbyte/netchecks/issues/147).
+
+### Operator / Helm Chart
+
+- Helm chart version bumped to 0.2.2.
+- New env var `PROBE_RESOURCES` (JSON-encoded `ResourceRequirements`). Empty / unset / malformed values are treated as no resources stanza (cluster default).
+
+### Documentation / Site
+
+- Bumped `next` 14.2.32 → 14.2.35 in the docs site for SNYK-JS-NEXT-14400636 (Next.js high-severity deserialization vuln).
+
 ## 0.7.0
 
 ### Major Changes
