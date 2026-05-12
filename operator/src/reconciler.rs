@@ -653,6 +653,7 @@ fn build_job_spec(na: &NetworkAssertion, config: &OperatorConfig) -> JobSpec {
         image_pull_policy: Some(config.probe_image_pull_policy.clone()),
         command: Some(command),
         volume_mounts: Some(volume_mounts),
+        resources: config.probe_resources.clone(),
         ..Default::default()
     };
 
@@ -1127,6 +1128,7 @@ mod tests {
             probe_image_repository: "ghcr.io/hardbyte/netchecks".to_string(),
             probe_image_tag: "test".to_string(),
             probe_image_pull_policy: "IfNotPresent".to_string(),
+            probe_resources: None,
             policy_report_max_results: 100,
         }
     }
@@ -1263,6 +1265,48 @@ mod tests {
             .as_ref()
             .unwrap();
         assert!(command.contains(&"--disable-redaction".to_string()));
+    }
+
+    #[test]
+    fn build_job_spec_applies_probe_resources() {
+        let na = test_network_assertion("res-test", vec![simple_http_rule()]);
+        let mut config = test_config();
+        config.probe_resources = Some(
+            serde_json::from_str(
+                r#"{"requests":{"cpu":"20m","memory":"64Mi"},"limits":{"cpu":"100m","memory":"128Mi"}}"#,
+            )
+            .unwrap(),
+        );
+        let job_spec = build_job_spec(&na, &config);
+
+        let container = &job_spec.template.spec.as_ref().unwrap().containers[0];
+        let resources = container.resources.as_ref().expect("resources set");
+        assert_eq!(
+            resources
+                .requests
+                .as_ref()
+                .and_then(|m| m.get("cpu"))
+                .map(|q| q.0.as_str()),
+            Some("20m")
+        );
+        assert_eq!(
+            resources
+                .limits
+                .as_ref()
+                .and_then(|m| m.get("memory"))
+                .map(|q| q.0.as_str()),
+            Some("128Mi")
+        );
+    }
+
+    #[test]
+    fn build_job_spec_no_resources_when_unset() {
+        let na = test_network_assertion("res-test", vec![simple_http_rule()]);
+        let config = test_config();
+        let job_spec = build_job_spec(&na, &config);
+
+        let container = &job_spec.template.spec.as_ref().unwrap().containers[0];
+        assert!(container.resources.is_none());
     }
 
     #[test]

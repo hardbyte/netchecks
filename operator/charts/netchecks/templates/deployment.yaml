@@ -63,6 +63,10 @@ spec:
               value: {{ .Values.probeConfig.image.tag | default .Chart.AppVersion | quote }}
             - name: PROBE_IMAGE_PULL_POLICY
               value: {{ .Values.probeConfig.image.pullPolicy | quote }}
+            {{- with .Values.probeConfig.resources }}
+            - name: PROBE_RESOURCES
+              value: {{ toJson . | quote }}
+            {{- end }}
       {{- with .Values.operator.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
