@@ -888,7 +888,7 @@ async fn upsert_policy_report(
         ),
     ]);
 
-    let gvk = kube::api::GroupVersionKind::gvk("wgpolicyk8s.io", "v1alpha2", "PolicyReport");
+    let gvk = kube::api::GroupVersionKind::gvk("wgpolicyk8s.io", "v1beta1", "PolicyReport");
     let api_resource = ApiResource::from_gvk(&gvk);
     let api: Api<DynamicObject> = Api::namespaced_with(client.clone(), namespace, &api_resource);
 
