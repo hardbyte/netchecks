@@ -29,6 +29,7 @@ const navigation = [
             {title: 'External Data', href: '/docs/external-data'},
             {title: 'Alerting', href: '/docs/alerting'},
             {title: 'Compliance', href: '/docs/compliance'},
+            {title: 'Compliance Annotations', href: '/docs/compliance-annotations'},
         ],
     },
     {

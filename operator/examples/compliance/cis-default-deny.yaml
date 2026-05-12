@@ -1,0 +1,27 @@
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: default-deny-enforcement
+  namespace: default
+  annotations:
+    netchecks.io/controls: "cis-k8s/5.3.1, cis-k8s/5.3.2"
+    netchecks.io/description: >
+      Verify default-deny NetworkPolicy is enforced in the default
+      namespace. CIS Kubernetes Benchmark 5.3.2 requires a default
+      deny-all NetworkPolicy for each namespace.
+    netchecks.io/severity: medium
+spec:
+  schedule: "@hourly"
+  rules:
+    - name: egress-blocked
+      type: http
+      url: https://example.com
+      expected: fail
+      validate:
+        message: Default deny should block egress to the internet
+    - name: cross-namespace-blocked
+      type: http
+      url: http://api.production:8080
+      expected: fail
+      validate:
+        message: Default deny should block cross-namespace traffic

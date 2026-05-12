@@ -25,3 +25,12 @@ The `netchecks` probe image is based on the [python:3.12-slim-bookworm](https://
 
 [Kyverno's PolicyReporter](https://kyverno.github.io/policy-reporter/) is optionally installed alongside Netchecks to
 provide a convenient way to expose metrics, view the results, and generate notifications.
+
+## Compliance Reporting
+
+NetworkAssertions can be annotated with compliance framework control IDs (`netchecks.io/controls`,
+`netchecks.io/description`, `netchecks.io/severity`) — see the
+[Compliance Annotations](/docs/compliance-annotations) guide. These annotations let the
+[netchecks-compliance](/docs/compliance) add-on map test results from PolicyReports back to specific
+framework controls (PCI-DSS v4.0, SOC 2, CIS Kubernetes Benchmark) and produce audit-ready
+PDF/HTML/JSON reports.
