@@ -48,7 +48,7 @@ sed 's/DS_PROMETHEUS/<your-uid>/g' alerts/netchecks-alerts.yaml > netchecks-aler
 | `netchecks_probe_p95_slow` | warning | probe p95 > 30 s (per type) | 15m |
 | `netchecks_no_reconciles` | critical | no successful reconciles in 30m | 5m |
 
-> **Note on `netchecks_no_reconciles`**: this rule uses `increase(...[30m])` which only stabilises once Prometheus has 30 minutes of scrape history. On a fresh install the rule will be in `pending` for ~5 minutes and then briefly fire until enough data has accumulated. Either silence it during install or wait for the first half hour of metrics.
+> **Note on `netchecks_no_reconciles`**: this rule uses `increase(...[30m])` which only stabilizes once Prometheus has 30 minutes of scrape history. On a fresh install the rule will be in `pending` for ~5 minutes and then briefly fire until enough data has accumulated. Either silence it during install or wait for the first half hour of metrics.
 
 ## Metrics reference
 

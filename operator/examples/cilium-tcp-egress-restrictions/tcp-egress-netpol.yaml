@@ -17,12 +17,18 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
-    # Allow TCP to the Kubernetes API (port 443)
-    - toServices:
-        - k8sService:
-            serviceName: kubernetes
-            namespace: default
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
+    # Allow TCP to the Kubernetes API server.
+    #
+    # We use the `kube-apiserver` reserved entity rather than `toServices` —
+    # `toServices` translates a ClusterIP Service into its backend identity
+    # for policy matching, but its behavior changed in Cilium 1.17 and the
+    # rule stopped matching reliably when kube-proxy is installed.
+    #
+    # We also intentionally do NOT pin a port: with kube-proxy the destination
+    # port is rewritten by DNAT before Cilium's bpf policy hook sees the
+    # packet (e.g. Service :443 → apiserver pod :6443 in kind), so a port
+    # filter would have to know the apiserver's internal port. Restricting
+    # to the `kube-apiserver` entity is already a tight match — there's only
+    # one such workload per cluster.
+    - toEntities:
+        - kube-apiserver
