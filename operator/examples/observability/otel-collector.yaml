@@ -1,0 +1,115 @@
+# OpenTelemetry Collector — receives OTLP from the netchecks operator and
+# re-exposes the metrics in Prometheus format for scraping by a Prometheus
+# server (e.g. kube-prometheus-stack).
+#
+# Pipeline: netchecks-operator (OTLP push) → otel-collector → Prometheus
+# (scrape /metrics on port 8889).
+#
+# Tested with otel/opentelemetry-collector-contrib:0.110.0.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netchecks-otel-collector-config
+  namespace: observability
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+        timeout: 10s
+
+    exporters:
+      prometheus:
+        endpoint: 0.0.0.0:8889
+        send_timestamps: true
+        metric_expiration: 5m
+        resource_to_telemetry_conversion:
+          enabled: true
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [prometheus]
+      telemetry:
+        logs:
+          level: info
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netchecks-otel-collector
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: netchecks-otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: netchecks-otel-collector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: netchecks-otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.110.0
+          args:
+            - --config=/etc/otel/config.yaml
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+            - name: prometheus
+              containerPort: 8889
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otel
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: netchecks-otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: netchecks-otel-collector
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: netchecks-otel-collector
+spec:
+  selector:
+    app.kubernetes.io/name: netchecks-otel-collector
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http
+    - name: prometheus
+      port: 8889
+      targetPort: prometheus

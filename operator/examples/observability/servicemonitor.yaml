@@ -1,0 +1,27 @@
+# ServiceMonitor — tells Prometheus Operator (kube-prometheus-stack) to scrape
+# the OTel Collector's Prometheus exporter, which re-publishes the netchecks
+# operator's OTLP-pushed metrics in Prometheus format.
+#
+# Requires the monitoring.coreos.com/v1 CRDs (installed by kube-prometheus-stack
+# or prometheus-operator).
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: netchecks-otel-collector
+  namespace: observability
+  labels:
+    # kube-prometheus-stack's default Prometheus selects ServiceMonitors with
+    # this label. Adjust if your Prometheus uses a different selector.
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: netchecks-otel-collector
+  namespaceSelector:
+    matchNames:
+      - observability
+  endpoints:
+    - port: prometheus
+      interval: 30s
+      path: /metrics

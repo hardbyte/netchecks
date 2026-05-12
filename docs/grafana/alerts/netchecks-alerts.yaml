@@ -1,0 +1,296 @@
+# Grafana unified-alerting rules for a netchecks operator that emits OTLP
+# metrics to a Prometheus-compatible datasource (OTel Collector → Prometheus).
+#
+# Import via:
+#   - Grafana provisioning/alerting/ directory, or
+#   - /api/v1/provisioning/alert-rules and friends
+#
+# Before importing, replace DS_PROMETHEUS with the uid of your Prometheus-
+# compatible datasource (visible in Grafana at /datasources):
+#   sed 's/DS_PROMETHEUS/prom/' netchecks-alerts.yaml > /tmp/netchecks.yaml
+#
+# Rule structure: each rule runs a Prometheus query (refId A), reduces every
+# returned series to its latest value (refId B), then thresholds it (refId C).
+# The explicit reduce step is what lets Grafana's unified alerting engine
+# handle multi-series queries — without it Grafana rejects evaluation with
+# "frame cannot uniquely be identified by its labels".
+
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: netchecks
+    folder: netchecks
+    interval: 1m
+    rules:
+
+      - uid: netchecks_operator_down
+        title: "netchecks operator is not scraping"
+        condition: "C"
+        for: 5m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: critical
+          owner: netchecks
+        annotations:
+          summary: "Prometheus has not seen the netchecks OTel collector for >5m"
+          description: |
+            The Prometheus target scraping the netchecks OTel collector is
+            down. The operator may be unreachable, the collector may have
+            crashed, or no metrics have flowed in the last 5 minutes.
+            Check `kubectl get pods -n observability` and the operator
+            logs.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: DS_PROMETHEUS
+            model:
+              refId: A
+              datasource: { type: prometheus, uid: DS_PROMETHEUS }
+              expr: up{job="netchecks-otel-collector"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: A
+              reducer: last
+              settings: { mode: dropNN }
+          - refId: C
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: B
+              conditions:
+                - type: query
+                  operator: { type: and }
+                  query: { params: [C] }
+                  reducer: { type: last, params: [] }
+                  evaluator: { type: lt, params: [1] }
+
+      - uid: netchecks_reconcile_error_rate_high
+        title: "netchecks reconcile error rate > 10%"
+        condition: "C"
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          owner: netchecks
+        annotations:
+          summary: "More than 10% of reconciliations are failing"
+          description: |
+            Over the last 5 minutes more than 10% of NetworkAssertion
+            reconciliations have failed. Common reasons: invalid spec,
+            API server errors, PolicyReport schema rejection. See
+            `netchecks_reconcile_total{result!="success"}` grouped by
+            `reason` in the Netchecks Operator dashboard.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: DS_PROMETHEUS
+            model:
+              refId: A
+              datasource: { type: prometheus, uid: DS_PROMETHEUS }
+              expr: |
+                sum(rate(netchecks_reconcile_total{result!="success"}[5m]))
+                /
+                clamp_min(sum(rate(netchecks_reconcile_total[5m])), 1e-9)
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: A
+              reducer: last
+              settings: { mode: dropNN }
+          - refId: C
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: B
+              conditions:
+                - type: query
+                  operator: { type: and }
+                  query: { params: [C] }
+                  reducer: { type: last, params: [] }
+                  evaluator: { type: gt, params: [0.1] }
+
+      - uid: netchecks_reconcile_p95_slow
+        title: "netchecks reconcile p95 > 5s"
+        condition: "C"
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          owner: netchecks
+        annotations:
+          summary: "Reconciliation p95 latency is above 5 seconds"
+          description: |
+            95th percentile reconcile duration is exceeding 5s. The
+            controller may be backlogged on Kubernetes API calls,
+            CronJob conversions, or PolicyReport upserts. See the
+            "Reconcile duration" panel.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: DS_PROMETHEUS
+            model:
+              refId: A
+              datasource: { type: prometheus, uid: DS_PROMETHEUS }
+              expr: |
+                histogram_quantile(0.95,
+                  sum by (le) (rate(netchecks_reconcile_duration_milliseconds_bucket[10m]))
+                )
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: A
+              reducer: last
+              settings: { mode: dropNN }
+          - refId: C
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: B
+              conditions:
+                - type: query
+                  operator: { type: and }
+                  query: { params: [C] }
+                  reducer: { type: last, params: [] }
+                  evaluator: { type: gt, params: [5000] }
+
+      - uid: netchecks_probe_p95_slow
+        title: "netchecks probe p95 > 30s"
+        condition: "C"
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          owner: netchecks
+        annotations:
+          summary: "Probe p95 duration is above 30s for {{ $labels.type }}"
+          description: |
+            Probes of type {{ $labels.type }} are taking >30s at the 95th
+            percentile over the last 10 minutes. This usually indicates a
+            failing target that's hanging until timeout — check the
+            corresponding NetworkAssertion's PolicyReport.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: DS_PROMETHEUS
+            model:
+              refId: A
+              datasource: { type: prometheus, uid: DS_PROMETHEUS }
+              expr: |
+                histogram_quantile(0.95,
+                  sum by (type, le) (rate(netchecks_probe_duration_seconds_bucket[10m]))
+                )
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: A
+              reducer: last
+              settings: { mode: dropNN }
+          - refId: C
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: B
+              conditions:
+                - type: query
+                  operator: { type: and }
+                  query: { params: [C] }
+                  reducer: { type: last, params: [] }
+                  evaluator: { type: gt, params: [30] }
+
+      - uid: netchecks_no_reconciles
+        title: "netchecks has had no successful reconciles in 30m"
+        condition: "C"
+        for: 5m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: critical
+          owner: netchecks
+        annotations:
+          summary: "No successful reconciles in the last 30 minutes"
+          description: |
+            The netchecks operator has not completed a successful
+            reconciliation in 30 minutes. Either there are no
+            NetworkAssertions in the cluster (expected on a fresh
+            install) or the controller has stalled. Check
+            `kubectl get networkassertions -A` and the operator logs.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 1800, to: 0 }
+            datasourceUid: DS_PROMETHEUS
+            model:
+              refId: A
+              datasource: { type: prometheus, uid: DS_PROMETHEUS }
+              expr: sum(increase(netchecks_reconcile_total{result="success"}[30m]))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: A
+              reducer: last
+              settings: { mode: dropNN }
+          - refId: C
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: { type: __expr__, uid: __expr__ }
+              expression: B
+              conditions:
+                - type: query
+                  operator: { type: and }
+                  query: { params: [C] }
+                  reducer: { type: last, params: [] }
+                  evaluator: { type: lt, params: [1] }
