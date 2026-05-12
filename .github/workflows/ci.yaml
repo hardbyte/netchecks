@@ -311,13 +311,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      KIND_VERSION: v0.18.0
-      KIND_CONFIG: .github/kind-config.yaml
+      KIND_VERSION: v0.27.0
       TIMEOUT: 2m
       LOG_TIME: 30m
-      cilium_version: 1.14.3
-      cilium_cli_version: v0.15.11
-      kubectl_version: v1.26.3
+      cilium_version: 1.19.3
+      cilium_cli_version: v0.19.2
+      kubectl_version: v1.32.2
       PROBE_IMAGE_NAME: netchecks
       OPERATOR_IMAGE_NAME: netchecks-operator
       IMAGE_REGISTRY: ghcr.io
@@ -348,7 +347,7 @@ jobs:
 
       - name: Fetch kind cilium config
         run: |
-          curl -LO https://raw.githubusercontent.com/cilium/cilium/1.14.3/Documentation/installation/kind-config.yaml
+          curl -LO https://raw.githubusercontent.com/cilium/cilium/${{ env.cilium_version }}/Documentation/installation/kind-config.yaml
 
       - name: Create kind cluster
         uses: helm/kind-action@v1
