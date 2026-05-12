@@ -312,11 +312,12 @@ jobs:
     timeout-minutes: 20
     env:
       KIND_VERSION: v0.27.0
+      KIND_NODE_IMAGE: kindest/node:v1.30.10
       TIMEOUT: 2m
       LOG_TIME: 30m
-      cilium_version: 1.19.3
-      cilium_cli_version: v0.19.2
-      kubectl_version: v1.32.2
+      cilium_version: 1.16.19
+      cilium_cli_version: v0.16.24
+      kubectl_version: v1.30.10
       PROBE_IMAGE_NAME: netchecks
       OPERATOR_IMAGE_NAME: netchecks-operator
       IMAGE_REGISTRY: ghcr.io
@@ -353,6 +354,7 @@ jobs:
         uses: helm/kind-action@v1
         with:
           version: ${{ env.KIND_VERSION }}
+          node_image: ${{ env.KIND_NODE_IMAGE }}
           cluster_name: kind
           config: kind-config.yaml
 
