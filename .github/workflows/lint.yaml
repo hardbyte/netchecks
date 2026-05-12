@@ -6,7 +6,7 @@ jobs:
   check-linters:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: reviewdog/action-shellcheck@v1
         with:
           filter_mode: file
@@ -20,7 +20,7 @@ jobs:
   check-versions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install uv
         id: setup-uv
         uses: astral-sh/setup-uv@v2
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Actions Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Check for typos
         uses: crate-ci/typos@master
         with:
