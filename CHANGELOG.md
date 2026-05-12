@@ -6,6 +6,8 @@
 
 - **Default probe resource requests/limits** — The operator now applies a configurable `resources` block to every probe Job it creates. Set `probeConfig.resources` in the Helm chart values and the chart wires it through to the operator via the new `PROBE_RESOURCES` env var. Closes [#147](https://github.com/hardbyte/netchecks/issues/147).
 
+- **Source IP binding for TCP, HTTP, and DNS probes** — All three probe types now accept a `--source-ip` CLI flag (and matching `source-ip` config field for `netcheck run`). The probe binds its outgoing socket to the given local address, which is useful when a host has multiple interfaces and you want to verify a specific egress path. Closes [#70](https://github.com/hardbyte/netchecks/issues/70).
+
 ### Operator / Helm Chart
 
 - Helm chart version bumped to 0.2.2.

@@ -98,6 +98,7 @@ def check_individual_assertion(
                 host=test_config["host"],
                 server=test_config.get("server"),
                 timeout=test_config.get("timeout"),
+                source_ip=test_config.get("source-ip"),
             )
         case "http":
             if verbose:
@@ -108,6 +109,7 @@ def check_individual_assertion(
                 headers=test_config.get("headers"),
                 timeout=test_config.get("timeout"),
                 verify=test_config.get("verify-tls-cert", True),
+                source_ip=test_config.get("source-ip"),
             )
         case "tcp":
             if verbose:
@@ -116,6 +118,7 @@ def check_individual_assertion(
                 host=test_config["host"],
                 port=int(test_config["port"]),
                 timeout=test_config.get("timeout", 5),
+                source_ip=test_config.get("source-ip"),
             )
         case "internal":
             if verbose:

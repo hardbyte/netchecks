@@ -353,6 +353,54 @@ def test_tcp_check_connection_refused():
     assert data["status"] == "fail"
 
 
+def test_tcp_check_with_loopback_source_ip():
+    """Binding to 127.0.0.1 should still let us reach a localhost port — we just
+    confirm the option flows through to the spec and doesn't break the probe."""
+    result = runner.invoke(
+        app,
+        ["tcp", "--host", "localhost", "--port", "1", "--source-ip", "127.0.0.1"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["spec"]["source-ip"] == "127.0.0.1"
+
+
+def test_tcp_check_invalid_source_ip_fails_gracefully():
+    """A source IP not assigned to any local interface should fail the probe,
+    not crash the CLI."""
+    result = runner.invoke(
+        app,
+        ["tcp", "--host", "localhost", "--port", "1", "--source-ip", "10.99.99.99"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["spec"]["source-ip"] == "10.99.99.99"
+    assert data["data"]["connected"] is False
+    assert data["data"]["error"] is not None
+
+
+def test_http_check_invalid_source_ip_fails_gracefully():
+    result = runner.invoke(
+        app,
+        ["http", "--url", "https://example.com", "--source-ip", "10.99.99.99"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["spec"]["source-ip"] == "10.99.99.99"
+    assert "exception-type" in data["data"]
+
+
+def test_dns_check_invalid_source_ip_fails_gracefully():
+    result = runner.invoke(
+        app,
+        ["dns", "--host", "example.com", "--source-ip", "10.99.99.99"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["spec"]["source-ip"] == "10.99.99.99"
+    assert data["data"]["response-code"] != "NOERROR"
+
+
 def test_tcp_check_with_custom_validation():
     result = runner.invoke(
         app,

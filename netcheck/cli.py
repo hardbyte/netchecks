@@ -97,6 +97,11 @@ def http(
     headers: Optional[List[str]] = typer.Option(
         None, "-h", "--header", help="Headers to send with request. Format: 'key:value'"
     ),
+    source_ip: Optional[str] = typer.Option(
+        None,
+        "--source-ip",
+        help="Local IP address to bind outgoing connections to (must exist on a local interface)",
+    ),
     verbose: bool = typer.Option(False, "-v", "--verbose"),
 ):
     """Carry out a http network check"""
@@ -114,6 +119,8 @@ def http(
         "headers": parsed_headers,
         "expected": "fail" if should_fail else None,
     }
+    if source_ip is not None:
+        test_config["source-ip"] = source_ip
 
     if verbose:
         err_console.print("Netcheck http configuration:")
@@ -150,6 +157,11 @@ def dns(
     should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
     validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Timeout in seconds"),
+    source_ip: Optional[str] = typer.Option(
+        None,
+        "--source-ip",
+        help="Local IP address to send DNS queries from (must exist on a local interface)",
+    ),
     verbose: bool = typer.Option(False, "-v", "--verbose"),
 ):
     """Carry out a dns check"""
@@ -160,6 +172,8 @@ def dns(
         "timeout": timeout,
         "expected": "fail" if should_fail else None,
     }
+    if source_ip is not None:
+        test_config["source-ip"] = source_ip
     if verbose:
         err_console.print("netcheck dns")
         err_console.print("Options")
@@ -190,6 +204,11 @@ def tcp(
     timeout: float = typer.Option(5.0, "-t", "--timeout", help="Timeout in seconds"),
     should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
     validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
+    source_ip: Optional[str] = typer.Option(
+        None,
+        "--source-ip",
+        help="Local IP address to bind the outgoing connection to (must exist on a local interface)",
+    ),
     verbose: bool = typer.Option(False, "-v", "--verbose"),
 ):
     """Carry out a tcp connectivity check"""
@@ -200,6 +219,8 @@ def tcp(
         "timeout": timeout,
         "expected": "fail" if should_fail else None,
     }
+    if source_ip is not None:
+        test_config["source-ip"] = source_ip
     if verbose:
         err_console.print("netcheck tcp")
         err_console.print("Options")

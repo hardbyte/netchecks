@@ -1,5 +1,6 @@
 import datetime
 import logging
+from typing import Optional
 
 import dns.resolver
 from dns.exception import Timeout
@@ -14,7 +15,9 @@ size(data['A']) >= 1 &&
 """
 
 
-def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
+def get_A_records_by_dns_lookup(
+    target, nameserver=None, timeout=60, source_ip: Optional[str] = None
+):
     # We always reset the default dns resolver
     dns.resolver.reset_default_resolver()
     resolver = dns.resolver.get_default_resolver()
@@ -28,7 +31,9 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
     # search=True is required to use the OS search path!
     # E.g. `kubernetes` -> `kubernetes.default.svc.cluster.local`
     try:
-        answer = resolver.resolve(target, "A", lifetime=timeout, search=True)
+        answer = resolver.resolve(
+            target, "A", lifetime=timeout, search=True, source=source_ip
+        )
 
         # canonical name of the target
         result["canonical_name"] = answer.canonical_name.to_text()
@@ -54,17 +59,21 @@ def get_A_records_by_dns_lookup(target, nameserver=None, timeout=60):
     return result
 
 
-def dns_lookup_check(host, server, timeout=10):
+def dns_lookup_check(host, server, timeout=10, source_ip: Optional[str] = None):
     test_spec = {
         "type": "dns",
         "nameserver": server,
         "host": host,
         "timeout": timeout,
     }
+    if source_ip is not None:
+        test_spec["source-ip"] = source_ip
     startTimestamp = datetime.datetime.now(datetime.UTC).isoformat()
 
     try:
-        result_data = get_A_records_by_dns_lookup(host, nameserver=server, timeout=timeout)
+        result_data = get_A_records_by_dns_lookup(
+            host, nameserver=server, timeout=timeout, source_ip=source_ip
+        )
 
     except Exception as e:
         logger.info(f"Unexpected exception:\n\n{e}")
