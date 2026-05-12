@@ -65,6 +65,6 @@ annotations:
               message: Http request to Kubernetes API should succeed.
 dependencies:
   - name: policy-reporter
-    version: 2.22.4
+    version: 3.7.4
     repository: https://kyverno.github.io/policy-reporter
     condition: policy-reporter.enabled

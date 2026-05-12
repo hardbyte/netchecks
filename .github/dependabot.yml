@@ -58,15 +58,16 @@ updates:
       - "cli"
       - "dependencies"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "cargo"
     directory: "/operator"
     open-pull-requests-limit: 1
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
       time: "09:00"
       timezone: "Pacific/Auckland"
     groups:
-      python-packages:
+      cargo-packages:
         patterns:
           - "*"
     labels:
