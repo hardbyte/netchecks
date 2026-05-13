@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.9.0
+
+### Operator
+
+- **PolicyReports now written as `wgpolicyk8s.io/v1beta1`** — the chart's PolicyReport CRD already has v1beta1 as the storage version; the operator now writes that directly instead of relying on Kubernetes to convert from v1alpha2 on the way to etcd. The v1alpha2 endpoint is still served for backward compatibility.
+
+### Helm Chart
+
+- **Chart version bumped to 0.3.0**, `appVersion` to 0.9.0.
+- **`policy-reporter` subchart bumped 2.22.4 → 3.7.4** (major). Users with custom subchart values under `policy-reporter:` should review the upstream changelog. The subchart is opt-in (`policy-reporter.enabled=false` by default) and the keys netchecks itself sets (`enabled`, `ui.enabled`) are unchanged.
+
+### Observability
+
+- **Grafana dashboard** at [`docs/grafana/netchecks-dashboard.json`](docs/grafana/netchecks-dashboard.json) — 11 panels covering reconcile throughput / errors / duration, in-flight reconciliations, assertion processing, PolicyReport upserts, probe duration by type, and stat panel headlines.
+- **Grafana unified-alerting rules** at [`docs/grafana/alerts/netchecks-alerts.yaml`](docs/grafana/alerts/netchecks-alerts.yaml) — five rules: operator down, reconcile error rate, reconcile p95, probe p95, no-successful-reconciles.
+- **OTel Collector example** at [`operator/examples/observability/`](operator/examples/observability/) — minimal collector + ServiceMonitor wiring for kube-prometheus-stack.
+
+### Documentation
+
+- **Compliance annotations guide** at [`docs/src/pages/docs/compliance-annotations.md`](docs/src/pages/docs/compliance-annotations.md) with three example `NetworkAssertions` (PCI-DSS v4.0 CDE isolation, SOC 2 boundary protection, CIS Kubernetes Benchmark default-deny).
+
+### Internal
+
+- **Rust dependency refresh**: opentelemetry 0.31 → 0.32 across `opentelemetry`, `opentelemetry_sdk`, `opentelemetry-otlp`; kube-rs 3.0 → 3.1 and the rest of the lockfile via `cargo update`.
+- **CLI dependency refresh** via `uv lock --upgrade`: pydantic 2.12 → 2.13, typer 0.24 → 0.25, requests 2.32 → 2.34, urllib3 2.6 → 2.7, ruff 0.15.5 → 0.15.12, etc. `rich` constraint relaxed from `<14.0.0` to `<16.0.0`; locked at 15.0.0.
+- **CI**: pytest 8 → 9, kind 0.18 → 0.27, kubectl 1.26.3 → 1.32.2, kindest/node v1.32.2, Cilium 1.14.3 → 1.19.3, cilium-cli v0.15.11 → v0.19.2.
+- **GitHub Actions**: bumped to Node 24-capable versions ahead of the September 2026 Node 20 deprecation — `actions/checkout` v4→v6, `actions/setup-python` v4→v6, `actions/upload-artifact` v4→v7, `actions/download-artifact` v4→v8, `docker/login-action` v3→v4, `docker/metadata-action` v5→v6, `docker/setup-buildx-action` v3→v4, `docker/setup-qemu-action` v3→v4, `docker/build-push-action` v6→v7, `astral-sh/setup-uv` v2→v7.
+- **Dependabot config**: replaced the dead `pip /operator` ecosystem (Python operator gone in v0.7.0) with `cargo /operator`.
+
+### Cilium example
+
+- Rewrote `operator/examples/cilium-tcp-egress-restrictions/tcp-egress-netpol.yaml` to use `toEntities: [kube-apiserver]` instead of `toServices: [kubernetes]`. Cilium 1.17+ changed how `toServices` matching interacts with kube-proxy DNAT — the new rule works on Cilium 1.16+ and is the idiomatic post-1.17 pattern.
+
 ## 0.8.0
 
 ### Features
