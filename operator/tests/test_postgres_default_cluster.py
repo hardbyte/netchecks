@@ -20,7 +20,7 @@ def test_postgres_grants_with_installed_operator(netchecks, k8s_namespace, test_
         shell=True,
         check=True,
     )
-    _initialise_postgres(database_namespace)
+    _initialize_postgres(database_namespace)
 
     subprocess.run(
         f"kubectl apply -n {k8s_namespace} -f {postgres_assertion_manifest}",
@@ -53,7 +53,7 @@ def test_postgres_grants_with_installed_operator(netchecks, k8s_namespace, test_
     time.sleep(3.0)
 
 
-def _initialise_postgres(database_namespace):
+def _initialize_postgres(database_namespace):
     sql = """
     do $$
     begin
