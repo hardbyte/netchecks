@@ -4,6 +4,75 @@ entries:
   - annotations:
       artifacthub.io/category: security
       artifacthub.io/changes: |
+        - kind: changed
+          description: Operator writes PolicyReports as wgpolicyk8s.io/v1beta1 (storage version) instead of v1alpha2.
+        - kind: changed
+          description: policy-reporter subchart bumped 2.22.4 → 3.7.4 (major bump — review custom subchart values).
+        - kind: added
+          description: Grafana dashboard, alert rules, and OTel Collector example manifests for operator metrics.
+        - kind: added
+          description: Compliance annotation guide and example NetworkAssertions (PCI-DSS, SOC 2, CIS).
+      artifacthub.io/crds: |
+        - kind: NetworkAssertion
+          version: v1
+          name: networkassertions.netchecks.io
+          displayName: Network Assertion
+          description: NetworkAssertion is the Schema for the networkassertions API
+      artifacthub.io/crdsExamples: |
+        - apiVersion: netchecks.io/v1
+          kind: NetworkAssertion
+          metadata:
+            name: http-should-work
+            annotations:
+              description: Assert pod can connect to k8s API
+          spec:
+            template:
+              metadata:
+                labels:
+                  optional-label: applied-to-test-pod
+                annotations:
+                  my: override-annotation
+            rules:
+              - name: kubernetes-version
+                type: http
+                url: https://kubernetes.default.svc/version
+                verify-tls-cert: false
+                expected: pass
+                validate:
+                  message: Http request to Kubernetes API should succeed.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://netchecks.io
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Deep Insights
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.9.0
+    created: "2026-05-13T06:10:17.62590591Z"
+    dependencies:
+    - condition: policy-reporter.enabled
+      name: policy-reporter
+      repository: https://kyverno.github.io/policy-reporter
+      version: 3.7.4
+    description: Netchecks proactively verifies whether your security controls are
+      working as intended.
+    digest: ab9a80d541e25cd716888c64ce7b86a080f117057beb9aa74101cce1e7046c56
+    icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
+    maintainers:
+    - email: brian@hardbyte.nz
+      name: Brian Thorne
+      url: hardbyte.nz
+    name: netchecks
+    sources:
+    - https://github.com/hardbyte/netchecks
+    type: application
+    urls:
+    - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.3.0/netchecks-0.3.0.tgz
+    version: 0.3.0
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
         - kind: added
           description: Default probe resource requests/limits via probeConfig.resources, applied to every probe Job.
           links:
@@ -1211,4 +1280,4 @@ entries:
     urls:
     - https://github.com/hardbyte/netchecks/releases/download/netchecks-0.1.2/netchecks-0.1.2.tgz
     version: 0.1.2
-generated: "2026-05-12T07:43:46.285102346Z"
+generated: "2026-05-13T06:10:17.626008671Z"
