@@ -38,7 +38,7 @@ jobs:
         run: uv python install ${{ matrix.python }}
 
       - name: Sync Dependencies
-        run: uv sync --frozen --no-dev
+        run: uv sync --frozen
 
       - name: Run Tests
         run: |
@@ -51,6 +51,38 @@ jobs:
           flag-name: Unittests-${{ matrix.os }}-${{ matrix.python-version }}
           parallel: true
           path-to-lcov: ./coverage.lcov
+
+  probe_postgres_tests:
+    name: Postgres Probe Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: netcheck
+          POSTGRES_PASSWORD: netcheck
+          POSTGRES_DB: netcheck
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NETCHECK_POSTGRES_DSN: postgresql://netcheck:netcheck@localhost:5432/netcheck
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: 'true'
+      - name: Install Python
+        run: uv python install 3.12
+      - name: Sync Dependencies
+        run: uv sync --frozen
+      - name: Run Postgres Tests
+        run: uv run pytest tests/test_postgres.py -v
 
   probe_coverage:
     name: Probe Code Coverage
@@ -357,6 +389,11 @@ jobs:
           node_image: ${{ env.KIND_NODE_IMAGE }}
           cluster_name: kind
           config: kind-config.yaml
+
+      - name: Load Postgres Image into Kind
+        run: |
+          docker pull postgres:18
+          kind load docker-image postgres:18
 
       - name: Install Cilium
         run: |

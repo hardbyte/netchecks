@@ -15,6 +15,19 @@ Unit tests for the Python probe:
 uv run pytest
 ```
 
+PostgreSQL integration tests are skipped unless `NETCHECK_POSTGRES_DSN` is set:
+
+```bash
+docker run --rm --name netcheck-postgres \
+  -e POSTGRES_USER=netcheck \
+  -e POSTGRES_PASSWORD=netcheck \
+  -e POSTGRES_DB=netcheck \
+  -p 5432:5432 postgres:18
+
+NETCHECK_POSTGRES_DSN=postgresql://netcheck:netcheck@localhost:5432/netcheck \
+  uv run pytest tests/test_postgres.py -v
+```
+
 ## Testing the Rust Operator
 
 Build and run clippy checks:
@@ -33,6 +46,9 @@ The integration tests run the operator in a real Kubernetes cluster using [Kind]
 
 ```bash
 kind create cluster --name netchecks-test
+kubectl create namespace database
+kubectl apply -n database -f operator/tests/testdata/postgres-db.yaml
+kubectl wait -n database deployment/postgres --for condition=Available --timeout=120s
 docker build -t ghcr.io/hardbyte/netchecks:local .
 docker build -t ghcr.io/hardbyte/netchecks-operator:local operator/
 kind load docker-image ghcr.io/hardbyte/netchecks:local --name netchecks-test

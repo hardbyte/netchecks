@@ -4,6 +4,7 @@ import tempfile
 import pytest
 from typer.testing import CliRunner
 
+import netcheck.runner as netcheck_runner
 from netcheck.cli import app
 
 runner = CliRunner()
@@ -427,3 +428,61 @@ def test_run_tcp_config(tcp_config_filename):
 
     tcp_fail = data["assertions"][1]["results"][0]
     assert tcp_fail["status"] == "pass"  # expected: fail + connection refused = pass
+
+
+def test_postgres_cli_redacts_dsn_by_default(monkeypatch):
+    monkeypatch.setattr(
+        netcheck_runner,
+        "postgres_query_check",
+        lambda **kwargs: {
+            "spec": {"type": "postgres", "dsn": kwargs["dsn"], "query": kwargs["query"]},
+            "data": {"success": True},
+        },
+    )
+
+    result = runner.invoke(app, ["postgres", "--dsn", "postgres://user:secret@example/db", "--query", "select 1"])
+
+    assert result.exit_code == 0, result.stderr
+    data = json.loads(result.stdout)
+    assert data["status"] == "pass"
+    assert data["spec"]["dsn"] == "REDACTED"
+
+
+def test_run_config_supports_validate_pattern(monkeypatch):
+    monkeypatch.setattr(
+        netcheck_runner,
+        "postgres_query_check",
+        lambda **kwargs: {
+            "spec": {"type": "postgres", "dsn": kwargs["dsn"], "query": kwargs["query"]},
+            "data": {"success": True, "rows": [{"answer": 42}]},
+        },
+    )
+    test_config = {
+        "assertions": [
+            {
+                "name": "postgres-validate-pattern",
+                "rules": [
+                    {
+                        "name": "answer-is-42",
+                        "type": "postgres",
+                        "dsn": "postgres://example",
+                        "query": "select 42 as answer",
+                        "validate": {"pattern": "data.rows[0].answer == 42"},
+                    }
+                ],
+            }
+        ]
+    }
+
+    with tempfile.NamedTemporaryFile("w", delete=False) as f:
+        f.write(json.dumps(test_config))
+        test_config_filename = f.name
+
+    result = runner.invoke(app, ["run", "--config", test_config_filename])
+
+    assert result.exit_code == 0, result.stderr
+    data = json.loads(result.stdout)
+    result = data["assertions"][0]["results"][0]
+    assert result["name"] == "answer-is-42"
+    assert result["status"] == "pass"
+    assert result["spec"]["pattern"] == "data.rows[0].answer == 42"

@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-netcheck-connection
+type: Opaque
+stringData:
+  DATABASE_URL: postgresql://netcheck:netcheck@postgres.database.svc.cluster.local:5432/netcheck
+---
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: postgres-grants-should-work
+  annotations:
+    description: Assert Postgres SQL and grant checks work in Kubernetes
+spec:
+  context:
+    - name: database
+      secret:
+        name: postgres-netcheck-connection
+  rules:
+    - name: postgres-sql
+      type: postgres
+      dsn: "{{ database.DATABASE_URL }}"
+      query: "select 42 as answer"
+      validate:
+        pattern: "data.success == true && data.rows[0].answer == 42"
+        message: SQL check should return the expected row.
+    - name: postgres-grants
+      type: postgres-grants
+      dsn: "{{ database.DATABASE_URL }}"
+      rules:
+        - name: payments-app-no-truncate
+          mode: deny
+          roles:
+            names: [payments_app]
+          objects:
+            type: table
+            schemas: [billing]
+            names: ["*"]
+          privileges: [TRUNCATE]
+      validate:
+        pattern: "data.success == true && data['violation-count'] == 0"
+        message: payments_app must not be able to truncate billing tables.

@@ -9,6 +9,7 @@ from typing import List, Optional
 
 from netcheck.checks.dns import DEFAULT_DNS_VALIDATION_RULE
 from netcheck.checks.tcp import DEFAULT_TCP_VALIDATION_RULE
+from netcheck.checks.postgres import DEFAULT_POSTGRES_VALIDATION_RULE
 from netcheck.checks.http import NetcheckHttpMethod
 from netcheck.runner import run_from_config, check_individual_assertion
 from netcheck.version import NETCHECK_VERSION
@@ -31,6 +32,8 @@ class NetcheckTestType(str, Enum):
     http = "http"
     tcp = "tcp"
     internal = "internal"
+    postgres = "postgres"
+    postgres_grants = "postgres-grants"
 
 
 def show_version(value: bool = True):
@@ -238,6 +241,55 @@ def tcp(
         validation_rule=validation_rule,
         verbose=verbose,
         include_context=True,
+    )
+
+    output_result(result, should_fail, verbose)
+
+
+@app.command()
+def postgres(
+    dsn: str = typer.Option(..., "--dsn", help="PostgreSQL connection string", rich_help_panel="postgres test"),
+    query: str = typer.Option(..., "--query", help="Single SQL statement to run", rich_help_panel="postgres test"),
+    timeout: float = typer.Option(5.0, "-t", "--timeout", help="Timeout in seconds"),
+    read_only: bool = typer.Option(True, "--read-only/--read-write", help="Run the transaction in read-only mode"),
+    rollback: bool = typer.Option(True, "--rollback/--commit", help="Rollback the transaction after running the query"),
+    row_limit: int = typer.Option(100, "--row-limit", help="Maximum number of rows to return"),
+    should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
+    validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
+    disable_redaction: bool = typer.Option(False, "--disable-redaction", is_flag=True),
+    verbose: bool = typer.Option(False, "-v", "--verbose"),
+):
+    """Carry out a PostgreSQL SQL check."""
+    test_config = {
+        "dsn": dsn,
+        "query": query,
+        "timeout": timeout,
+        "read-only": read_only,
+        "rollback": rollback,
+        "row-limit": row_limit,
+        "expected": "fail" if should_fail else None,
+    }
+
+    if verbose:
+        safe_config = dict(test_config)
+        if not disable_redaction:
+            safe_config["dsn"] = "REDACTED"
+        err_console.print("netcheck postgres")
+        err_console.print("Options")
+        err_console.print_json(data=safe_config)
+
+    if validation_rule is None:
+        validation_rule = DEFAULT_POSTGRES_VALIDATION_RULE
+    else:
+        err_console.print("Validating result against custom validation rule")
+
+    result = check_individual_assertion(
+        NetcheckTestType.postgres,
+        test_config,
+        err_console,
+        validation_rule=validation_rule,
+        verbose=verbose,
+        include_context=disable_redaction,
     )
 
     output_result(result, should_fail, verbose)

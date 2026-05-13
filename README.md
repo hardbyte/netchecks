@@ -34,7 +34,7 @@ There are two main components:
 
 # Netcheck Command Line Tool
 
-`netcheck` is a configurable command line application for testing network conditions are as expected. It can be used to validate DNS, HTTP, and TCP connectivity and can be configured to assert that the results are as expected, for example:
+`netcheck` is a configurable command line application for testing network conditions are as expected. It can be used to validate DNS, HTTP, TCP, and PostgreSQL connectivity and can be configured to assert that the results are as expected, for example:
 
 ```shell
 netcheck http --url=https://github.com/status --validation-rule "data.body.contains('GitHub lives!') && data['status-code'] in [200, 201]"
@@ -172,6 +172,46 @@ Ensure that a POST request fails:
 
 ```shell
 $ netcheck http --method=post --url=https://s3.ap-southeast-2.amazonaws.com --should-fail
+```
+
+
+## PostgreSQL checks
+
+`postgres` checks run a single SQL statement and validate the returned rows:
+
+```shell
+netcheck postgres \
+  --dsn postgresql://user:password@postgres.example.com:5432/app \
+  --query "select current_database() as database_name" \
+  --validation-rule "data.success == true && size(data.rows) == 1"
+```
+
+`postgres-grants` checks can be used from configuration files or Kubernetes `NetworkAssertion` resources to validate effective database privileges. They use PostgreSQL's `has_*_privilege` functions so role membership and `PUBLIC` grants are included:
+
+```json
+{
+  "assertions": [
+    {
+      "name": "payments-app-cannot-truncate",
+      "rules": [
+        {
+          "type": "postgres-grants",
+          "dsn": "{{ database.url }}",
+          "rules": [
+            {
+              "name": "payments-app-no-truncate",
+              "mode": "deny",
+              "roles": {"names": ["payments_app"]},
+              "objects": {"type": "table", "schemas": ["billing"], "names": ["*"]},
+              "privileges": ["TRUNCATE"]
+            }
+          ],
+          "validate": {"pattern": "data.success == true && data['violation-count'] == 0"}
+        }
+      ]
+    }
+  ]
+}
 ```
 
 
