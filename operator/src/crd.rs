@@ -41,10 +41,10 @@ pub struct NetworkAssertionSpec {
     pub disable_redaction: bool,
 }
 
-/// A network assertion rule (http, dns, or tcp check).
+/// A network assertion rule (http, dns, tcp, postgres, or postgres-grants check).
 ///
 /// The `name` field is required. All other rule fields (type, url, host, port,
-/// headers, expected, validate, etc.) are captured in `fields` via serde flatten.
+/// headers, dsn, query, expected, validate, etc.) are captured in `fields` via serde flatten.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Rule {
     /// Name of this rule.

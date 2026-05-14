@@ -18,6 +18,7 @@ const navigation = [
             {title: 'Validating HTTP Controls', href: '/docs/http'},
             {title: 'Validating DNS Controls', href: '/docs/dns'},
             {title: 'Validating TCP Connectivity', href: '/docs/tcp'},
+            {title: 'Validating PostgreSQL Grants', href: '/docs/postgres'},
             {title: 'Validating K8s Data', href: '/docs/k8s_data'},
         ],
     },

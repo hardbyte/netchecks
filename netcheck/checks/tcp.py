@@ -22,7 +22,7 @@ def tcp_check(
         test_spec["source-ip"] = source_ip
 
     result_data = {
-        "startTimestamp": datetime.datetime.utcnow().isoformat(),
+        "startTimestamp": datetime.datetime.now(datetime.UTC).isoformat(),
     }
 
     output = {"spec": test_spec, "data": result_data}
@@ -48,6 +48,6 @@ def tcp_check(
         result_data["connected"] = False
         result_data["error"] = str(e)
 
-    result_data["endTimestamp"] = datetime.datetime.utcnow().isoformat()
+    result_data["endTimestamp"] = datetime.datetime.now(datetime.UTC).isoformat()
 
     return output

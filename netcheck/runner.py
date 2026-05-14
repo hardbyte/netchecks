@@ -12,6 +12,12 @@ from netcheck.checks.internal import internal_check
 from netcheck.checks.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
 from netcheck.checks.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
 from netcheck.checks.tcp import tcp_check, DEFAULT_TCP_VALIDATION_RULE
+from netcheck.checks.postgres import (
+    postgres_query_check,
+    postgres_grants_check,
+    DEFAULT_POSTGRES_VALIDATION_RULE,
+    DEFAULT_POSTGRES_GRANTS_VALIDATION_RULE,
+)
 from netcheck.context import replace_template, LazyFileLoadingDict
 
 logger = logging.getLogger("netcheck.runner")
@@ -69,7 +75,7 @@ def run_from_config(
                 rule["type"],
                 rule,
                 err_console=err_console,
-                validation_rule=rule.get("validation"),
+                validation_rule=rule.get("validation") or rule.get("validate", {}).get("pattern"),
                 validation_context=context,
                 verbose=verbose,
                 include_context=include_context,
@@ -126,9 +132,32 @@ def check_individual_assertion(
             test_detail = internal_check(
                 test_config.get("timeout", 5),
             )
+        case "postgres":
+            if verbose:
+                err_console.print("Postgres check running SQL statement")
+            test_detail = postgres_query_check(
+                dsn=test_config["dsn"],
+                query=test_config["query"],
+                params=test_config.get("params"),
+                timeout=test_config.get("timeout", 5),
+                read_only=test_config.get("read-only", True),
+                rollback=test_config.get("rollback", True),
+                row_limit=test_config.get("row-limit", 100),
+            )
+        case "postgres-grants":
+            if verbose:
+                err_console.print("Postgres grants check evaluating effective privileges")
+            test_detail = postgres_grants_check(
+                dsn=test_config["dsn"],
+                rules=test_config.get("rules", []),
+                timeout=test_config.get("timeout", 5),
+            )
         case _:
             logger.warning("Unhandled test type")
             raise NotImplementedError("Unknown test type")
+
+    if "name" in test_config:
+        test_detail["name"] = test_config["name"]
 
     if validation_rule is None:
         # use the default validation rule
@@ -141,6 +170,10 @@ def check_individual_assertion(
                 validation_rule = DEFAULT_TCP_VALIDATION_RULE
             case "internal":
                 validation_rule = "true"
+            case "postgres":
+                validation_rule = DEFAULT_POSTGRES_VALIDATION_RULE
+            case "postgres-grants":
+                validation_rule = DEFAULT_POSTGRES_GRANTS_VALIDATION_RULE
             case _:
                 raise NotImplementedError("Unknown check type")
     elif verbose:
@@ -165,7 +198,7 @@ def check_individual_assertion(
 
     # Strip out known sensitive fields
     if not include_context:
-        for field in {"headers"}:
+        for field in {"headers", "dsn", "password", "params", "connection"}:
             if field in test_detail["spec"]:
                 test_detail["spec"][field] = "REDACTED"
             if field in test_detail["data"]:

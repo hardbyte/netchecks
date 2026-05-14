@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-connection
+type: Opaque
+stringData:
+  DATABASE_URL: postgresql://netcheck:netcheck@postgres.database.svc.cluster.local:5432/netcheck
+---
+apiVersion: netchecks.io/v1
+kind: NetworkAssertion
+metadata:
+  name: postgres-grant-controls
+  annotations:
+    description: Validate PostgreSQL grants using effective privilege checks
+spec:
+  schedule: "*/10 * * * *"
+  context:
+    - name: database
+      secret:
+        name: postgres-connection
+  rules:
+    - name: database-responds
+      type: postgres
+      dsn: "{{ database.DATABASE_URL }}"
+      query: "select current_database() as database_name"
+      validate:
+        pattern: "data.success == true && size(data.rows) == 1"
+        message: PostgreSQL should respond to a read-only SQL check.
+    - name: payments-app-cannot-truncate
+      type: postgres-grants
+      dsn: "{{ database.DATABASE_URL }}"
+      rules:
+        - name: payments-app-no-truncate
+          mode: deny
+          roles:
+            names: [payments_app]
+          objects:
+            type: table
+            schemas: [billing]
+            names: ["*"]
+          privileges: [TRUNCATE]
+      validate:
+        pattern: "data.success == true && data['violation-count'] == 0"
+        message: payments_app must not be able to truncate billing tables.
