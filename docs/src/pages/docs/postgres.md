@@ -29,7 +29,7 @@ spec:
         message: PostgreSQL should respond to a read-only SQL check.
 ```
 
-By default SQL checks run in a read-only transaction and roll back afterwards. Netchecks rejects multiple SQL statements so checks remain small and auditable.
+By default SQL checks run in a read-only transaction and roll back afterwards.
 
 ### SQL Parameters
 
@@ -117,7 +117,7 @@ Object selectors:
 | --- | --- | --- |
 | `database` | `names` | `CONNECT`, `CREATE`, `TEMPORARY`, `TEMP` |
 | `schema` | `names` | `USAGE`, `CREATE` |
-| `table` | `schemas`, `names` | `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER` |
+| `table` | `schemas`, `names` | `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER` — covers ordinary tables, partitioned tables, views, materialized views, and foreign tables |
 | `sequence` | `schemas`, `names` | `USAGE`, `SELECT`, `UPDATE` |
 | `function` | `schemas`, `names` | `EXECUTE` |
 
@@ -140,6 +140,38 @@ For some controls you may want to prove that an operation fails when run as an a
 ```
 
 Prefer catalog-based `postgres-grants` checks for destructive privileges such as `TRUNCATE`. If you use active checks, target dedicated probe objects and keep `rollback: true` unless the check explicitly needs to commit.
+
+## Least Privilege for the Probe Role
+
+**Important:** Grant the probe role only the privileges it needs. Using a superuser or a role with
+`pg_execute_server_program` membership is strongly discouraged.
+
+`COPY ... TO PROGRAM 'cmd'` runs a shell command on the database server. PostgreSQL allows this for
+superusers and roles with the `pg_execute_server_program` system role. A `read-only` transaction
+does not prevent it because `COPY TO` is classified as a read from the transaction's perspective.
+If your probe role is a superuser, a misconfigured or injected query could execute arbitrary shell
+commands on the database server.
+
+Create a dedicated role with only the access the probe needs:
+
+```sql
+CREATE ROLE netcheck_probe WITH LOGIN PASSWORD '...';
+-- allow connecting to the database being monitored
+GRANT CONNECT ON DATABASE myapp TO netcheck_probe;
+-- grant only the catalog access needed for grant checks
+GRANT USAGE ON SCHEMA information_schema TO netcheck_probe;
+-- for SQL checks: grant SELECT on specific tables/views, nothing else
+GRANT SELECT ON myapp.orders TO netcheck_probe;
+```
+
+A non-superuser role without `pg_execute_server_program` will receive a permission-denied error
+from `COPY ... TO PROGRAM`, `COPY ... FROM PROGRAM`, and similar server-side file operations.
+
+### Sequences and non-transactional side effects
+
+`nextval()` advances a sequence even when the transaction is rolled back. Avoid calling `nextval()`
+in probe queries. The `read-only: true` default will block `nextval()` anyway, but be cautious if
+you set `read-only: false` with `rollback: true`.
 
 ## Redaction
 

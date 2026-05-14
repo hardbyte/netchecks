@@ -51,10 +51,9 @@ def postgres_query_check(
     output = {"spec": test_spec, "data": result_data}
 
     try:
-        statement = _single_statement(query)
         result = _execute_query(
             dsn=dsn,
-            query=statement,
+            query=query.strip(),
             params=params,
             timeout=timeout,
             read_only=read_only,
@@ -114,16 +113,6 @@ def postgres_grants_check(
     result_data["violation-count"] = len(result_data["violations"])
     result_data["endTimestamp"] = datetime.datetime.now(datetime.UTC).isoformat()
     return output
-
-
-def _single_statement(query: str) -> str:
-    statement = query.strip()
-    if not statement:
-        raise ValueError("query must not be empty")
-    without_trailing_semicolon = statement[:-1] if statement.endswith(";") else statement
-    if ";" in without_trailing_semicolon:
-        raise ValueError("postgres checks only support a single SQL statement")
-    return statement
 
 
 def _execute_query(
@@ -260,7 +249,9 @@ def _selected_objects(cursor, object_type: str, selector: dict[str, Any]) -> lis
         case "schema":
             return _selected_schemas(cursor, selector)
         case "table":
-            return _selected_relations(cursor, selector, relation_kinds=["r", "p"])
+            # r=table, p=partitioned, v=view, m=materialized view, f=foreign table
+            # has_table_privilege applies to all of these
+            return _selected_relations(cursor, selector, relation_kinds=["r", "p", "v", "m", "f"])
         case "sequence":
             return _selected_relations(cursor, selector, relation_kinds=["S"])
         case "function":
