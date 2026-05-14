@@ -430,6 +430,48 @@ def test_run_tcp_config(tcp_config_filename):
     assert tcp_fail["status"] == "pass"  # expected: fail + connection refused = pass
 
 
+def test_postgres_cli_verbose(monkeypatch):
+    monkeypatch.setattr(
+        netcheck_runner,
+        "postgres_query_check",
+        lambda **kwargs: {
+            "spec": {"type": "postgres", "dsn": kwargs["dsn"], "query": kwargs["query"]},
+            "data": {"success": True},
+        },
+    )
+
+    result = runner.invoke(
+        app,
+        ["postgres", "--dsn", "postgres://example/db", "--query", "select 1", "-v"],
+    )
+
+    assert result.exit_code == 0, result.stderr
+    assert "Postgres" in result.stderr
+    assert "Passed" in result.stderr
+    data = json.loads(result.stdout)
+    assert data["status"] == "pass"
+
+
+def test_postgres_cli_disable_redaction(monkeypatch):
+    monkeypatch.setattr(
+        netcheck_runner,
+        "postgres_query_check",
+        lambda **kwargs: {
+            "spec": {"type": "postgres", "dsn": kwargs["dsn"], "query": kwargs["query"]},
+            "data": {"success": True},
+        },
+    )
+
+    result = runner.invoke(
+        app,
+        ["postgres", "--dsn", "postgres://user:secret@example/db", "--query", "select 1", "--disable-redaction"],
+    )
+
+    assert result.exit_code == 0, result.stderr
+    data = json.loads(result.stdout)
+    assert data["spec"]["dsn"] == "postgres://user:secret@example/db"
+
+
 def test_postgres_cli_redacts_dsn_by_default(monkeypatch):
     monkeypatch.setattr(
         netcheck_runner,
