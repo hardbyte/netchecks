@@ -6,13 +6,13 @@ icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.3.0
+version: 0.3.1
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "0.9.0"
+appVersion: "0.10.0"
 sources:
   - https://github.com/hardbyte/netchecks
 maintainers:
@@ -22,14 +22,10 @@ maintainers:
 annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   artifacthub.io/changes: |
-    - kind: changed
-      description: Operator writes PolicyReports as wgpolicyk8s.io/v1beta1 (storage version) instead of v1alpha2.
-    - kind: changed
-      description: policy-reporter subchart bumped 2.22.4 → 3.7.4 (major bump — review custom subchart values).
     - kind: added
-      description: Grafana dashboard, alert rules, and OTel Collector example manifests for operator metrics.
-    - kind: added
-      description: Compliance annotation guide and example NetworkAssertions (PCI-DSS, SOC 2, CIS).
+      description: "PostgreSQL probe types: postgres (SQL assertions) and postgres-grants (effective privilege checks using has_*_privilege)."
+    - kind: security
+      description: "Postgres probes: docs and defaults enforce least-privilege DSN; COPY...TO PROGRAM risk documented."
   artifacthub.io/category: security
   artifacthub.io/operator: "true"
   artifacthub.io/prerelease: "false"
