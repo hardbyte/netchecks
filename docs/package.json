@@ -12,6 +12,9 @@
     "lint": "next lint"
   },
   "browserslist": "defaults, not ie <= 11",
+  "overrides": {
+    "postcss": "8.5.14"
+  },
   "dependencies": {
     "@docsearch/react": "^4.6.3",
     "@headlessui/react": "^2.2.10",
