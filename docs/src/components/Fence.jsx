@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Fragment } from 'react'
-import Highlight, { defaultProps } from 'prism-react-renderer'
+import { Highlight } from 'prism-react-renderer'
 
 export function Fence({ children, language }) {
   const [copied, setCopied] = React.useState(false);
@@ -24,9 +24,8 @@ export function Fence({ children, language }) {
   return (
     <>
       <Highlight
-      {...defaultProps}
       code={children.trimEnd()}
-      language={language}
+      language={language ?? 'text'}
       theme={undefined}
     >
       {({ className, style, tokens, getTokenProps }) => (
