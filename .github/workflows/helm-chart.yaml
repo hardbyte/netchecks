@@ -21,7 +21,7 @@ jobs:
           fetch-depth: "0"
 
       - name: chart-testing (ct lint)
-        uses: helm/chart-testing-action@v2.0.1
+        uses: helm/chart-testing-action@v2.8.0
 
       - name: Run Helm Chart lint
         run: |
