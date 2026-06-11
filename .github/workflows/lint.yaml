@@ -10,7 +10,7 @@ jobs:
       - uses: reviewdog/action-shellcheck@v1
         with:
           filter_mode: file
-      - uses: hadolint/hadolint-action@v3.1.0
+      - uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: Dockerfile
           recursive: true
