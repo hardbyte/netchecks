@@ -3,9 +3,31 @@
 nameOverride: ""
 fullnameOverride: ""
 
-# If the CRDs are not installed by Helm, they must be added before installing
-# the operator.
-installCRDs: true
+# Custom Resource Definitions installed by this chart.
+#
+# Deprecated: `installCRDs` is still honoured as an alias for `crds.install`, but
+# `crds` should be preferred.
+crds:
+  # If the CRDs are not installed by Helm, they must be added before installing
+  # the operator.
+  install: true
+
+  # Annotate the CRDs with `helm.sh/resource-policy: keep` so that they survive
+  # `helm uninstall`, along with any NetworkAssertion and PolicyReport resources
+  # in the cluster. This matches the behaviour of the chart's former `crds/`
+  # directory, which Helm never removes.
+  keep: true
+
+  groups:
+    # NetworkAssertion (`netchecks.io`), defined and owned by Netchecks.
+    netchecks: true
+
+    # PolicyReport and ClusterPolicyReport (`wgpolicyk8s.io`). This is a shared,
+    # vendor-neutral API group that other components install as well, for example
+    # Kyverno, the Trivy PolicyReport adapters or Kubescape. Set this to false when
+    # another component owns these CRDs, so that two charts do not overwrite each
+    # other's copy.
+    wgpolicyk8s: true
 
 networkPolicy:
   enabled: true
