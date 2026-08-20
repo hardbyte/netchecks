@@ -24,9 +24,13 @@ crds:
 
     # PolicyReport and ClusterPolicyReport (`wgpolicyk8s.io`). This is a shared,
     # vendor-neutral API group that other components install as well, for example
-    # Kyverno, the Trivy PolicyReport adapters or Kubescape. Set this to false when
-    # another component owns these CRDs, so that two charts do not overwrite each
-    # other's copy.
+    # Kyverno, the Trivy PolicyReport adapters or Kubescape.
+    #
+    # Set this to false only if another component owns these CRDs *and* serves
+    # `v1beta1` - that is the version the operator writes its reports to. The copy
+    # shipped here serves v1alpha1, v1alpha2 and v1beta1; Kyverno's serves only
+    # v1alpha2, and handing ownership over to it makes reconciliation fail with
+    # `404 page not found`. See the chart README for details.
     wgpolicyk8s: true
 
 networkPolicy:

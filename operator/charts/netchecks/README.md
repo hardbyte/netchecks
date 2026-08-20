@@ -36,15 +36,30 @@ The chart installs two sets of CRDs:
 | `crds.groups.wgpolicyk8s` | `wgpolicyk8s.io` | `PolicyReport`, `ClusterPolicyReport` |
 
 `wgpolicyk8s.io` is a shared, vendor-neutral API group. Other components install the same
-CRDs — Kyverno, the Trivy PolicyReport adapters, Kubescape. If one of those already owns
-them in your cluster, turn them off here so that the two charts do not overwrite each
-other's copy:
+CRDs — Kyverno, the Trivy PolicyReport adapters, Kubescape — so if one of those already
+owns them in your cluster, you may want to turn them off here:
 
 ```yaml
 crds:
   groups:
     wgpolicyk8s: false
 ```
+
+> **Check the served versions before you do.** The operator writes its reports to
+> `wgpolicyk8s.io/v1beta1` specifically (`operator/src/reconciler.rs`). The CRDs shipped
+> here serve `v1alpha1`, `v1alpha2` and `v1beta1`; other distributions of the same CRDs may
+> serve fewer. Kyverno's chart, for example, serves only `v1alpha2`. Handing ownership to a
+> component that does not serve `v1beta1` leaves the operator unable to write reports, and
+> the NetworkAssertion fails to reconcile with:
+>
+> ```
+> kubernetes API error: ApiError: 404 page not found
+> ```
+>
+> Verify with `kubectl get crd policyreports.wgpolicyk8s.io -o jsonpath='{.spec.versions[*].name}'`
+> before disabling. If the other owner serves only `v1alpha2`, keep these CRDs enabled and
+> disable them on the other side instead — this chart's copy is a superset and satisfies
+> both.
 
 `crds.install: false` disables all of them, in which case the CRDs must be present before
 the operator is installed.
