@@ -45,7 +45,7 @@
 
 ### CLI
 
-- **PostgreSQL probes** ([#3xx](https://github.com/hardbyte/netchecks/commit/732d300)): two new check types, available from the CLI (`netcheck postgres`) and in NetworkAssertion rules.
+- **PostgreSQL probes** ([732d300](https://github.com/hardbyte/netchecks/commit/732d300)): two new check types, available from the CLI (`netcheck postgres`) and in NetworkAssertion rules.
   - `postgres` runs a single SQL statement and exposes `success`, `row-count`, `columns`, `rows` (and `sqlstate` on error) to CEL validation. Read-only transactions with rollback by default; `params`, `timeout`, `read-only`, `rollback` and `row-limit` are configurable.
   - `postgres-grants` validates *effective* privileges with PostgreSQL's `has_*_privilege` functions (so role membership and `PUBLIC` grants are accounted for). Rules select roles (by name, login flag, membership) and objects (databases, schemas, tables/views/materialized views/foreign tables, sequences, functions) and assert privileges are present (`mode: require`) or absent (`mode: deny`).
 - `dsn`, `params`, `password` and `connection` fields are redacted from probe output by default.
