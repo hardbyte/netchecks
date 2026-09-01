@@ -529,14 +529,14 @@ fn build_cron_job(
             owner_references: Some(vec![owner_ref]),
             ..Default::default()
         },
-        spec: Some(CronJobSpec {
+        spec: CronJobSpec {
             schedule: schedule.to_string(),
             job_template: JobTemplateSpec {
                 metadata: None,
                 spec: Some(build_job_spec(na, config)),
             },
             ..Default::default()
-        }),
+        },
         ..Default::default()
     })
 }
@@ -1168,7 +1168,7 @@ mod tests {
         let cron = build_cron_job(&na, &config, "*/5 * * * *").expect("should build cronjob");
 
         assert_eq!(cron.metadata.name.as_deref(), Some("scheduled"));
-        let spec = cron.spec.as_ref().unwrap();
+        let spec = &cron.spec;
         assert_eq!(spec.schedule, "*/5 * * * *");
         assert!(spec.job_template.spec.is_some());
     }
