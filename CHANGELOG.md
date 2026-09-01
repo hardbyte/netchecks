@@ -1,5 +1,60 @@
 # Changelog
 
+## 0.11.0
+
+### Helm Chart
+
+- **CRD installation is configurable** ([#346](https://github.com/hardbyte/netchecks/pull/346), thanks @christianhuth). The CRDs moved from the chart's `crds/` directory (which Helm never templates) into `templates/`, gated by new values:
+  - `crds.install` (default `true`; the long-documented `installCRDs` is honored as an alias and finally does something),
+  - `crds.keep` (default `true`, annotates the CRDs with `helm.sh/resource-policy: keep` so `helm uninstall` leaves them and their `NetworkAssertion`/`PolicyReport` objects in place, as before),
+  - `crds.groups.netchecks` / `crds.groups.wgpolicyk8s` to skip either API group, e.g. when Kyverno, Trivy or Kubescape already own the shared `wgpolicyk8s.io` CRDs.
+- **Upgrade note — one-time adoption step.** CRDs installed by chart ≤ 0.3.x carry no Helm ownership metadata, so `helm upgrade` to chart 0.4+ fails with `invalid ownership metadata` until they are adopted once:
+
+  ```bash
+  for crd in networkassertions.netchecks.io policyreports.wgpolicyk8s.io clusterpolicyreports.wgpolicyk8s.io; do
+    kubectl label crd "$crd" app.kubernetes.io/managed-by=Helm --overwrite
+    kubectl annotate crd "$crd" meta.helm.sh/release-name=<release> meta.helm.sh/release-namespace=<namespace> --overwrite
+  done
+  ```
+
+  Alternatively set `crds.install=false` and manage the CRDs outside the chart. Full details in the [chart README](operator/charts/netchecks/README.md).
+- Removed a duplicate `policyreports.wgpolicyk8s.io` definition that was shipped inside `clusterpolicyreports.yaml`.
+- Chart version bumped to **0.5.0**, `appVersion` to 0.11.0. Maintainer entry changed to the GitHub username `hardbyte` (required by chart-testing's maintainer validation).
+
+### Operator
+
+- **PolicyReport API version is discovered at runtime** instead of being hardcoded to `wgpolicyk8s.io/v1beta1` ([#347](https://github.com/hardbyte/netchecks/issues/347)). The operator uses `v1beta1` when served and falls back to `v1alpha2`, so it now works when another component's copy of the CRDs (e.g. Kyverno's, which serves only `v1alpha2`) owns the API group. `v1alpha1` is not selected because its result schema differs.
+- A missing `wgpolicyk8s.io` API group (or one serving only unsupported versions) is now reported as a `PolicyReportApiUnavailable` status condition on the NetworkAssertion with an actionable message, and logged at startup, instead of an opaque `404 page not found`.
+- **kube-rs 3.1 → 4.2, k8s-openapi 0.27 → 0.28**, plus a full `cargo update`.
+
+### CLI
+
+- **Dependency refresh** via `uv lock --upgrade`: `common-expression-language` 0.5.6 → 0.8.0, typer 0.25 → 0.27, psycopg 3.3.5, pydantic 2.13.5, requests 2.34.2. The CEL wrapper now handles cel 0.8's `KeyError`/`TypeError` for missing fields and type mismatches, so rules such as `data['status-code'] == 200` still evaluate to `false` (rather than crashing) when a probe never received a response.
+
+### Static manifests
+
+- `operator/manifests/deploy.yaml` is regenerated from the current chart and, for the first time, actually contains the CRDs — `helm template` never rendered the old `crds/` directory, so `kubectl apply -f .../deploy.yaml` previously installed an operator with no `NetworkAssertion` CRD despite what the docs said.
+
+### Internal / CI
+
+- Fork pull requests can pass CI: image pushes to `ghcr.io` are skipped for forks (and dependabot), which build the images locally and hand them to the integration-test job as artifacts — full test coverage, no registry access for forks.
+- Chart linting (`ct lint`) now runs — it had been pointed at a non-existent directory. `ruff` is pinned in the lint workflow to the locked version (0.16.5) so rule additions no longer break CI on unrelated pushes; ruff 0.16 findings across the codebase fixed.
+- Integration tests install the chart with `crds.keep=false` and uninstall with `--wait`, so repeated installs into fresh namespaces don't trip over left-over CRD ownership metadata.
+
+## 0.10.0
+
+### CLI
+
+- **PostgreSQL probes** ([#3xx](https://github.com/hardbyte/netchecks/commit/732d300)): two new check types, available from the CLI (`netcheck postgres`) and in NetworkAssertion rules.
+  - `postgres` runs a single SQL statement and exposes `success`, `row-count`, `columns`, `rows` (and `sqlstate` on error) to CEL validation. Read-only transactions with rollback by default; `params`, `timeout`, `read-only`, `rollback` and `row-limit` are configurable.
+  - `postgres-grants` validates *effective* privileges with PostgreSQL's `has_*_privilege` functions (so role membership and `PUBLIC` grants are accounted for). Rules select roles (by name, login flag, membership) and objects (databases, schemas, tables/views/materialized views/foreign tables, sequences, functions) and assert privileges are present (`mode: require`) or absent (`mode: deny`).
+- `dsn`, `params`, `password` and `connection` fields are redacted from probe output by default.
+- New [PostgreSQL docs](docs/src/pages/docs/postgres.md) including least-privilege guidance for the probe role (why a superuser or `pg_execute_server_program` member must not be used).
+
+### Helm Chart
+
+- Chart version 0.3.1, `appVersion` 0.10.0.
+
 ## 0.9.0
 
 ### Operator

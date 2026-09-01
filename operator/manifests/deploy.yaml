@@ -7,7 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.10.0"
+    app.kubernetes.io/version: "0.11.0"
 spec:
   podSelector:
     matchLabels:
@@ -53,7 +53,7 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.10.0"
+    app.kubernetes.io/version: "0.11.0"
 ---
 # Source: netchecks/charts/policy-reporter/templates/cluster-secret.yaml
 apiVersion: v1
@@ -2312,7 +2312,7 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.10.0"
+    app.kubernetes.io/version: "0.11.0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -2452,7 +2452,7 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.10.0"
+    app.kubernetes.io/version: "0.11.0"
 spec:
   type: ClusterIP
   ports:
@@ -2652,7 +2652,7 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.10.0"
+    app.kubernetes.io/version: "0.11.0"
 spec:
   # Only one replica is required for the operator
   replicas: 1
