@@ -29,8 +29,8 @@ crds:
     # each other's copy.
     #
     # The operator discovers which PolicyReport API version the cluster serves at
-    # runtime (preferring v1beta1, then v1alpha2, then v1alpha1), so any of the
-    # commonly distributed copies of these CRDs works. See the chart README.
+    # runtime (v1beta1, falling back to v1alpha2), so the commonly distributed
+    # copies of these CRDs all work. See the chart README.
     wgpolicyk8s: true
 
 networkPolicy:

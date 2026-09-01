@@ -46,11 +46,11 @@ crds:
 ```
 
 The operator discovers the PolicyReport API version the cluster serves when it starts
-(preferring `v1beta1`, then `v1alpha2`, then `v1alpha1`), so it works with any of the
-commonly distributed copies of these CRDs — including Kyverno's, which serves only
-`v1alpha2`. If no `wgpolicyk8s.io` API group is served at all, the operator logs a warning at
-startup and NetworkAssertions report a `PolicyReportApiUnavailable` status condition until the
-CRDs are installed.
+(`v1beta1`, falling back to `v1alpha2`), so it works with the commonly distributed copies of
+these CRDs — including Kyverno's, which serves only `v1alpha2`. `v1alpha1` is not supported:
+its result schema differs. If no `wgpolicyk8s.io` API group is served, or only `v1alpha1` is,
+the operator logs a warning at startup and NetworkAssertions report a
+`PolicyReportApiUnavailable` status condition until suitable CRDs are installed.
 
 To see which versions are served: `kubectl get crd policyreports.wgpolicyk8s.io -o jsonpath='{.spec.versions[*].name}'`.
 

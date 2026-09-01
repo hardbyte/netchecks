@@ -10,10 +10,13 @@ use crate::observability::OperatorObservability;
 pub const POLICY_REPORT_GROUP: &str = "wgpolicyk8s.io";
 /// Kind of the report resource written per NetworkAssertion.
 pub const POLICY_REPORT_KIND: &str = "PolicyReport";
-/// Versions the operator knows how to write, most preferred first. The report
-/// fields netchecks uses (`results`, `summary`, `scope`) are identical across
-/// them, so any served version works.
-const POLICY_REPORT_VERSION_PREFERENCE: [&str; 3] = ["v1beta1", "v1alpha2", "v1alpha1"];
+/// Versions the operator can write, most preferred first.
+///
+/// `convert_results_for_policy_report` emits the v1alpha2/v1beta1 result schema
+/// (`result`, `properties`, `source`, `timestamp`); v1alpha1 uses `status`/`data`
+/// instead and is deliberately not supported, since the API server would prune
+/// those fields and leave each result without its outcome.
+const POLICY_REPORT_SUPPORTED_VERSIONS: [&str; 2] = ["v1beta1", "v1alpha2"];
 
 /// Errors resolving the PolicyReport API on the cluster.
 #[derive(Debug, thiserror::Error)]
@@ -25,10 +28,10 @@ pub enum DiscoveryError {
     GroupMissing,
 
     #[error(
-        "the {POLICY_REPORT_GROUP} API group is served (versions: {0}) but none of them \
-         provides the {POLICY_REPORT_KIND} kind"
+        "the {POLICY_REPORT_GROUP} API group is served (versions: {0}) but none of the versions \
+         this operator supports (v1beta1, v1alpha2) provides the {POLICY_REPORT_KIND} kind"
     )]
-    KindMissing(String),
+    UnsupportedVersions(String),
 
     #[error("failed to discover the {POLICY_REPORT_GROUP} API group: {0}")]
     Kube(#[from] kube::Error),
@@ -36,14 +39,12 @@ pub enum DiscoveryError {
 
 /// Pick the PolicyReport version to write, given the versions the cluster serves.
 ///
-/// Prefers the operator's known versions in order, then the group's preferred
-/// version, then whatever is served first.
-pub fn select_policy_report_version<'a>(served: &[&'a str], preferred: &'a str) -> Option<&'a str> {
-    POLICY_REPORT_VERSION_PREFERENCE
+/// Returns the most preferred supported version that is served, or `None` when
+/// the cluster serves only versions with an incompatible result schema.
+pub fn select_policy_report_version<'a>(served: &[&'a str]) -> Option<&'a str> {
+    POLICY_REPORT_SUPPORTED_VERSIONS
         .iter()
         .find_map(|wanted| served.iter().find(|v| *v == wanted).copied())
-        .or_else(|| served.iter().find(|v| **v == preferred).copied())
-        .or_else(|| served.first().copied())
 }
 
 /// Resolve the `PolicyReport` API resource from cluster discovery.
@@ -69,11 +70,12 @@ pub async fn discover_policy_report_resource(
             .map(|(ar, _)| ar)
     };
 
-    // Preferred version first, then any other served version that has the kind.
-    select_policy_report_version(&served, group.preferred_version_or_latest())
-        .and_then(has_kind)
-        .or_else(|| served.iter().find_map(|version| has_kind(version)))
-        .ok_or_else(|| DiscoveryError::KindMissing(served.join(", ")))
+    // Most preferred supported version that is served *and* has the kind.
+    POLICY_REPORT_SUPPORTED_VERSIONS
+        .iter()
+        .filter(|wanted| served.contains(wanted))
+        .find_map(|version| has_kind(version))
+        .ok_or_else(|| DiscoveryError::UnsupportedVersions(served.join(", ")))
 }
 
 /// Operator configuration loaded from environment variables.
@@ -187,32 +189,28 @@ mod tests {
     #[test]
     fn policy_report_version_prefers_v1beta1() {
         let served = ["v1alpha1", "v1alpha2", "v1beta1"];
-        assert_eq!(
-            select_policy_report_version(&served, "v1alpha2"),
-            Some("v1beta1")
-        );
+        assert_eq!(select_policy_report_version(&served), Some("v1beta1"));
     }
 
     #[test]
     fn policy_report_version_falls_back_to_kyverno_v1alpha2() {
         // Kyverno's CRDs serve only v1alpha2.
         assert_eq!(
-            select_policy_report_version(&["v1alpha2"], "v1alpha2"),
+            select_policy_report_version(&["v1alpha2"]),
+            Some("v1alpha2")
+        );
+        assert_eq!(
+            select_policy_report_version(&["v1alpha1", "v1alpha2"]),
             Some("v1alpha2")
         );
     }
 
     #[test]
-    fn policy_report_version_uses_group_preference_for_unknown_versions() {
-        assert_eq!(
-            select_policy_report_version(&["v2", "v1"], "v1"),
-            Some("v1")
-        );
-        assert_eq!(
-            select_policy_report_version(&["v2", "v3"], "v9"),
-            Some("v2")
-        );
-        assert_eq!(select_policy_report_version(&[], "v1"), None);
+    fn policy_report_version_rejects_incompatible_schemas() {
+        // v1alpha1 results use `status`/`data`, which the operator does not emit.
+        assert_eq!(select_policy_report_version(&["v1alpha1"]), None);
+        assert_eq!(select_policy_report_version(&["v2", "v3"]), None);
+        assert_eq!(select_policy_report_version(&[]), None);
     }
 
     #[test]
