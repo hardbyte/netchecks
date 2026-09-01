@@ -73,7 +73,8 @@ def netchecks(k8s_namespace):
             f"""helm upgrade --install netchecks-operator {NETCHECKS_CHART_DIR} \
                 -n {k8s_namespace} \
                 --set operator.image.tag={IMAGE_TAG} \
-                --set probeConfig.image.tag={IMAGE_TAG}
+                --set probeConfig.image.tag={IMAGE_TAG} \
+                --set crds.keep=false
             """,
             shell=True,
             check=True,

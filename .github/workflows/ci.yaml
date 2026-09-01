@@ -501,8 +501,12 @@ jobs:
           helm dependency build operator/charts/netchecks
 
       - name: Install Netchecks Operator (helm chart)
+        # crds.keep=false so that the uninstall below removes the CRDs again:
+        # kept CRDs carry this release's ownership metadata and would make the
+        # integration tests' installs into other namespaces fail with
+        # "invalid ownership metadata".
         run: |
-          helm upgrade --install netchecks-operator operator/charts/netchecks -n netchecks --create-namespace
+          helm upgrade --install netchecks-operator operator/charts/netchecks -n netchecks --create-namespace --set crds.keep=false
 
       - name: Uninstall Netchecks Operator
         run: |
