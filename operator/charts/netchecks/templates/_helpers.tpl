@@ -64,7 +64,7 @@ Create the name of the service account to use for the operator
 {{/*
 Whether CRDs should be installed by this chart.
 
-Honours the legacy `installCRDs` value as an alias for `crds.install`. That value was
+Honors the legacy `installCRDs` value as an alias for `crds.install`. That value was
 documented but had no effect while the CRDs lived in the chart's `crds/` directory,
 which Helm never templates.
 */}}

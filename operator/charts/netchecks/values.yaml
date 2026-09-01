@@ -5,7 +5,7 @@ fullnameOverride: ""
 
 # Custom Resource Definitions installed by this chart.
 #
-# Deprecated: `installCRDs` is still honoured as an alias for `crds.install`, but
+# Deprecated: `installCRDs` is still honored as an alias for `crds.install`, but
 # `crds` should be preferred.
 crds:
   # If the CRDs are not installed by Helm, they must be added before installing
@@ -14,7 +14,7 @@ crds:
 
   # Annotate the CRDs with `helm.sh/resource-policy: keep` so that they survive
   # `helm uninstall`, along with any NetworkAssertion and PolicyReport resources
-  # in the cluster. This matches the behaviour of the chart's former `crds/`
+  # in the cluster. This matches the behavior of the chart's former `crds/`
   # directory, which Helm never removes.
   keep: true
 
