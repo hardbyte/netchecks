@@ -151,6 +151,10 @@ jobs:
       IMAGE_NAME: netchecks
       IMAGE_REGISTRY: ghcr.io
       IMAGE_REPOSITORY: hardbyte
+      # PRs from forks run with a read-only GITHUB_TOKEN and cannot push to
+      # ghcr.io. For those, build locally and hand the image to the k8s job
+      # as a workflow artifact instead.
+      CAN_PUSH: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
 
     steps:
       - name: Checkout code
@@ -167,6 +171,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
       - name: Login to GitHub Container Registry
+        if: env.CAN_PUSH == 'true'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
@@ -177,6 +182,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
       - name: Build and push
+        if: env.CAN_PUSH == 'true'
         id: docker_build
         uses: docker/build-push-action@v7
         with:
@@ -187,6 +193,24 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=probe
           cache-to: type=gha,mode=max,scope=probe
+      - name: Build image archive (fork PR)
+        if: env.CAN_PUSH != 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=docker,dest=${{ runner.temp }}/probe-image.tar
+          cache-from: type=gha,scope=probe
+      - name: Upload image artifact (fork PR)
+        if: env.CAN_PUSH != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: probe-image
+          path: ${{ runner.temp }}/probe-image.tar
+          if-no-files-found: error
+          retention-days: 1
 
   # ---------------------------------------------------------------------------
   # Operator Docker — build each platform natively, then merge manifests.
@@ -211,6 +235,9 @@ jobs:
       IMAGE_NAME: netchecks-operator
       IMAGE_REGISTRY: ghcr.io
       IMAGE_REPOSITORY: hardbyte
+      # See probe_docker: fork PRs cannot push to ghcr.io, so hand the image
+      # to the k8s job as a workflow artifact instead.
+      CAN_PUSH: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
 
     steps:
       - name: Checkout code
@@ -229,6 +256,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
 
       - name: Login to GitHub Container Registry
+        if: env.CAN_PUSH == 'true'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
@@ -239,6 +267,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push by digest
+        if: env.CAN_PUSH == 'true'
         id: build
         uses: docker/build-push-action@v7
         with:
@@ -249,12 +278,14 @@ jobs:
           cache-to: type=gha,mode=max,scope=operator-${{ matrix.platform }}
 
       - name: Export digest
+        if: env.CAN_PUSH == 'true'
         run: |
           mkdir -p ${{ runner.temp }}/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       - name: Upload digest
+        if: env.CAN_PUSH == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: operator-digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
@@ -262,9 +293,31 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+      - name: Build image archive (fork PR)
+        if: env.CAN_PUSH != 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: operator
+          platforms: ${{ matrix.platform }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=docker,dest=${{ runner.temp }}/operator-image.tar
+          cache-from: type=gha,scope=operator-${{ matrix.platform }}
+
+      - name: Upload image artifact (fork PR)
+        if: env.CAN_PUSH != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: operator-image-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: ${{ runner.temp }}/operator-image.tar
+          if-no-files-found: error
+          retention-days: 1
+
   operator_docker_merge:
     name: Merge Operator Manifests
     needs: operator_docker
+    # Nothing was pushed for a fork PR, so there is nothing to merge.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -339,10 +392,18 @@ jobs:
 
   k8s:
     name: Kubernetes Integration Tests
-    needs: [probe_docker, operator_docker_merge]
+    needs: [probe_docker, operator_docker, operator_docker_merge]
+    # operator_docker_merge is skipped for fork PRs (images arrive as
+    # artifacts instead); still run the integration tests in that case.
+    if: >-
+      !cancelled() &&
+      needs.probe_docker.result == 'success' &&
+      needs.operator_docker.result == 'success' &&
+      (needs.operator_docker_merge.result == 'success' || needs.operator_docker_merge.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
+      CAN_PUSH: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
       KIND_VERSION: v0.27.0
       KIND_NODE_IMAGE: kindest/node:v1.32.2
       TIMEOUT: 2m
@@ -410,9 +471,29 @@ jobs:
           kind get nodes
 
       - name: Load Netchecks Images into Kind
+        if: env.CAN_PUSH == 'true'
         run: |
           docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
           docker pull ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+          kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
+      - name: Download probe image artifact (fork PR)
+        if: env.CAN_PUSH != 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: probe-image
+          path: ${{ runner.temp }}/images
+      - name: Download operator image artifact (fork PR)
+        if: env.CAN_PUSH != 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: operator-image-amd64
+          path: ${{ runner.temp }}/images
+      - name: Load Netchecks Images into Kind (fork PR)
+        if: env.CAN_PUSH != 'true'
+        run: |
+          docker load -i ${{ runner.temp }}/images/probe-image.tar
+          docker load -i ${{ runner.temp }}/images/operator-image.tar
           kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.PROBE_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
           kind load docker-image ${{env.IMAGE_REGISTRY}}/${{env.IMAGE_REPOSITORY}}/${{env.OPERATOR_IMAGE_NAME}}:sha-${GITHUB_SHA::7}
       - name: Prepare Netchecks Operator Helm Chart

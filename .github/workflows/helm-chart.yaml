@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "charts/**"
+      - "operator/charts/**"
 
   pull_request:
     branches:
@@ -23,9 +23,13 @@ jobs:
       - name: chart-testing (ct lint)
         uses: helm/chart-testing-action@v2.8.0
 
+      - name: Add chart dependency repositories
+        run: |
+          helm repo add policy-reporter https://kyverno.github.io/policy-reporter
+
       - name: Run Helm Chart lint
         run: |
           ct lint \
                   --target-branch=main \
                   --validate-maintainers=true \
-                  --chart-dirs charts
+                  --chart-dirs operator/charts

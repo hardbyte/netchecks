@@ -7,7 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.1.1"
+    app.kubernetes.io/version: "0.10.0"
 spec:
   podSelector:
     matchLabels:
@@ -24,14 +24,26 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: netchecks-operator-policy-reporter
+  name: policy-reporter
   namespace: netchecks
   labels:
     app.kubernetes.io/name: policy-reporter
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "2.11.1"
+    app.kubernetes.io/version: "3.7.4"
     app.kubernetes.io/component: reporting
     app.kubernetes.io/part-of: policy-reporter
+---
+# Source: netchecks/charts/policy-reporter/templates/ui/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: policy-reporter-ui
+  namespace: netchecks
+  labels:
+    app.kubernetes.io/name: policy-reporter-ui
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "3.7.4"
+automountServiceAccountToken: true
 ---
 # Source: netchecks/templates/serviceaccount.yaml
 apiVersion: v1
@@ -41,77 +53,2132 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.1.1"
+    app.kubernetes.io/version: "0.10.0"
+---
+# Source: netchecks/charts/policy-reporter/templates/cluster-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: policy-reporter-ui-default-cluster
+  namespace: netchecks
+  labels:
+    app.kubernetes.io/name: policy-reporter
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "3.7.4"
+    app.kubernetes.io/component: reporting
+    app.kubernetes.io/part-of: policy-reporter
+type: Opaque
+data:
+  host: aHR0cDovL3BvbGljeS1yZXBvcnRlcjo4MDgw
 ---
 # Source: netchecks/charts/policy-reporter/templates/config-secret.yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: netchecks-operator-policy-reporter-config
+  name: policy-reporter-config
   namespace: netchecks
   labels:
     app.kubernetes.io/name: policy-reporter
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "2.11.1"
+    app.kubernetes.io/version: "3.7.4"
     app.kubernetes.io/component: reporting
     app.kubernetes.io/part-of: policy-reporter
 type: Opaque
 data:
-  config.yaml: bG9raToKICBob3N0OiAiIgogIGNlcnRpZmljYXRlOiAiIgogIHNraXBUTFM6IGZhbHNlCiAgcGF0aDogIiIKICBzZWNyZXRSZWY6ICIiCiAgbWluaW11bVByaW9yaXR5OiAiIgogIHNraXBFeGlzdGluZ09uU3RhcnR1cDogdHJ1ZQoKZWxhc3RpY3NlYXJjaDoKICBob3N0OiAiIgogIGNlcnRpZmljYXRlOiAiIgogIHNraXBUTFM6IGZhbHNlCiAgdXNlcm5hbWU6ICIiCiAgcGFzc3dvcmQ6ICIiCiAgc2VjcmV0UmVmOiAiIgogIGluZGV4OiAicG9saWN5LXJlcG9ydGVyIgogIHJvdGF0aW9uOiAiZGFpbHkiCiAgbWluaW11bVByaW9yaXR5OiAiIgogIHNraXBFeGlzdGluZ09uU3RhcnR1cDogdHJ1ZQoKc2xhY2s6CiAgd2ViaG9vazogIiIKICBzZWNyZXRSZWY6ICIiCiAgbWluaW11bVByaW9yaXR5OiAiIgogIHNraXBFeGlzdGluZ09uU3RhcnR1cDogdHJ1ZQoKZGlzY29yZDoKICB3ZWJob29rOiAiIgogIHNlY3JldFJlZjogIiIKICBtaW5pbXVtUHJpb3JpdHk6ICIiCiAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgp0ZWFtczoKICB3ZWJob29rOiAiIgogIGNlcnRpZmljYXRlOiAiIgogIHNraXBUTFM6IGZhbHNlCiAgc2VjcmV0UmVmOiAiIgogIG1pbmltdW1Qcmlvcml0eTogIiIKICBza2lwRXhpc3RpbmdPblN0YXJ0dXA6IHRydWUKCndlYmhvb2s6CiAgaG9zdDogIiIKICBjZXJ0aWZpY2F0ZTogIiIKICBza2lwVExTOiBmYWxzZQogIHNlY3JldFJlZjogIiIKICBtaW5pbXVtUHJpb3JpdHk6ICIiCiAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgp1aToKICBob3N0OiBodHRwOi8vbmV0Y2hlY2tzLW9wZXJhdG9yLXVpOjgwODAKICBjZXJ0aWZpY2F0ZTogIiIKICBza2lwVExTOiBmYWxzZQogIG1pbmltdW1Qcmlvcml0eTogIndhcm5pbmciCiAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgpzMzoKICBhY2Nlc3NLZXlJRDogCiAgc2VjcmV0QWNjZXNzS2V5OiAgCiAgc2VjcmV0UmVmOiAiIgogIHJlZ2lvbjogCiAgZW5kcG9pbnQ6IAogIGJ1Y2tldDogCiAgcGF0aFN0eWxlOiBmYWxzZQogIHByZWZpeDogCiAgbWluaW11bVByaW9yaXR5OiAiIgogIHNraXBFeGlzdGluZ09uU3RhcnR1cDogdHJ1ZQoKa2luZXNpczoKICBhY2Nlc3NLZXlJRDogCiAgc2VjcmV0QWNjZXNzS2V5OiAgCiAgc2VjcmV0UmVmOiAiIgogIHJlZ2lvbjogCiAgZW5kcG9pbnQ6IAogIHN0cmVhbU5hbWU6IAogIG1pbmltdW1Qcmlvcml0eTogIiIKICBza2lwRXhpc3RpbmdPblN0YXJ0dXA6IHRydWUKCm1ldHJpY3M6CiAgbW9kZTogZGV0YWlsZWQKCnJlcG9ydEZpbHRlcjoKICBuYW1lc3BhY2VzOgogIGNsdXN0ZXJSZXBvcnRzOgogICAgZGlzYWJsZWQ6IGZhbHNlCgpsZWFkZXJFbGVjdGlvbjoKICBlbmFibGVkOiBmYWxzZQogIHJlbGVhc2VPbkNhbmNlbDogdHJ1ZQogIGxlYXNlRHVyYXRpb246IDE1CiAgcmVuZXdEZWFkbGluZTogMTAKICByZXRyeVBlcmlvZDogMgpyZWRpczoKICBhZGRyZXNzOiAiIgogIGRhdGFiYXNlOiAwCiAgZW5hYmxlZDogZmFsc2UKICBwYXNzd29yZDogIiIKICBwcmVmaXg6IHBvbGljeS1yZXBvcnRlcgogIHVzZXJuYW1lOiAiIgo=
+  config.yaml: Y3JkOgogIHRhcmdldENvbmZpZzogZmFsc2UKCnRhcmdldDoKICBsb2tpOgogICAgY29uZmlnOgogICAgICBob3N0OiAiIgogICAgICBjZXJ0aWZpY2F0ZTogIiIKICAgICAgc2tpcFRMUzogZmFsc2UKICAgICAgcGF0aDogIiIKICAgIG5hbWU6IAogICAgc2VjcmV0UmVmOiAiIgogICAgbW91bnRlZFNlY3JldDogIiIKICAgIG1pbmltdW1TZXZlcml0eTogIiIKICAgIHNraXBFeGlzdGluZ09uU3RhcnR1cDogdHJ1ZQoKICBlbGFzdGljc2VhcmNoOgogICAgY29uZmlnOgogICAgICBob3N0OiAiIgogICAgICBjZXJ0aWZpY2F0ZTogIiIKICAgICAgc2tpcFRMUzogZmFsc2UKICAgICAgdXNlcm5hbWU6ICIiCiAgICAgIHBhc3N3b3JkOiAiIgogICAgICBhcGlLZXk6ICIiCiAgICAgIGluZGV4OiAicG9saWN5LXJlcG9ydGVyIgogICAgICByb3RhdGlvbjogImRhaWx5IgogICAgICB0eXBlbGVzc0FwaTogImZhbHNlIgogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgogIHNsYWNrOgogICAgY29uZmlnOgogICAgICB3ZWJob29rOiAiIgogICAgICBjaGFubmVsOiAiIgogICAgICBjZXJ0aWZpY2F0ZTogCiAgICAgIHNraXBUTFM6IAogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgogIGRpc2NvcmQ6CiAgICBjb25maWc6CiAgICAgIHdlYmhvb2s6ICIiCiAgICAgIGNlcnRpZmljYXRlOiAiIgogICAgICBza2lwVExTOiBmYWxzZQogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgogIHRlYW1zOgogICAgY29uZmlnOgogICAgICB3ZWJob29rOiAiIgogICAgICBjZXJ0aWZpY2F0ZTogIiIKICAgICAgc2tpcFRMUzogZmFsc2UKICAgIG5hbWU6IAogICAgc2VjcmV0UmVmOiAiIgogICAgbW91bnRlZFNlY3JldDogIiIKICAgIG1pbmltdW1TZXZlcml0eTogIiIKICAgIHNraXBFeGlzdGluZ09uU3RhcnR1cDogdHJ1ZQoKICB3ZWJob29rOgogICAgY29uZmlnOgogICAgICB3ZWJob29rOiAiIgogICAgICBjZXJ0aWZpY2F0ZTogIiIKICAgICAgc2tpcFRMUzogZmFsc2UKICAgICAga2VlcGFsaXZlOgogICAgICAgIGludGVydmFsOiAiMCIKICAgIG5hbWU6IAogICAgc2VjcmV0UmVmOiAiIgogICAgbW91bnRlZFNlY3JldDogIiIKICAgIG1pbmltdW1TZXZlcml0eTogIiIKICAgIHNraXBFeGlzdGluZ09uU3RhcnR1cDogdHJ1ZQoKICB0ZWxlZ3JhbToKICAgIGNvbmZpZzoKICAgICAgY2hhdElkOiAiIgogICAgICB0b2tlbjogIiIKICAgICAgd2ViaG9vazogCiAgICAgIGNlcnRpZmljYXRlOiAiIgogICAgICBza2lwVExTOiBmYWxzZQogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgogIGdvb2dsZUNoYXQ6CiAgICBjb25maWc6CiAgICAgIHdlYmhvb2s6ICIiCiAgICAgIGNlcnRpZmljYXRlOiAiIgogICAgICBza2lwVExTOiBmYWxzZQogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgogIGppcmE6CiAgICBjb25maWc6CiAgICAgIGhvc3Q6ICIiCiAgICAgIHVzZXJuYW1lOiAiIgogICAgICBwYXNzd29yZDogIiIKICAgICAgYXBpVG9rZW46ICIiCiAgICAgIGFwaVZlcnNpb246ICJ2MyIKICAgICAgc3VtbWFyeVRlbXBsYXRlOiAiIgogICAgICBwcm9qZWN0S2V5OiAiIgogICAgICBpc3N1ZVR5cGU6ICIiCiAgICAgIGNlcnRpZmljYXRlOiAiIgogICAgICBza2lwVExTOiBmYWxzZQogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgogIGFsZXJ0TWFuYWdlcjoKICAgIGNvbmZpZzoKICAgICAgaG9zdDogIiIKICAgICAgY2VydGlmaWNhdGU6ICIiCiAgICAgIHNraXBUTFM6IGZhbHNlCiAgICBuYW1lOiAKICAgIHNlY3JldFJlZjogIiIKICAgIG1vdW50ZWRTZWNyZXQ6ICIiCiAgICBtaW5pbXVtU2V2ZXJpdHk6ICIiCiAgICBza2lwRXhpc3RpbmdPblN0YXJ0dXA6IHRydWUKCiAgczM6CiAgICBjb25maWc6CiAgICAgIGFjY2Vzc0tleUlkOiAKICAgICAgc2VjcmV0QWNjZXNzS2V5OiAgCiAgICAgIHJlZ2lvbjogCiAgICAgIGVuZHBvaW50OiAKICAgICAgYnVja2V0OiAKICAgICAgYnVja2V0S2V5RW5hYmxlZDogZmFsc2UKICAgICAga21zS2V5SWQ6IAogICAgICBzZXJ2ZXJTaWRlRW5jcnlwdGlvbjogCiAgICAgIHBhdGhTdHlsZTogZmFsc2UKICAgICAgcHJlZml4OiAKICAgIG5hbWU6IAogICAgc2VjcmV0UmVmOiAiIgogICAgbW91bnRlZFNlY3JldDogIiIKICAgIG1pbmltdW1TZXZlcml0eTogIiIKICAgIHNraXBFeGlzdGluZ09uU3RhcnR1cDogdHJ1ZQoKICBraW5lc2lzOgogICAgY29uZmlnOgogICAgICBhY2Nlc3NLZXlJZDogCiAgICAgIHNlY3JldEFjY2Vzc0tleTogIAogICAgICByZWdpb246IAogICAgICBlbmRwb2ludDogCiAgICAgIHN0cmVhbU5hbWU6IAogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgogIHNlY3VyaXR5SHViOgogICAgY29uZmlnOgogICAgICBhY2Nlc3NLZXlJZDogIiIKICAgICAgc2VjcmV0QWNjZXNzS2V5OiAgIiIKICAgICAgcmVnaW9uOiAKICAgICAgZW5kcG9pbnQ6IAogICAgICBhY2NvdW50SWQ6ICIiCiAgICAgIHByb2R1Y3ROYW1lOiAKICAgICAgY29tcGFueU5hbWU6IAogICAgICBkZWxheUluU2Vjb25kczogMgogICAgICBzeW5jaHJvbml6ZTogdHJ1ZQogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgogIGdjczoKICAgIGNvbmZpZzoKICAgICAgY3JlZGVudGlhbHM6IAogICAgICBidWNrZXQ6IAogICAgICBwcmVmaXg6IAogICAgbmFtZTogCiAgICBzZWNyZXRSZWY6ICIiCiAgICBtb3VudGVkU2VjcmV0OiAiIgogICAgbWluaW11bVNldmVyaXR5OiAiIgogICAgc2tpcEV4aXN0aW5nT25TdGFydHVwOiB0cnVlCgp3b3JrZXI6IDUKbWV0cmljczoKICBjdXN0b21MYWJlbHM6IFtdCiAgZW5hYmxlZDogdHJ1ZQogIGZpbHRlcjoge30KICBtb2RlOiBkZXRhaWxlZApzb3VyY2VGaWx0ZXJzOgogIC0gZGlzYWJsZUNsdXN0ZXJSZXBvcnRzOiBmYWxzZQogICAga2luZHM6CiAgICAgIGV4Y2x1ZGU6CiAgICAgIC0gUmVwbGljYVNldAogICAgc2VsZWN0b3I6CiAgICAgIHNvdXJjZXM6CiAgICAgIC0ga3l2ZXJubwogICAgICAtIEt5dmVybm9WYWxpZGF0aW5nUG9saWN5CiAgICAgIC0gS3l2ZXJub0ltYWdlVmFsaWRhdGluZ1BvbGljeQogICAgdW5jb250cm9sbGVkT25seTogdHJ1ZQoKbGVhZGVyRWxlY3Rpb246CiAgZW5hYmxlZDogZmFsc2UKICByZWxlYXNlT25DYW5jZWw6IHRydWUKICBsZWFzZUR1cmF0aW9uOiAxNQogIHJlbmV3RGVhZGxpbmU6IDEwCiAgcmV0cnlQZXJpb2Q6IDIKcmVkaXM6CiAgYWRkcmVzczogIiIKICBjZXJ0aWZpY2F0ZTogIiIKICBjbGllbnRDZXJ0OiAiIgogIGNsaWVudEtleTogIiIKICBkYXRhYmFzZTogMAogIGVuYWJsZWQ6IGZhbHNlCiAgcGFzc3dvcmQ6ICIiCiAgcHJlZml4OiBwb2xpY3ktcmVwb3J0ZXIKICBzZWNyZXRSZWY6ICIiCiAgc2tpcFRMUzogZmFsc2UKICB1c2VybmFtZTogIiIKCmxvZ2dpbmc6CiAgc2VydmVyOiBmYWxzZQogIGVuY29kaW5nOiBjb25zb2xlCiAgbG9nTGV2ZWw6IDAKCmFwaToKICBiYXNpY0F1dGg6CiAgICB1c2VybmFtZTogCiAgICBwYXNzd29yZDogCiAgICBzZWNyZXRSZWY6IAoKZGF0YWJhc2U6CiAgdHlwZTogCiAgZGF0YWJhc2U6IAogIHVzZXJuYW1lOiAKICBwYXNzd29yZDogCiAgaG9zdDogCiAgZW5hYmxlU1NMOiBmYWxzZQogIGRzbjogCiAgbWF4T3BlbkNvbm5lY3Rpb25zOiAyNQogIG1heElkbGVDb25uZWN0aW9uczogMjUKICBjb25uZWN0aW9uTWF4SWRsZVRpbWU6IDAKICBjb25uZWN0aW9uTWF4TGlmZXRpbWU6IDAKICB0aW1lb3V0OiAxMAogIG1ldHJpY3M6IGZhbHNlCiAgc2VjcmV0UmVmOiAKICBtb3VudGVkU2VjcmV0OiAKcGVyaW9kaWNTeW5jOgogIGVuYWJsZWQ6IGZhbHNlCiAgaW50ZXJ2YWw6IDMwCg==
 ---
-# Source: netchecks/charts/policy-reporter/charts/ui/templates/config.yaml
+# Source: netchecks/charts/policy-reporter/templates/ui/config-secret.yaml
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: netchecks-operator-ui-config
+  name: policy-reporter-ui-config
   namespace: netchecks
   labels:
-    app.kubernetes.io/name: ui
+    app.kubernetes.io/name: policy-reporter-ui
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "1.7.1"
-    app.kubernetes.io/component: ui
-    app.kubernetes.io/part-of: policy-reporter
+    app.kubernetes.io/version: "3.7.4"
+type: Opaque
 data:
-  config.yaml: |-
-    logSize: 200
-    displayMode: ""
-    refreshInterval: 10000
-    clusterName: ""
-    views:
-      dashboard:
-        policyReports: true
-        clusterPolicyReports: true
-      logs: true
-      policyReports: true
-      clusterPolicyReports: true
-      kyvernoPolicies: true
-      kyvernoVerifyImages: true
-    redis:
-      address: ""
-      database: 0
-      enabled: false
-      password: ""
-      prefix: policy-reporter-ui
-      username: ""
+  config.yaml: bG9nZ2luZzoKICBhcGk6IGZhbHNlCiAgc2VydmVyOiBmYWxzZQogIGVuY29kaW5nOiBjb25zb2xlCiAgbG9nTGV2ZWw6IDAKCnNlcnZlcjoKICBwb3J0OiA4MDgwCiAgY29yczogdHJ1ZQogIG92ZXJ3cml0ZUhvc3Q6IHRydWUKICBzZXNzaW9uczoKICAgIHN0b3JhZ2U6IGZpbGVzeXN0ZW0KICAgIHRlbXBEaXI6IC90bXAKCnVpOgogIGRpc3BsYXlNb2RlOiAKICBiYW5uZXI6IAogIGxvZ286CiAgICBwYXRoOiAKICAgIGRpc2FibGVkOiBmYWxzZQoKY3JkczoKICBjdXN0b21Cb2FyZDogZmFsc2UKCmNsdXN0ZXJzOgogIC0gbmFtZTogRGVmYXVsdAogICAgc2VjcmV0UmVmOiBwb2xpY3ktcmVwb3J0ZXItdWktZGVmYXVsdC1jbHVzdGVyCgpzb3VyY2VzOgogIC0gbmFtZToga3l2ZXJubwogICAgdHlwZTogcmVzdWx0CiAgICBleGNlcHRpb25zOiBmYWxzZQogICAgZXhjbHVkZXM6CiAgICAgIHJlc3VsdHM6CiAgICAgIC0gd2FybgogICAgICAtIGVycm9yCiAgLSBuYW1lOiBLeXZlcm5vVmFsaWRhdGluZ1BvbGljeQogICAgdHlwZTogcmVzdWx0CiAgICBleGNlcHRpb25zOiBmYWxzZQogICAgZXhjbHVkZXM6CiAgICAgIHJlc3VsdHM6CiAgICAgIC0gd2FybgogICAgICAtIGVycm9yCm9wZW5JRENvbm5lY3Q6CiAgICBjYWxsYmFja1VybDogIiIKICAgIGNlcnRpZmljYXRlOiAiIgogICAgY2xpZW50SWQ6ICIiCiAgICBjbGllbnRTZWNyZXQ6ICIiCiAgICBkaXNjb3ZlcnlVcmw6ICIiCiAgICBlbmFibGVkOiBmYWxzZQogICAgZ3JvdXBDbGFpbTogIiIKICAgIHNjb3BlczogW10KICAgIHNlY3JldFJlZjogIiIKICAgIHNraXBUTFM6IGZhbHNlCm9hdXRoOgogICAgY2FsbGJhY2tVcmw6ICIiCiAgICBjbGllbnRJZDogIiIKICAgIGNsaWVudFNlY3JldDogIiIKICAgIGVuYWJsZWQ6IGZhbHNlCiAgICBwcm92aWRlcjogIiIKICAgIHNjb3BlczogW10KICAgIHNlY3JldFJlZjogIiIK
 ---
-# Source: netchecks/templates/configmap.yaml
-apiVersion: v1
-kind: ConfigMap
+# Source: netchecks/templates/crds/clusterpolicyreports.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
 metadata:
-  name: netchecks-operator
-  labels: 
-    app.kubernetes.io/name: netchecks
-    app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.1.1"
-data:
-  config.json: |-
-    {
-      "probe": {
-        "image": {"pullPolicy":"Always","repository":"ghcr.io/hardbyte/netchecks","tag":"main"},
-        "imagePullSecrets": [],
-        "podAnnotations": {}
-        }
-    }
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.0
+  creationTimestamp: null
+  name: clusterpolicyreports.wgpolicyk8s.io
+spec:
+  group: wgpolicyk8s.io
+  names:
+    kind: ClusterPolicyReport
+    listKind: ClusterPolicyReportList
+    plural: clusterpolicyreports
+    shortNames:
+    - cpolr
+    singular: clusterpolicyreport
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .scope.kind
+      name: Kind
+      priority: 1
+      type: string
+    - jsonPath: .scope.name
+      name: Name
+      priority: 1
+      type: string
+    - jsonPath: .summary.pass
+      name: Pass
+      type: integer
+    - jsonPath: .summary.fail
+      name: Fail
+      type: integer
+    - jsonPath: .summary.warn
+      name: Warn
+      type: integer
+    - jsonPath: .summary.error
+      name: Error
+      type: integer
+    - jsonPath: .summary.skip
+      name: Skip
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ClusterPolicyReport is the Schema for the clusterpolicyreports
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          results:
+            description: PolicyReportResult provides result details
+            items:
+              description: PolicyReportResult provides the result for an individual
+                policy
+              properties:
+                category:
+                  description: Category indicates policy category
+                  type: string
+                data:
+                  additionalProperties:
+                    type: string
+                  description: Data provides additional information for the policy
+                    rule
+                  type: object
+                message:
+                  description: Message is a short user friendly description of the
+                    policy rule
+                  type: string
+                policy:
+                  description: Policy is the name of the policy
+                  type: string
+                resourceSelector:
+                  description: ResourceSelector is an optional selector for policy
+                    results that apply to multiple resources. For example, a policy
+                    result may apply to all pods that match a label. Either a Resource
+                    or a ResourceSelector can be specified. If neither are provided,
+                    the result is assumed to be for the policy report scope.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                resources:
+                  description: Resources is an optional reference to the resource
+                    checked by the policy and rule
+                  items:
+                    description: 'ObjectReference contains enough information to let
+                      you inspect or modify the referred object. --- New uses of this
+                      type are discouraged because of difficulty describing its usage
+                      when embedded in APIs. 1. Ignored fields.  It includes many
+                      fields which are not generally honored.  For instance, ResourceVersion
+                      and FieldPath are both very rarely valid in actual usage. 2.
+                      Invalid usage help.  It is impossible to add specific help for
+                      individual usage.  In most embedded usages, there are particular
+                      restrictions like, "must refer only to types A and B" or "UID
+                      not honored" or "name must be restricted". Those cannot be well
+                      described when embedded. 3. Inconsistent validation.  Because
+                      the usages are different, the validation rules are different
+                      by usage, which makes it hard for users to predict what will
+                      happen. 4. The fields are both imprecise and overly precise.  Kind
+                      is not a precise mapping to a URL. This can produce ambiguity
+                      during interpretation and require a REST mapping.  In most cases,
+                      the dependency is on the group,resource tuple and the version
+                      of the actual struct is irrelevant. 5. We cannot easily change
+                      it.  Because this type is embedded in many locations, updates
+                      to this type will affect numerous schemas.  Don''t make new
+                      APIs embed an underspecified API type they do not control. Instead
+                      of using this type, create a locally provided and used type
+                      that is well-focused on your reference. For example, ServiceReferences
+                      for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                      .'
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: 'If referring to a piece of an object instead
+                          of an entire object, this string should contain a valid
+                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within
+                          a pod, this would take on a value like: "spec.containers{name}"
+                          (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]"
+                          (container with index 2 in this pod). This syntax is chosen
+                          only to have some well-defined way of referencing a part
+                          of an object. TODO: this design is not final and this field
+                          is subject to change in the future.'
+                        type: string
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                        type: string
+                      resourceVersion:
+                        description: 'Specific resourceVersion to which this reference
+                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      uid:
+                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                        type: string
+                    type: object
+                  type: array
+                rule:
+                  description: Rule is the name of the policy rule
+                  type: string
+                scored:
+                  description: Scored indicates if this policy rule is scored
+                  type: boolean
+                severity:
+                  description: Severity indicates policy severity
+                  enum:
+                  - high
+                  - low
+                  - medium
+                  type: string
+                status:
+                  description: Status indicates the result of the policy rule check
+                  enum:
+                  - pass
+                  - fail
+                  - warn
+                  - error
+                  - skip
+                  type: string
+              required:
+              - policy
+              type: object
+            type: array
+          scope:
+            description: Scope is an optional reference to the report scope (e.g.
+              a Deployment, Namespace, or Node)
+            properties:
+              apiVersion:
+                description: API version of the referent.
+                type: string
+              fieldPath:
+                description: 'If referring to a piece of an object instead of an entire
+                  object, this string should contain a valid JSON/Go field access
+                  statement, such as desiredState.manifest.containers[2]. For example,
+                  if the object reference is to a container within a pod, this would
+                  take on a value like: "spec.containers{name}" (where "name" refers
+                  to the name of the container that triggered the event) or if no
+                  container name is specified "spec.containers[2]" (container with
+                  index 2 in this pod). This syntax is chosen only to have some well-defined
+                  way of referencing a part of an object. TODO: this design is not
+                  final and this field is subject to change in the future.'
+                type: string
+              kind:
+                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                type: string
+              name:
+                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                type: string
+              namespace:
+                description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                type: string
+              resourceVersion:
+                description: 'Specific resourceVersion to which this reference is
+                  made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                type: string
+              uid:
+                description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                type: string
+            type: object
+          scopeSelector:
+            description: ScopeSelector is an optional selector for multiple scopes
+              (e.g. Pods). Either one of, or none of, but not both of, Scope or ScopeSelector
+              should be specified.
+            properties:
+              matchExpressions:
+                description: matchExpressions is a list of label selector requirements.
+                  The requirements are ANDed.
+                items:
+                  description: A label selector requirement is a selector that contains
+                    values, a key, and an operator that relates the key and values.
+                  properties:
+                    key:
+                      description: key is the label key that the selector applies
+                        to.
+                      type: string
+                    operator:
+                      description: operator represents a key's relationship to a set
+                        of values. Valid operators are In, NotIn, Exists and DoesNotExist.
+                      type: string
+                    values:
+                      description: values is an array of string values. If the operator
+                        is In or NotIn, the values array must be non-empty. If the
+                        operator is Exists or DoesNotExist, the values array must
+                        be empty. This array is replaced during a strategic merge
+                        patch.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - key
+                  - operator
+                  type: object
+                type: array
+              matchLabels:
+                additionalProperties:
+                  type: string
+                description: matchLabels is a map of {key,value} pairs. A single {key,value}
+                  in the matchLabels map is equivalent to an element of matchExpressions,
+                  whose key field is "key", the operator is "In", and the values array
+                  contains only "value". The requirements are ANDed.
+                type: object
+            type: object
+          summary:
+            description: PolicyReportSummary provides a summary of results
+            properties:
+              error:
+                description: Error provides the count of policies that could not be
+                  evaluated
+                type: integer
+              fail:
+                description: Fail provides the count of policies whose requirements
+                  were not met
+                type: integer
+              pass:
+                description: Pass provides the count of policies whose requirements
+                  were met
+                type: integer
+              skip:
+                description: Skip indicates the count of policies that were not selected
+                  for evaluation
+                type: integer
+              warn:
+                description: Warn provides the count of unscored policies whose requirements
+                  were not met
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources: {}
+  - additionalPrinterColumns:
+    - jsonPath: .scope.kind
+      name: Kind
+      priority: 1
+      type: string
+    - jsonPath: .scope.name
+      name: Name
+      priority: 1
+      type: string
+    - jsonPath: .summary.pass
+      name: Pass
+      type: integer
+    - jsonPath: .summary.fail
+      name: Fail
+      type: integer
+    - jsonPath: .summary.warn
+      name: Warn
+      type: integer
+    - jsonPath: .summary.error
+      name: Error
+      type: integer
+    - jsonPath: .summary.skip
+      name: Skip
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha2
+    schema:
+      openAPIV3Schema:
+        description: ClusterPolicyReport is the Schema for the clusterpolicyreports
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          results:
+            description: PolicyReportResult provides result details
+            items:
+              description: PolicyReportResult provides the result for an individual
+                policy
+              properties:
+                category:
+                  description: Category indicates policy category
+                  type: string
+                message:
+                  description: Description is a short user friendly message for the
+                    policy rule
+                  type: string
+                policy:
+                  description: Policy is the name or identifier of the policy
+                  type: string
+                properties:
+                  additionalProperties:
+                    type: string
+                  description: Properties provides additional information for the
+                    policy rule
+                  type: object
+                resourceSelector:
+                  description: SubjectSelector is an optional label selector for checked
+                    Kubernetes resources. For example, a policy result may apply to
+                    all pods that match a label. Either a Subject or a SubjectSelector
+                    can be specified. If neither are provided, the result is assumed
+                    to be for the policy report scope.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                resources:
+                  description: Subjects is an optional reference to the checked Kubernetes
+                    resources
+                  items:
+                    description: 'ObjectReference contains enough information to let
+                      you inspect or modify the referred object. --- New uses of this
+                      type are discouraged because of difficulty describing its usage
+                      when embedded in APIs. 1. Ignored fields.  It includes many
+                      fields which are not generally honored.  For instance, ResourceVersion
+                      and FieldPath are both very rarely valid in actual usage. 2.
+                      Invalid usage help.  It is impossible to add specific help for
+                      individual usage.  In most embedded usages, there are particular
+                      restrictions like, "must refer only to types A and B" or "UID
+                      not honored" or "name must be restricted". Those cannot be well
+                      described when embedded. 3. Inconsistent validation.  Because
+                      the usages are different, the validation rules are different
+                      by usage, which makes it hard for users to predict what will
+                      happen. 4. The fields are both imprecise and overly precise.  Kind
+                      is not a precise mapping to a URL. This can produce ambiguity
+                      during interpretation and require a REST mapping.  In most cases,
+                      the dependency is on the group,resource tuple and the version
+                      of the actual struct is irrelevant. 5. We cannot easily change
+                      it.  Because this type is embedded in many locations, updates
+                      to this type will affect numerous schemas.  Don''t make new
+                      APIs embed an underspecified API type they do not control. Instead
+                      of using this type, create a locally provided and used type
+                      that is well-focused on your reference. For example, ServiceReferences
+                      for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                      .'
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: 'If referring to a piece of an object instead
+                          of an entire object, this string should contain a valid
+                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within
+                          a pod, this would take on a value like: "spec.containers{name}"
+                          (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]"
+                          (container with index 2 in this pod). This syntax is chosen
+                          only to have some well-defined way of referencing a part
+                          of an object. TODO: this design is not final and this field
+                          is subject to change in the future.'
+                        type: string
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                        type: string
+                      resourceVersion:
+                        description: 'Specific resourceVersion to which this reference
+                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      uid:
+                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                        type: string
+                    type: object
+                  type: array
+                result:
+                  description: Result indicates the outcome of the policy rule execution
+                  enum:
+                  - pass
+                  - fail
+                  - warn
+                  - error
+                  - skip
+                  type: string
+                rule:
+                  description: Rule is the name or identifier of the rule within the
+                    policy
+                  type: string
+                scored:
+                  description: Scored indicates if this result is scored
+                  type: boolean
+                severity:
+                  description: Severity indicates policy check result criticality
+                  enum:
+                  - critical
+                  - high
+                  - low
+                  - medium
+                  - info
+                  type: string
+                source:
+                  description: Source is an identifier for the policy engine that
+                    manages this report
+                  type: string
+                timestamp:
+                  description: Timestamp indicates the time the result was found
+                  properties:
+                    nanos:
+                      description: Non-negative fractions of a second at nanosecond
+                        resolution. Negative second values with fractions must still
+                        have non-negative nanos values that count forward in time.
+                        Must be from 0 to 999,999,999 inclusive. This field may be
+                        limited in precision depending on context.
+                      format: int32
+                      type: integer
+                    seconds:
+                      description: Represents seconds of UTC time since Unix epoch
+                        1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+                        9999-12-31T23:59:59Z inclusive.
+                      format: int64
+                      type: integer
+                  required:
+                  - nanos
+                  - seconds
+                  type: object
+              required:
+              - policy
+              type: object
+            type: array
+          scope:
+            description: Scope is an optional reference to the report scope (e.g.
+              a Deployment, Namespace, or Node)
+            properties:
+              apiVersion:
+                description: API version of the referent.
+                type: string
+              fieldPath:
+                description: 'If referring to a piece of an object instead of an entire
+                  object, this string should contain a valid JSON/Go field access
+                  statement, such as desiredState.manifest.containers[2]. For example,
+                  if the object reference is to a container within a pod, this would
+                  take on a value like: "spec.containers{name}" (where "name" refers
+                  to the name of the container that triggered the event) or if no
+                  container name is specified "spec.containers[2]" (container with
+                  index 2 in this pod). This syntax is chosen only to have some well-defined
+                  way of referencing a part of an object. TODO: this design is not
+                  final and this field is subject to change in the future.'
+                type: string
+              kind:
+                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                type: string
+              name:
+                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                type: string
+              namespace:
+                description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                type: string
+              resourceVersion:
+                description: 'Specific resourceVersion to which this reference is
+                  made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                type: string
+              uid:
+                description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                type: string
+            type: object
+          scopeSelector:
+            description: ScopeSelector is an optional selector for multiple scopes
+              (e.g. Pods). Either one of, or none of, but not both of, Scope or ScopeSelector
+              should be specified.
+            properties:
+              matchExpressions:
+                description: matchExpressions is a list of label selector requirements.
+                  The requirements are ANDed.
+                items:
+                  description: A label selector requirement is a selector that contains
+                    values, a key, and an operator that relates the key and values.
+                  properties:
+                    key:
+                      description: key is the label key that the selector applies
+                        to.
+                      type: string
+                    operator:
+                      description: operator represents a key's relationship to a set
+                        of values. Valid operators are In, NotIn, Exists and DoesNotExist.
+                      type: string
+                    values:
+                      description: values is an array of string values. If the operator
+                        is In or NotIn, the values array must be non-empty. If the
+                        operator is Exists or DoesNotExist, the values array must
+                        be empty. This array is replaced during a strategic merge
+                        patch.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - key
+                  - operator
+                  type: object
+                type: array
+              matchLabels:
+                additionalProperties:
+                  type: string
+                description: matchLabels is a map of {key,value} pairs. A single {key,value}
+                  in the matchLabels map is equivalent to an element of matchExpressions,
+                  whose key field is "key", the operator is "In", and the values array
+                  contains only "value". The requirements are ANDed.
+                type: object
+            type: object
+          summary:
+            description: PolicyReportSummary provides a summary of results
+            properties:
+              error:
+                description: Error provides the count of policies that could not be
+                  evaluated
+                type: integer
+              fail:
+                description: Fail provides the count of policies whose requirements
+                  were not met
+                type: integer
+              pass:
+                description: Pass provides the count of policies whose requirements
+                  were met
+                type: integer
+              skip:
+                description: Skip indicates the count of policies that were not selected
+                  for evaluation
+                type: integer
+              warn:
+                description: Warn provides the count of non-scored policies whose
+                  requirements were not met
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources: {}
+  - additionalPrinterColumns:
+    - jsonPath: .scope.kind
+      name: Kind
+      priority: 1
+      type: string
+    - jsonPath: .scope.name
+      name: Name
+      priority: 1
+      type: string
+    - jsonPath: .summary.pass
+      name: Pass
+      type: integer
+    - jsonPath: .summary.fail
+      name: Fail
+      type: integer
+    - jsonPath: .summary.warn
+      name: Warn
+      type: integer
+    - jsonPath: .summary.error
+      name: Error
+      type: integer
+    - jsonPath: .summary.skip
+      name: Skip
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: ClusterPolicyReport is the Schema for the clusterpolicyreports
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          results:
+            description: PolicyReportResult provides result details
+            items:
+              description: PolicyReportResult provides the result for an individual
+                policy
+              properties:
+                category:
+                  description: Category indicates policy category
+                  type: string
+                message:
+                  description: Description is a short user friendly message for the
+                    policy rule
+                  type: string
+                policy:
+                  description: Policy is the name or identifier of the policy
+                  type: string
+                properties:
+                  additionalProperties:
+                    type: string
+                  description: Properties provides additional information for the
+                    policy rule
+                  type: object
+                resourceSelector:
+                  description: ResourceSelector is an optional label selector for
+                    checked Kubernetes resources. For example, a policy result may
+                    apply to all pods that match a label. Either a Subject or a ResourceSelector
+                    can be specified. If neither are provided, the result is assumed
+                    to be for the policy report scope.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                resources:
+                  description: Subjects is an optional reference to the checked Kubernetes
+                    resources
+                  items:
+                    description: 'ObjectReference contains enough information to let
+                      you inspect or modify the referred object. --- New uses of this
+                      type are discouraged because of difficulty describing its usage
+                      when embedded in APIs. 1. Ignored fields.  It includes many
+                      fields which are not generally honored.  For instance, ResourceVersion
+                      and FieldPath are both very rarely valid in actual usage. 2.
+                      Invalid usage help.  It is impossible to add specific help for
+                      individual usage.  In most embedded usages, there are particular
+                      restrictions like, "must refer only to types A and B" or "UID
+                      not honored" or "name must be restricted". Those cannot be well
+                      described when embedded. 3. Inconsistent validation.  Because
+                      the usages are different, the validation rules are different
+                      by usage, which makes it hard for users to predict what will
+                      happen. 4. The fields are both imprecise and overly precise.  Kind
+                      is not a precise mapping to a URL. This can produce ambiguity
+                      during interpretation and require a REST mapping.  In most cases,
+                      the dependency is on the group,resource tuple and the version
+                      of the actual struct is irrelevant. 5. We cannot easily change
+                      it.  Because this type is embedded in many locations, updates
+                      to this type will affect numerous schemas.  Don''t make new
+                      APIs embed an underspecified API type they do not control. Instead
+                      of using this type, create a locally provided and used type
+                      that is well-focused on your reference. For example, ServiceReferences
+                      for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                      .'
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: 'If referring to a piece of an object instead
+                          of an entire object, this string should contain a valid
+                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within
+                          a pod, this would take on a value like: "spec.containers{name}"
+                          (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]"
+                          (container with index 2 in this pod). This syntax is chosen
+                          only to have some well-defined way of referencing a part
+                          of an object. TODO: this design is not final and this field
+                          is subject to change in the future.'
+                        type: string
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                        type: string
+                      resourceVersion:
+                        description: 'Specific resourceVersion to which this reference
+                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      uid:
+                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                        type: string
+                    type: object
+                  type: array
+                result:
+                  description: Result indicates the outcome of the policy rule execution
+                  enum:
+                  - pass
+                  - fail
+                  - warn
+                  - error
+                  - skip
+                  type: string
+                rule:
+                  description: Rule is the name or identifier of the rule within the
+                    policy
+                  type: string
+                scored:
+                  description: Scored indicates if this result is scored
+                  type: boolean
+                severity:
+                  description: Severity indicates policy check result criticality
+                  enum:
+                  - critical
+                  - high
+                  - low
+                  - medium
+                  - info
+                  type: string
+                source:
+                  description: Source is an identifier for the policy engine that
+                    manages this report If the Source is specified at this level,
+                    it will override the Source field set at the PolicyReport level
+                  type: string
+                timestamp:
+                  description: Timestamp indicates the time the result was found
+                  properties:
+                    nanos:
+                      description: Non-negative fractions of a second at nanosecond
+                        resolution. Negative second values with fractions must still
+                        have non-negative nanos values that count forward in time.
+                        Must be from 0 to 999,999,999 inclusive. This field may be
+                        limited in precision depending on context.
+                      format: int32
+                      type: integer
+                    seconds:
+                      description: Represents seconds of UTC time since Unix epoch
+                        1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+                        9999-12-31T23:59:59Z inclusive.
+                      format: int64
+                      type: integer
+                  required:
+                  - nanos
+                  - seconds
+                  type: object
+              required:
+              - policy
+              type: object
+            type: array
+          scope:
+            description: Scope is an optional reference to the report scope (e.g.
+              a Deployment, Namespace, or Node)
+            properties:
+              apiVersion:
+                description: API version of the referent.
+                type: string
+              fieldPath:
+                description: 'If referring to a piece of an object instead of an entire
+                  object, this string should contain a valid JSON/Go field access
+                  statement, such as desiredState.manifest.containers[2]. For example,
+                  if the object reference is to a container within a pod, this would
+                  take on a value like: "spec.containers{name}" (where "name" refers
+                  to the name of the container that triggered the event) or if no
+                  container name is specified "spec.containers[2]" (container with
+                  index 2 in this pod). This syntax is chosen only to have some well-defined
+                  way of referencing a part of an object. TODO: this design is not
+                  final and this field is subject to change in the future.'
+                type: string
+              kind:
+                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                type: string
+              name:
+                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                type: string
+              namespace:
+                description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                type: string
+              resourceVersion:
+                description: 'Specific resourceVersion to which this reference is
+                  made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                type: string
+              uid:
+                description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                type: string
+            type: object
+          scopeSelector:
+            description: ScopeSelector is an optional selector for multiple scopes
+              (e.g. Pods). Either one of, or none of, but not both of, Scope or ScopeSelector
+              should be specified.
+            properties:
+              matchExpressions:
+                description: matchExpressions is a list of label selector requirements.
+                  The requirements are ANDed.
+                items:
+                  description: A label selector requirement is a selector that contains
+                    values, a key, and an operator that relates the key and values.
+                  properties:
+                    key:
+                      description: key is the label key that the selector applies
+                        to.
+                      type: string
+                    operator:
+                      description: operator represents a key's relationship to a set
+                        of values. Valid operators are In, NotIn, Exists and DoesNotExist.
+                      type: string
+                    values:
+                      description: values is an array of string values. If the operator
+                        is In or NotIn, the values array must be non-empty. If the
+                        operator is Exists or DoesNotExist, the values array must
+                        be empty. This array is replaced during a strategic merge
+                        patch.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - key
+                  - operator
+                  type: object
+                type: array
+              matchLabels:
+                additionalProperties:
+                  type: string
+                description: matchLabels is a map of {key,value} pairs. A single {key,value}
+                  in the matchLabels map is equivalent to an element of matchExpressions,
+                  whose key field is "key", the operator is "In", and the values array
+                  contains only "value". The requirements are ANDed.
+                type: object
+            type: object
+          summary:
+            description: PolicyReportSummary provides a summary of results
+            properties:
+              error:
+                description: Error provides the count of policies that could not be
+                  evaluated
+                type: integer
+              fail:
+                description: Fail provides the count of policies whose requirements
+                  were not met
+                type: integer
+              pass:
+                description: Pass provides the count of policies whose requirements
+                  were met
+                type: integer
+              skip:
+                description: Skip indicates the count of policies that were not selected
+                  for evaluation
+                type: integer
+              warn:
+                description: Warn provides the count of non-scored policies whose
+                  requirements were not met
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+---
+# Source: netchecks/templates/crds/networkassertions.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: networkassertions.netchecks.io
+  labels:
+    app.kubernetes.io/part-of: netcheck
+spec:
+  scope: Namespaced
+  group: netchecks.io
+  names:
+    kind: NetworkAssertion
+    listKind: NetworkAssertionList
+    plural: networkassertions
+    singular: networkassertion
+    shortNames:
+      - nas
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - jsonPath: .spec.schedule
+          name: Schedule
+          type: string
+        - jsonPath: '.status.conditions[?(@.type=="Reconciled")].status'
+          name: Ready
+          type: string
+        - jsonPath: '.status.conditions[?(@.type=="Reconciled")].reason'
+          name: Reason
+          type: string
+        - jsonPath: '.status.conditions[?(@.type=="Reconciled")].message'
+          name: Status
+          type: string
+          priority: 1
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: NetworkAssertion is the Schema for the networkassertions API
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+---
+# Source: netchecks/templates/crds/policyreports.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.0
+  creationTimestamp: null
+  name: policyreports.wgpolicyk8s.io
+spec:
+  group: wgpolicyk8s.io
+  names:
+    kind: PolicyReport
+    listKind: PolicyReportList
+    plural: policyreports
+    shortNames:
+    - polr
+    singular: policyreport
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .scope.kind
+      name: Kind
+      priority: 1
+      type: string
+    - jsonPath: .scope.name
+      name: Name
+      priority: 1
+      type: string
+    - jsonPath: .summary.pass
+      name: Pass
+      type: integer
+    - jsonPath: .summary.fail
+      name: Fail
+      type: integer
+    - jsonPath: .summary.warn
+      name: Warn
+      type: integer
+    - jsonPath: .summary.error
+      name: Error
+      type: integer
+    - jsonPath: .summary.skip
+      name: Skip
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: PolicyReport is the Schema for the policyreports API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          results:
+            description: PolicyReportResult provides result details
+            items:
+              description: PolicyReportResult provides the result for an individual
+                policy
+              properties:
+                category:
+                  description: Category indicates policy category
+                  type: string
+                data:
+                  additionalProperties:
+                    type: string
+                  description: Data provides additional information for the policy
+                    rule
+                  type: object
+                message:
+                  description: Message is a short user friendly description of the
+                    policy rule
+                  type: string
+                policy:
+                  description: Policy is the name of the policy
+                  type: string
+                resourceSelector:
+                  description: ResourceSelector is an optional selector for policy
+                    results that apply to multiple resources. For example, a policy
+                    result may apply to all pods that match a label. Either a Resource
+                    or a ResourceSelector can be specified. If neither are provided,
+                    the result is assumed to be for the policy report scope.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                resources:
+                  description: Resources is an optional reference to the resource
+                    checked by the policy and rule
+                  items:
+                    description: 'ObjectReference contains enough information to let
+                      you inspect or modify the referred object. --- New uses of this
+                      type are discouraged because of difficulty describing its usage
+                      when embedded in APIs. 1. Ignored fields.  It includes many
+                      fields which are not generally honored.  For instance, ResourceVersion
+                      and FieldPath are both very rarely valid in actual usage. 2.
+                      Invalid usage help.  It is impossible to add specific help for
+                      individual usage.  In most embedded usages, there are particular
+                      restrictions like, "must refer only to types A and B" or "UID
+                      not honored" or "name must be restricted". Those cannot be well
+                      described when embedded. 3. Inconsistent validation.  Because
+                      the usages are different, the validation rules are different
+                      by usage, which makes it hard for users to predict what will
+                      happen. 4. The fields are both imprecise and overly precise.  Kind
+                      is not a precise mapping to a URL. This can produce ambiguity
+                      during interpretation and require a REST mapping.  In most cases,
+                      the dependency is on the group,resource tuple and the version
+                      of the actual struct is irrelevant. 5. We cannot easily change
+                      it.  Because this type is embedded in many locations, updates
+                      to this type will affect numerous schemas.  Don''t make new
+                      APIs embed an underspecified API type they do not control. Instead
+                      of using this type, create a locally provided and used type
+                      that is well-focused on your reference. For example, ServiceReferences
+                      for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                      .'
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: 'If referring to a piece of an object instead
+                          of an entire object, this string should contain a valid
+                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within
+                          a pod, this would take on a value like: "spec.containers{name}"
+                          (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]"
+                          (container with index 2 in this pod). This syntax is chosen
+                          only to have some well-defined way of referencing a part
+                          of an object. TODO: this design is not final and this field
+                          is subject to change in the future.'
+                        type: string
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                        type: string
+                      resourceVersion:
+                        description: 'Specific resourceVersion to which this reference
+                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      uid:
+                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                        type: string
+                    type: object
+                  type: array
+                rule:
+                  description: Rule is the name of the policy rule
+                  type: string
+                scored:
+                  description: Scored indicates if this policy rule is scored
+                  type: boolean
+                severity:
+                  description: Severity indicates policy severity
+                  enum:
+                  - high
+                  - low
+                  - medium
+                  type: string
+                status:
+                  description: Status indicates the result of the policy rule check
+                  enum:
+                  - pass
+                  - fail
+                  - warn
+                  - error
+                  - skip
+                  type: string
+              required:
+              - policy
+              type: object
+            type: array
+          scope:
+            description: Scope is an optional reference to the report scope (e.g.
+              a Deployment, Namespace, or Node)
+            properties:
+              apiVersion:
+                description: API version of the referent.
+                type: string
+              fieldPath:
+                description: 'If referring to a piece of an object instead of an entire
+                  object, this string should contain a valid JSON/Go field access
+                  statement, such as desiredState.manifest.containers[2]. For example,
+                  if the object reference is to a container within a pod, this would
+                  take on a value like: "spec.containers{name}" (where "name" refers
+                  to the name of the container that triggered the event) or if no
+                  container name is specified "spec.containers[2]" (container with
+                  index 2 in this pod). This syntax is chosen only to have some well-defined
+                  way of referencing a part of an object. TODO: this design is not
+                  final and this field is subject to change in the future.'
+                type: string
+              kind:
+                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                type: string
+              name:
+                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                type: string
+              namespace:
+                description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                type: string
+              resourceVersion:
+                description: 'Specific resourceVersion to which this reference is
+                  made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                type: string
+              uid:
+                description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                type: string
+            type: object
+          scopeSelector:
+            description: ScopeSelector is an optional selector for multiple scopes
+              (e.g. Pods). Either one of, or none of, but not both of, Scope or ScopeSelector
+              should be specified.
+            properties:
+              matchExpressions:
+                description: matchExpressions is a list of label selector requirements.
+                  The requirements are ANDed.
+                items:
+                  description: A label selector requirement is a selector that contains
+                    values, a key, and an operator that relates the key and values.
+                  properties:
+                    key:
+                      description: key is the label key that the selector applies
+                        to.
+                      type: string
+                    operator:
+                      description: operator represents a key's relationship to a set
+                        of values. Valid operators are In, NotIn, Exists and DoesNotExist.
+                      type: string
+                    values:
+                      description: values is an array of string values. If the operator
+                        is In or NotIn, the values array must be non-empty. If the
+                        operator is Exists or DoesNotExist, the values array must
+                        be empty. This array is replaced during a strategic merge
+                        patch.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - key
+                  - operator
+                  type: object
+                type: array
+              matchLabels:
+                additionalProperties:
+                  type: string
+                description: matchLabels is a map of {key,value} pairs. A single {key,value}
+                  in the matchLabels map is equivalent to an element of matchExpressions,
+                  whose key field is "key", the operator is "In", and the values array
+                  contains only "value". The requirements are ANDed.
+                type: object
+            type: object
+          summary:
+            description: PolicyReportSummary provides a summary of results
+            properties:
+              error:
+                description: Error provides the count of policies that could not be
+                  evaluated
+                type: integer
+              fail:
+                description: Fail provides the count of policies whose requirements
+                  were not met
+                type: integer
+              pass:
+                description: Pass provides the count of policies whose requirements
+                  were met
+                type: integer
+              skip:
+                description: Skip indicates the count of policies that were not selected
+                  for evaluation
+                type: integer
+              warn:
+                description: Warn provides the count of unscored policies whose requirements
+                  were not met
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources: {}
+  - additionalPrinterColumns:
+    - jsonPath: .scope.kind
+      name: Kind
+      priority: 1
+      type: string
+    - jsonPath: .scope.name
+      name: Name
+      priority: 1
+      type: string
+    - jsonPath: .summary.pass
+      name: Pass
+      type: integer
+    - jsonPath: .summary.fail
+      name: Fail
+      type: integer
+    - jsonPath: .summary.warn
+      name: Warn
+      type: integer
+    - jsonPath: .summary.error
+      name: Error
+      type: integer
+    - jsonPath: .summary.skip
+      name: Skip
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha2
+    schema:
+      openAPIV3Schema:
+        description: PolicyReport is the Schema for the policyreports API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          results:
+            description: PolicyReportResult provides result details
+            items:
+              description: PolicyReportResult provides the result for an individual
+                policy
+              properties:
+                category:
+                  description: Category indicates policy category
+                  type: string
+                message:
+                  description: Description is a short user friendly message for the
+                    policy rule
+                  type: string
+                policy:
+                  description: Policy is the name or identifier of the policy
+                  type: string
+                properties:
+                  additionalProperties:
+                    type: string
+                  description: Properties provides additional information for the
+                    policy rule
+                  type: object
+                resourceSelector:
+                  description: SubjectSelector is an optional label selector for checked
+                    Kubernetes resources. For example, a policy result may apply to
+                    all pods that match a label. Either a Subject or a SubjectSelector
+                    can be specified. If neither are provided, the result is assumed
+                    to be for the policy report scope.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                resources:
+                  description: Subjects is an optional reference to the checked Kubernetes
+                    resources
+                  items:
+                    description: 'ObjectReference contains enough information to let
+                      you inspect or modify the referred object. --- New uses of this
+                      type are discouraged because of difficulty describing its usage
+                      when embedded in APIs. 1. Ignored fields.  It includes many
+                      fields which are not generally honored.  For instance, ResourceVersion
+                      and FieldPath are both very rarely valid in actual usage. 2.
+                      Invalid usage help.  It is impossible to add specific help for
+                      individual usage.  In most embedded usages, there are particular
+                      restrictions like, "must refer only to types A and B" or "UID
+                      not honored" or "name must be restricted". Those cannot be well
+                      described when embedded. 3. Inconsistent validation.  Because
+                      the usages are different, the validation rules are different
+                      by usage, which makes it hard for users to predict what will
+                      happen. 4. The fields are both imprecise and overly precise.  Kind
+                      is not a precise mapping to a URL. This can produce ambiguity
+                      during interpretation and require a REST mapping.  In most cases,
+                      the dependency is on the group,resource tuple and the version
+                      of the actual struct is irrelevant. 5. We cannot easily change
+                      it.  Because this type is embedded in many locations, updates
+                      to this type will affect numerous schemas.  Don''t make new
+                      APIs embed an underspecified API type they do not control. Instead
+                      of using this type, create a locally provided and used type
+                      that is well-focused on your reference. For example, ServiceReferences
+                      for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                      .'
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: 'If referring to a piece of an object instead
+                          of an entire object, this string should contain a valid
+                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within
+                          a pod, this would take on a value like: "spec.containers{name}"
+                          (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]"
+                          (container with index 2 in this pod). This syntax is chosen
+                          only to have some well-defined way of referencing a part
+                          of an object. TODO: this design is not final and this field
+                          is subject to change in the future.'
+                        type: string
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                        type: string
+                      resourceVersion:
+                        description: 'Specific resourceVersion to which this reference
+                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      uid:
+                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                        type: string
+                    type: object
+                  type: array
+                result:
+                  description: Result indicates the outcome of the policy rule execution
+                  enum:
+                  - pass
+                  - fail
+                  - warn
+                  - error
+                  - skip
+                  type: string
+                rule:
+                  description: Rule is the name or identifier of the rule within the
+                    policy
+                  type: string
+                scored:
+                  description: Scored indicates if this result is scored
+                  type: boolean
+                severity:
+                  description: Severity indicates policy check result criticality
+                  enum:
+                  - critical
+                  - high
+                  - low
+                  - medium
+                  - info
+                  type: string
+                source:
+                  description: Source is an identifier for the policy engine that
+                    manages this report
+                  type: string
+                timestamp:
+                  description: Timestamp indicates the time the result was found
+                  properties:
+                    nanos:
+                      description: Non-negative fractions of a second at nanosecond
+                        resolution. Negative second values with fractions must still
+                        have non-negative nanos values that count forward in time.
+                        Must be from 0 to 999,999,999 inclusive. This field may be
+                        limited in precision depending on context.
+                      format: int32
+                      type: integer
+                    seconds:
+                      description: Represents seconds of UTC time since Unix epoch
+                        1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+                        9999-12-31T23:59:59Z inclusive.
+                      format: int64
+                      type: integer
+                  required:
+                  - nanos
+                  - seconds
+                  type: object
+              required:
+              - policy
+              type: object
+            type: array
+          scope:
+            description: Scope is an optional reference to the report scope (e.g.
+              a Deployment, Namespace, or Node)
+            properties:
+              apiVersion:
+                description: API version of the referent.
+                type: string
+              fieldPath:
+                description: 'If referring to a piece of an object instead of an entire
+                  object, this string should contain a valid JSON/Go field access
+                  statement, such as desiredState.manifest.containers[2]. For example,
+                  if the object reference is to a container within a pod, this would
+                  take on a value like: "spec.containers{name}" (where "name" refers
+                  to the name of the container that triggered the event) or if no
+                  container name is specified "spec.containers[2]" (container with
+                  index 2 in this pod). This syntax is chosen only to have some well-defined
+                  way of referencing a part of an object. TODO: this design is not
+                  final and this field is subject to change in the future.'
+                type: string
+              kind:
+                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                type: string
+              name:
+                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                type: string
+              namespace:
+                description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                type: string
+              resourceVersion:
+                description: 'Specific resourceVersion to which this reference is
+                  made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                type: string
+              uid:
+                description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                type: string
+            type: object
+          scopeSelector:
+            description: ScopeSelector is an optional selector for multiple scopes
+              (e.g. Pods). Either one of, or none of, but not both of, Scope or ScopeSelector
+              should be specified.
+            properties:
+              matchExpressions:
+                description: matchExpressions is a list of label selector requirements.
+                  The requirements are ANDed.
+                items:
+                  description: A label selector requirement is a selector that contains
+                    values, a key, and an operator that relates the key and values.
+                  properties:
+                    key:
+                      description: key is the label key that the selector applies
+                        to.
+                      type: string
+                    operator:
+                      description: operator represents a key's relationship to a set
+                        of values. Valid operators are In, NotIn, Exists and DoesNotExist.
+                      type: string
+                    values:
+                      description: values is an array of string values. If the operator
+                        is In or NotIn, the values array must be non-empty. If the
+                        operator is Exists or DoesNotExist, the values array must
+                        be empty. This array is replaced during a strategic merge
+                        patch.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - key
+                  - operator
+                  type: object
+                type: array
+              matchLabels:
+                additionalProperties:
+                  type: string
+                description: matchLabels is a map of {key,value} pairs. A single {key,value}
+                  in the matchLabels map is equivalent to an element of matchExpressions,
+                  whose key field is "key", the operator is "In", and the values array
+                  contains only "value". The requirements are ANDed.
+                type: object
+            type: object
+          summary:
+            description: PolicyReportSummary provides a summary of results
+            properties:
+              error:
+                description: Error provides the count of policies that could not be
+                  evaluated
+                type: integer
+              fail:
+                description: Fail provides the count of policies whose requirements
+                  were not met
+                type: integer
+              pass:
+                description: Pass provides the count of policies whose requirements
+                  were met
+                type: integer
+              skip:
+                description: Skip indicates the count of policies that were not selected
+                  for evaluation
+                type: integer
+              warn:
+                description: Warn provides the count of non-scored policies whose
+                  requirements were not met
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources: {}
+  - additionalPrinterColumns:
+    - jsonPath: .scope.kind
+      name: Kind
+      priority: 1
+      type: string
+    - jsonPath: .scope.name
+      name: Name
+      priority: 1
+      type: string
+    - jsonPath: .summary.pass
+      name: Pass
+      type: integer
+    - jsonPath: .summary.fail
+      name: Fail
+      type: integer
+    - jsonPath: .summary.warn
+      name: Warn
+      type: integer
+    - jsonPath: .summary.error
+      name: Error
+      type: integer
+    - jsonPath: .summary.skip
+      name: Skip
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: PolicyReport is the Schema for the policyreports API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          results:
+            description: PolicyReportResult provides result details
+            items:
+              description: PolicyReportResult provides the result for an individual
+                policy
+              properties:
+                category:
+                  description: Category indicates policy category
+                  type: string
+                message:
+                  description: Description is a short user friendly message for the
+                    policy rule
+                  type: string
+                policy:
+                  description: Policy is the name or identifier of the policy
+                  type: string
+                properties:
+                  additionalProperties:
+                    type: string
+                  description: Properties provides additional information for the
+                    policy rule
+                  type: object
+                resourceSelector:
+                  description: ResourceSelector is an optional label selector for
+                    checked Kubernetes resources. For example, a policy result may
+                    apply to all pods that match a label. Either a Subject or a ResourceSelector
+                    can be specified. If neither are provided, the result is assumed
+                    to be for the policy report scope.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                resources:
+                  description: Subjects is an optional reference to the checked Kubernetes
+                    resources
+                  items:
+                    description: 'ObjectReference contains enough information to let
+                      you inspect or modify the referred object. --- New uses of this
+                      type are discouraged because of difficulty describing its usage
+                      when embedded in APIs. 1. Ignored fields.  It includes many
+                      fields which are not generally honored.  For instance, ResourceVersion
+                      and FieldPath are both very rarely valid in actual usage. 2.
+                      Invalid usage help.  It is impossible to add specific help for
+                      individual usage.  In most embedded usages, there are particular
+                      restrictions like, "must refer only to types A and B" or "UID
+                      not honored" or "name must be restricted". Those cannot be well
+                      described when embedded. 3. Inconsistent validation.  Because
+                      the usages are different, the validation rules are different
+                      by usage, which makes it hard for users to predict what will
+                      happen. 4. The fields are both imprecise and overly precise.  Kind
+                      is not a precise mapping to a URL. This can produce ambiguity
+                      during interpretation and require a REST mapping.  In most cases,
+                      the dependency is on the group,resource tuple and the version
+                      of the actual struct is irrelevant. 5. We cannot easily change
+                      it.  Because this type is embedded in many locations, updates
+                      to this type will affect numerous schemas.  Don''t make new
+                      APIs embed an underspecified API type they do not control. Instead
+                      of using this type, create a locally provided and used type
+                      that is well-focused on your reference. For example, ServiceReferences
+                      for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                      .'
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: 'If referring to a piece of an object instead
+                          of an entire object, this string should contain a valid
+                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within
+                          a pod, this would take on a value like: "spec.containers{name}"
+                          (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]"
+                          (container with index 2 in this pod). This syntax is chosen
+                          only to have some well-defined way of referencing a part
+                          of an object. TODO: this design is not final and this field
+                          is subject to change in the future.'
+                        type: string
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                        type: string
+                      resourceVersion:
+                        description: 'Specific resourceVersion to which this reference
+                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      uid:
+                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                        type: string
+                    type: object
+                  type: array
+                result:
+                  description: Result indicates the outcome of the policy rule execution
+                  enum:
+                  - pass
+                  - fail
+                  - warn
+                  - error
+                  - skip
+                  type: string
+                rule:
+                  description: Rule is the name or identifier of the rule within the
+                    policy
+                  type: string
+                scored:
+                  description: Scored indicates if this result is scored
+                  type: boolean
+                severity:
+                  description: Severity indicates policy check result criticality
+                  enum:
+                  - critical
+                  - high
+                  - low
+                  - medium
+                  - info
+                  type: string
+                source:
+                  description: Source is an identifier for the policy engine that
+                    manages this report If the Source is specified at this level,
+                    it will override the Source field set at the PolicyReport level
+                  type: string
+                timestamp:
+                  description: Timestamp indicates the time the result was found
+                  properties:
+                    nanos:
+                      description: Non-negative fractions of a second at nanosecond
+                        resolution. Negative second values with fractions must still
+                        have non-negative nanos values that count forward in time.
+                        Must be from 0 to 999,999,999 inclusive. This field may be
+                        limited in precision depending on context.
+                      format: int32
+                      type: integer
+                    seconds:
+                      description: Represents seconds of UTC time since Unix epoch
+                        1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+                        9999-12-31T23:59:59Z inclusive.
+                      format: int64
+                      type: integer
+                  required:
+                  - nanos
+                  - seconds
+                  type: object
+              required:
+              - policy
+              type: object
+            type: array
+          scope:
+            description: Scope is an optional reference to the report scope (e.g.
+              a Deployment, Namespace, or Node)
+            properties:
+              apiVersion:
+                description: API version of the referent.
+                type: string
+              fieldPath:
+                description: 'If referring to a piece of an object instead of an entire
+                  object, this string should contain a valid JSON/Go field access
+                  statement, such as desiredState.manifest.containers[2]. For example,
+                  if the object reference is to a container within a pod, this would
+                  take on a value like: "spec.containers{name}" (where "name" refers
+                  to the name of the container that triggered the event) or if no
+                  container name is specified "spec.containers[2]" (container with
+                  index 2 in this pod). This syntax is chosen only to have some well-defined
+                  way of referencing a part of an object. TODO: this design is not
+                  final and this field is subject to change in the future.'
+                type: string
+              kind:
+                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                type: string
+              name:
+                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                type: string
+              namespace:
+                description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                type: string
+              resourceVersion:
+                description: 'Specific resourceVersion to which this reference is
+                  made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                type: string
+              uid:
+                description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                type: string
+            type: object
+          scopeSelector:
+            description: ScopeSelector is an optional selector for multiple scopes
+              (e.g. Pods). Either one of, or none of, but not both of, Scope or ScopeSelector
+              should be specified.
+            properties:
+              matchExpressions:
+                description: matchExpressions is a list of label selector requirements.
+                  The requirements are ANDed.
+                items:
+                  description: A label selector requirement is a selector that contains
+                    values, a key, and an operator that relates the key and values.
+                  properties:
+                    key:
+                      description: key is the label key that the selector applies
+                        to.
+                      type: string
+                    operator:
+                      description: operator represents a key's relationship to a set
+                        of values. Valid operators are In, NotIn, Exists and DoesNotExist.
+                      type: string
+                    values:
+                      description: values is an array of string values. If the operator
+                        is In or NotIn, the values array must be non-empty. If the
+                        operator is Exists or DoesNotExist, the values array must
+                        be empty. This array is replaced during a strategic merge
+                        patch.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - key
+                  - operator
+                  type: object
+                type: array
+              matchLabels:
+                additionalProperties:
+                  type: string
+                description: matchLabels is a map of {key,value} pairs. A single {key,value}
+                  in the matchLabels map is equivalent to an element of matchExpressions,
+                  whose key field is "key", the operator is "In", and the values array
+                  contains only "value". The requirements are ANDed.
+                type: object
+            type: object
+          source:
+            description: Source is an identifier for the source e.g. a policy engine
+              that manages this report. Use this field if all the results are produced
+              by a single policy engine. If the results are produced by multiple sources
+              e.g. different engines or scanners, then use the Source field at the
+              PolicyReportResult level.
+            type: string
+          summary:
+            description: PolicyReportSummary provides a summary of results
+            properties:
+              error:
+                description: Error provides the count of policies that could not be
+                  evaluated
+                type: integer
+              fail:
+                description: Fail provides the count of policies whose requirements
+                  were not met
+                type: integer
+              pass:
+                description: Pass provides the count of policies whose requirements
+                  were met
+                type: integer
+              skip:
+                description: Skip indicates the count of policies that were not selected
+                  for evaluation
+                type: integer
+              warn:
+                description: Warn provides the count of non-scored policies whose
+                  requirements were not met
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
 ---
 # Source: netchecks/charts/policy-reporter/templates/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -121,13 +2188,24 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
     app.kubernetes.io/name: policy-reporter
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "2.11.1"
+    app.kubernetes.io/version: "3.7.4"
     app.kubernetes.io/component: reporting
     app.kubernetes.io/part-of: policy-reporter
-  name: netchecks-operator-policy-reporter
+  name: policy-reporter
 rules:
 - apiGroups:
-  - '*'
+  - 'openreports.io'
+  resources:
+  - reports
+  - reports/status
+  - clusterreports
+  - clusterreports/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - wgpolicyk8s.io
   resources:
   - policyreports
   - policyreports/status
@@ -137,6 +2215,32 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - ''
+  resources:
+  - namespaces
+  verbs:
+  - list
+- apiGroups:
+  - policyreporter.kyverno.io
+  resources:
+  - targetconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  verbs:
+  - get
+- apiGroups:
+  - 'batch'
+  resources:
+  - jobs
+  verbs:
+  - get
 ---
 # Source: netchecks/templates/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -144,77 +2248,60 @@ kind: ClusterRole
 metadata:
   name: netchecks-operator
 rules:
-  # Kopf Framework: knowing which other operators are running (i.e. peering).
-  - apiGroups: [kopf.dev]
-    resources: [clusterkopfpeerings]
-    verbs: [list, watch, patch, get]
-
-  # Kopf Framework: runtime observation of namespaces & CRDs (addition/deletion).
-  - apiGroups: [apiextensions.k8s.io]
-    resources: [customresourcedefinitions]
-    verbs: [list, watch]
-  - apiGroups: [""]
-    resources: [namespaces]
-    verbs: [list, watch]
-
-  # Kopf Framework: admission webhook configuration management.
-  - apiGroups: [admissionregistration.k8s.io/v1, admissionregistration.k8s.io/v1beta1]
-    resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
-    verbs: [create, patch]
-
-  # This could be restricted to our operator namespace
-  # Framework: posting the events about the handlers progress/errors.
+  # Events: posting events about reconciliation progress
   - apiGroups: [""]
     resources: [events]
     verbs: [create]
 
-  # Application: Access to our NetworkAssertions cluster-wide
-  # Note we don't create or delete them - that's up to the user.
+  # NetworkAssertions: watch and reconcile across all namespaces
   - apiGroups: [netchecks.io]
     resources: [networkassertions]
     verbs: [list, get, watch, patch, update]
+  - apiGroups: [netchecks.io]
+    resources: [networkassertions/status]
+    verbs: [patch, update]
 
+  # PolicyReports: create and update from probe results
   - apiGroups: [wgpolicyk8s.io]
     resources: [policyreports]
     verbs: [list, get, patch, create, update, watch]
 
-  # Application: other resources we produce and manipulate
-  # The operator can create CronJobs, Jobs, and ConfigMaps but we don't delete them.
-  - apiGroups: [batch, extensions]
+  # Jobs and CronJobs: create probe workloads
+  - apiGroups: [batch]
     resources: [jobs, cronjobs]
-    verbs: [create, delete]
-  # We directly create config maps. At some point we may need to patch them.
+    verbs: [create, list, get, update, patch, delete, watch]
+
+  # ConfigMaps: store probe configuration
   - apiGroups: [""]
     resources: [configmaps]
-    verbs: [create]
+    verbs: [list, get, patch, create, update, delete]
 
-  # The can be restricted to our operator namespace:
+  # Pods: read probe pod status and logs
   - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list", "watch", "patch"]
-
+    resources: [pods]
+    verbs: [get, list, watch]
   - apiGroups: [""]
-    resources: ["pods/log"]
-    verbs: ["get", "list", "watch"]
+    resources: [pods/log]
+    verbs: [get, list]
 ---
 # Source: netchecks/charts/policy-reporter/templates/clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: netchecks-operator-policy-reporter
+  name: policy-reporter
   labels:
     app.kubernetes.io/name: policy-reporter
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "2.11.1"
+    app.kubernetes.io/version: "3.7.4"
     app.kubernetes.io/component: reporting
     app.kubernetes.io/part-of: policy-reporter
 roleRef:
   kind: ClusterRole
-  name: netchecks-operator-policy-reporter
+  name: policy-reporter
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: "ServiceAccount"
-  name: netchecks-operator-policy-reporter
+  name: policy-reporter
   namespace: netchecks
 ---
 # Source: netchecks/templates/clusterrolebinding.yaml
@@ -225,7 +2312,7 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.1.1"
+    app.kubernetes.io/version: "0.10.0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -242,10 +2329,29 @@ metadata:
   labels:
     app.kubernetes.io/name: policy-reporter
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "2.11.1"
+    app.kubernetes.io/version: "3.7.4"
     app.kubernetes.io/component: reporting
     app.kubernetes.io/part-of: policy-reporter
-  name: netchecks-operator-policy-reporter-secret-reader
+  name: policy-reporter-secret-reader
+  namespace: netchecks
+rules:
+- apiGroups: ['']
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: netchecks/charts/policy-reporter/templates/ui/secret-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/name: policy-reporter-ui
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "3.7.4"
+  name: policy-reporter-ui-secret-reader
   namespace: netchecks
 rules:
 - apiGroups: ['']
@@ -258,56 +2364,52 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: netchecks-operator-policy-reporter-secret-reader
+  name: policy-reporter-secret-reader
   namespace: netchecks
   labels:
     app.kubernetes.io/name: policy-reporter
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "2.11.1"
+    app.kubernetes.io/version: "3.7.4"
     app.kubernetes.io/component: reporting
     app.kubernetes.io/part-of: policy-reporter
 roleRef:
   kind: Role
-  name: netchecks-operator-policy-reporter-secret-reader
+  name: policy-reporter-secret-reader
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: "ServiceAccount"
-  name: netchecks-operator-policy-reporter
+  name: policy-reporter
   namespace: netchecks
 ---
-# Source: netchecks/charts/policy-reporter/charts/ui/templates/service.yaml
-apiVersion: v1
-kind: Service
+# Source: netchecks/charts/policy-reporter/templates/ui/secret-rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
 metadata:
-  name: netchecks-operator-ui
+  name: policy-reporter-ui-secret-reader
   namespace: netchecks
   labels:
-    app.kubernetes.io/name: ui
+    app.kubernetes.io/name: policy-reporter-ui
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "1.7.1"
-    app.kubernetes.io/component: ui
-    app.kubernetes.io/part-of: policy-reporter
-spec:
-  type: ClusterIP
-  ports:
-    - port: 8080
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: ui
-    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "3.7.4"
+roleRef:
+  kind: Role
+  name: policy-reporter-ui-secret-reader
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: "ServiceAccount"
+  name: policy-reporter-ui
+  namespace: netchecks
 ---
 # Source: netchecks/charts/policy-reporter/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: netchecks-operator-policy-reporter
+  name: policy-reporter
   namespace: netchecks
   labels:
     app.kubernetes.io/name: policy-reporter
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "2.11.1"
+    app.kubernetes.io/version: "3.7.4"
     app.kubernetes.io/component: reporting
     app.kubernetes.io/part-of: policy-reporter
 spec:
@@ -319,6 +2421,27 @@ spec:
       name: http
   selector:
     app.kubernetes.io/name: policy-reporter
+    app.kubernetes.io/instance: netchecks-operator
+---
+# Source: netchecks/charts/policy-reporter/templates/ui/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-reporter-ui
+  namespace: netchecks
+  labels:
+    app.kubernetes.io/name: policy-reporter-ui
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "3.7.4"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: policy-reporter-ui
     app.kubernetes.io/instance: netchecks-operator
 ---
 # Source: netchecks/templates/service.yaml
@@ -329,7 +2452,7 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.1.1"
+    app.kubernetes.io/version: "0.10.0"
 spec:
   type: ClusterIP
   ports:
@@ -341,93 +2464,21 @@ spec:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
 ---
-# Source: netchecks/charts/policy-reporter/charts/ui/templates/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: netchecks-operator-ui
-  namespace: netchecks
-  labels:
-    app.kubernetes.io/name: ui
-    app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "1.7.1"
-    app.kubernetes.io/component: ui
-    app.kubernetes.io/part-of: policy-reporter
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: ui
-      app.kubernetes.io/instance: netchecks-operator
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: ui
-        app.kubernetes.io/instance: netchecks-operator
-        app.kubernetes.io/version: "1.7.1"
-        app.kubernetes.io/part-of: policy-reporter
-      annotations:
-        checksum/config: "655ae5ca58afbb9160b03b2b96093eb8ea5b8e20074464114c7c276493f1410a"
-    spec:
-      serviceAccountName: default
-      automountServiceAccountToken: false
-      containers:
-        - name: ui
-          image: "ghcr.io/kyverno/policy-reporter-ui:1.7.1"
-          imagePullPolicy: IfNotPresent
-          securityContext: 
-            
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1234
-            seccompProfile:
-              type: RuntimeDefault
-          args:
-            - -config=/app/config.yaml
-            - -policy-reporter=http://netchecks-operator-policy-reporter:8080
-          ports:
-            - name: http
-              containerPort: 8080
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          volumeMounts:
-          - name: config-file
-            mountPath: /app/config.yaml
-            subPath: config.yaml
-            readOnly: true
-          resources:
-            {}
-      volumes:
-      - name: config-file
-        configMap:
-          name: netchecks-operator-ui-config
----
 # Source: netchecks/charts/policy-reporter/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: netchecks-operator-policy-reporter
+  name: policy-reporter
   namespace: netchecks
   labels:
     app.kubernetes.io/name: policy-reporter
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "2.11.1"
+    app.kubernetes.io/version: "3.7.4"
     app.kubernetes.io/component: reporting
     app.kubernetes.io/part-of: policy-reporter
 spec:
   replicas: 1
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app.kubernetes.io/name: policy-reporter
@@ -437,20 +2488,20 @@ spec:
       labels:
         app.kubernetes.io/name: policy-reporter
         app.kubernetes.io/instance: netchecks-operator
-        app.kubernetes.io/version: "2.11.1"
+        app.kubernetes.io/version: "3.7.4"
         app.kubernetes.io/part-of: policy-reporter
       annotations:
-        checksum/secret: "1c79a5c861822c7c48966bcd8a71fe0617c56e963f1bc9d5259f1579eb40d226"
+        checksum/secret: "88115c5e07c316080800ed49f1a37591600fd25e60589b0f501273cb7f1e7dd5"
     spec:
-      serviceAccountName: netchecks-operator-policy-reporter
+      serviceAccountName: policy-reporter
       automountServiceAccountToken: true
       securityContext:
         fsGroup: 1234
       containers:
         - name: policy-reporter
-          image: "ghcr.io/kyverno/policy-reporter:2.11.1"
+          image: "ghcr.io/kyverno/policy-reporter:3.7.4"
           imagePullPolicy: IfNotPresent
-          securityContext: 
+          securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
@@ -468,7 +2519,8 @@ spec:
             - --metrics-enabled=true
             - --rest-enabled=true
             - --profile=false
-            - --lease-name=netchecks-operator-policy-reporter
+            - --lease-name=policy-reporter
+            - --template-dir=/app/templates
           ports:
             - name: http
               containerPort: 8080
@@ -490,6 +2542,8 @@ spec:
             mountPath: /app/config.yaml
             subPath: config.yaml
             readOnly: true
+          - name: tmp
+            mountPath: /tmp
           env:
           - name: POD_NAMESPACE
             valueFrom:
@@ -500,8 +2554,95 @@ spec:
         emptyDir: {}
       - name: config-file
         secret:
-          secretName: netchecks-operator-policy-reporter-config
+          secretName: policy-reporter-config
           optional: true
+      - name: tmp
+        emptyDir: {}
+---
+# Source: netchecks/charts/policy-reporter/templates/ui/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-reporter-ui
+  namespace: netchecks
+  labels:
+    app.kubernetes.io/name: policy-reporter-ui
+    app.kubernetes.io/instance: netchecks-operator
+    app.kubernetes.io/version: "3.7.4"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: policy-reporter-ui
+      app.kubernetes.io/instance: netchecks-operator
+  template:
+    metadata:
+      annotations:
+        checksum/secret: "7435002ca3d3789953c2f664f0e9f5915a0205049688a0bfadb8656f1fea5add"
+        checksum/cluster-secret: "2011c3439fac3f4c2a3d915b3b972a59392067ed20d6fa6beccf8db8b8ed2387"
+      labels:
+        app.kubernetes.io/name: policy-reporter-ui
+        app.kubernetes.io/instance: netchecks-operator
+        app.kubernetes.io/version: "3.7.4"
+    spec:
+      serviceAccountName: policy-reporter-ui
+      automountServiceAccountToken: true
+      securityContext:
+        runAsGroup: 1234
+        runAsUser: 1234
+      containers:
+        - name: policy-reporter-ui
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1234
+            seccompProfile:
+              type: RuntimeDefault
+          image: "ghcr.io/kyverno/policy-reporter-ui:2.5.1"
+          imagePullPolicy: IfNotPresent
+          args:
+            - run
+            - --config=/app/config.yaml
+            - --port=8080
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            {}
+          volumeMounts:
+          - name: config-file
+            mountPath: /app/config.yaml
+            subPath: config.yaml
+            readOnly: true
+          - name: tmp
+            mountPath: /tmp
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+      volumes:
+      - name: config-file
+        secret:
+          secretName: policy-reporter-ui-config
+          optional: true
+      - name: tmp
+        emptyDir: {}
 ---
 # Source: netchecks/templates/deployment.yaml
 apiVersion: apps/v1
@@ -511,9 +2652,9 @@ metadata:
   labels:
     app.kubernetes.io/name: netchecks
     app.kubernetes.io/instance: netchecks-operator
-    app.kubernetes.io/version: "0.1.1"
+    app.kubernetes.io/version: "0.10.0"
 spec:
-  # Please note that only one replica is required for the operator
+  # Only one replica is required for the operator
   replicas: 1
   strategy:
     type: Recreate
@@ -523,10 +2664,6 @@ spec:
       app.kubernetes.io/instance: netchecks-operator
   template:
     metadata:
-      annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: "9090"
-        prometheus.io/scrape: "true"
       labels:
         app.kubernetes.io/name: netchecks
         app.kubernetes.io/instance: netchecks-operator
@@ -537,7 +2674,10 @@ spec:
       containers:
         - name: netchecks
           securityContext:
-            {}
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
           image: "ghcr.io/hardbyte/netchecks-operator:main"
           imagePullPolicy: IfNotPresent
           ports:
@@ -546,22 +2686,26 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /livez
               port: http
-            periodSeconds: 60
-            timeoutSeconds: 10
-            successThreshold: 1
-            failureThreshold: 10
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 10
           resources:
             {}
           env:
-            - name: JSON_CONFIG
-              value: /var/config/config.json
-          volumeMounts:
-            - mountPath: /var/config
-              name: config-file
-              readOnly: true
-      volumes:
-        - name: config-file
-          configMap:
-            name: netchecks-operator
+            - name: RUST_LOG
+              value: "info,netchecks_operator=debug"
+            - name: OPERATOR_HTTP_ADDR
+              value: "0.0.0.0:8080"
+            - name: PROBE_IMAGE_REPOSITORY
+              value: "ghcr.io/hardbyte/netchecks"
+            - name: PROBE_IMAGE_TAG
+              value: "main"
+            - name: PROBE_IMAGE_PULL_POLICY
+              value: "IfNotPresent"
