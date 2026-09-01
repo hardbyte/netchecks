@@ -1,8 +1,8 @@
 import datetime
 import decimal
 import logging
-from typing import Any, Optional
 import uuid
+from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
@@ -29,7 +29,7 @@ GRANTABLE_PRIVILEGES = {
 def postgres_query_check(
     dsn: str,
     query: str,
-    params: Optional[list[Any] | dict[str, Any]] = None,
+    params: list[Any] | dict[str, Any] | None = None,
     timeout: float = 5,
     read_only: bool = True,
     rollback: bool = True,
@@ -94,12 +94,14 @@ def postgres_grants_check(
     output = {"spec": test_spec, "data": result_data}
 
     try:
-        with psycopg.connect(dsn, connect_timeout=max(1, int(timeout)), row_factory=dict_row) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("select set_config('statement_timeout', %s, true)", (str(max(1, int(timeout * 1000))),))
-                for rule in rules:
-                    result_data["violations"].extend(_evaluate_grant_rule(cursor, rule))
-                connection.rollback()
+        with (
+            psycopg.connect(dsn, connect_timeout=max(1, int(timeout)), row_factory=dict_row) as connection,
+            connection.cursor() as cursor,
+        ):
+            cursor.execute("select set_config('statement_timeout', %s, true)", (str(max(1, int(timeout * 1000))),))
+            for rule in rules:
+                result_data["violations"].extend(_evaluate_grant_rule(cursor, rule))
+            connection.rollback()
         result_data["success"] = True
     except Exception as error:
         logger.debug("Postgres grants check failed", exc_info=error)
@@ -118,7 +120,7 @@ def postgres_grants_check(
 def _execute_query(
     dsn: str,
     query: str,
-    params: Optional[list[Any] | dict[str, Any]],
+    params: list[Any] | dict[str, Any] | None,
     timeout: float,
     read_only: bool,
     rollback: bool,

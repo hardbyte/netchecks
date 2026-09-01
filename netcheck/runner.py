@@ -1,30 +1,26 @@
 import datetime
 import json
 import logging
-from typing import Dict
 
-
-from netcheck.validation import evaluate_cel_with_context
-from netcheck.version import OUTPUT_JSON_VERSION
-
-from netcheck.version import NETCHECK_VERSION
+from netcheck.checks.dns import DEFAULT_DNS_VALIDATION_RULE, dns_lookup_check
+from netcheck.checks.http import DEFAULT_HTTP_VALIDATION_RULE, http_request_check
 from netcheck.checks.internal import internal_check
-from netcheck.checks.dns import dns_lookup_check, DEFAULT_DNS_VALIDATION_RULE
-from netcheck.checks.http import http_request_check, DEFAULT_HTTP_VALIDATION_RULE
-from netcheck.checks.tcp import tcp_check, DEFAULT_TCP_VALIDATION_RULE
 from netcheck.checks.postgres import (
-    postgres_query_check,
-    postgres_grants_check,
-    DEFAULT_POSTGRES_VALIDATION_RULE,
     DEFAULT_POSTGRES_GRANTS_VALIDATION_RULE,
+    DEFAULT_POSTGRES_VALIDATION_RULE,
+    postgres_grants_check,
+    postgres_query_check,
 )
-from netcheck.context import replace_template, LazyFileLoadingDict
+from netcheck.checks.tcp import DEFAULT_TCP_VALIDATION_RULE, tcp_check
+from netcheck.context import LazyFileLoadingDict, replace_template
+from netcheck.validation import evaluate_cel_with_context
+from netcheck.version import NETCHECK_VERSION, OUTPUT_JSON_VERSION
 
 logger = logging.getLogger("netcheck.runner")
 
 
 def run_from_config(
-    netchecks_config: Dict,
+    netchecks_config: dict,
     err_console,
     verbose: bool = False,
     include_context: bool = False,
@@ -198,7 +194,7 @@ def check_individual_assertion(
 
     # Strip out known sensitive fields
     if not include_context:
-        for field in {"headers", "dsn", "password", "params", "connection"}:
+        for field in ("headers", "dsn", "password", "params", "connection"):
             if field in test_detail["spec"]:
                 test_detail["spec"][field] = "REDACTED"
             if field in test_detail["data"]:

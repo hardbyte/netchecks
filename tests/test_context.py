@@ -1,11 +1,11 @@
 """Unit tests for context loading and LazyFileLoadingDict."""
 
 import tempfile
-
-import pytest
 from pathlib import Path
 
-from netcheck.context import LazyFileLoadingDict, replace_template_in_string, replace_template
+import pytest
+
+from netcheck.context import LazyFileLoadingDict, replace_template, replace_template_in_string
 
 
 class TestLazyFileLoadingDict:

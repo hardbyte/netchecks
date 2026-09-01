@@ -1,6 +1,6 @@
 import json
-import time
 import subprocess
+import time
 
 
 def test_internal_check(netchecks, k8s_namespace, test_file_path):
@@ -154,6 +154,6 @@ def _trigger_re_evaluation_of_assertion(assertion_name, k8s_namespace, manual_tr
             check=True,
             capture_output=True,
         )
-        if "created".encode() in jobs_response.stdout:
+        if b"created" in jobs_response.stdout:
             break
         time.sleep(1.5**i)

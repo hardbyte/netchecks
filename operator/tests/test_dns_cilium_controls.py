@@ -1,10 +1,9 @@
 import json
 import os
-import time
 import subprocess
+import time
 
 import pytest
-
 
 INCLUDE_CILIUM_TESTS = os.getenv("INCLUDE_CILIUM_TESTS")
 

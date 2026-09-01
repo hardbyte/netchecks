@@ -1,6 +1,6 @@
 import json
-import time
 import subprocess
+import time
 
 
 def test_use_external_secret_data(netchecks, k8s_namespace, test_file_path):
