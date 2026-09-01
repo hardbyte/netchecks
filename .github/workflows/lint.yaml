@@ -15,7 +15,13 @@ jobs:
           dockerfile: Dockerfile
           recursive: true
           no-fail: 'true'
-      - uses: chartboost/ruff-action@v1
+      # Pin ruff to the version locked in pyproject.toml/uv.lock — an
+      # unpinned latest ruff introduces new rules and breaks CI without any
+      # code change. (chartboost/ruff-action is archived; astral-sh is the
+      # official successor.)
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.15.12"
 
   check-versions:
     runs-on: ubuntu-latest
