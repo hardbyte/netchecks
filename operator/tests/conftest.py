@@ -117,7 +117,8 @@ def netchecks(k8s_namespace):
                 check=True,
             )
             subprocess.run(
-                f"helm uninstall netchecks-operator -n {k8s_namespace}",
+                # --wait so the CRDs are fully deleted before the next session installs again
+                f"helm uninstall netchecks-operator -n {k8s_namespace} --wait",
                 shell=True,
                 check=True,
             )
