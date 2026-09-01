@@ -5,3 +5,4 @@ poetry.lock
 
 .idea
 .aider*
+*.egg-info/
