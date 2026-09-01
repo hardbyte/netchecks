@@ -6,13 +6,13 @@ icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.4.2
+version: 0.5.0
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "0.10.0"
+appVersion: "0.11.0"
 sources:
   - https://github.com/hardbyte/netchecks
 # The maintainer name must be a GitHub username (validated by ct lint).
@@ -23,8 +23,12 @@ maintainers:
 annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   artifacthub.io/changes: |
+    - kind: added
+      description: "CRD installation is configurable: crds.install, crds.keep and per-API-group toggles (crds.groups.netchecks, crds.groups.wgpolicyk8s). The CRDs moved from crds/ into templates/; see the README for the one-time adoption step when upgrading from chart 0.3.x."
     - kind: fixed
-      description: "The operator discovers the served wgpolicyk8s.io PolicyReport API version at runtime instead of requiring v1beta1, so crds.groups.wgpolicyk8s=false works with Kyverno-owned CRDs."
+      description: "The operator discovers the served wgpolicyk8s.io PolicyReport API version at runtime (v1beta1 or v1alpha2) instead of requiring v1beta1, so crds.groups.wgpolicyk8s=false works with Kyverno-owned CRDs."
+    - kind: changed
+      description: "Operator 0.11.0: kube-rs 4 / k8s-openapi 0.28; a missing PolicyReport CRD is reported as a PolicyReportApiUnavailable status condition."
   artifacthub.io/category: security
   artifacthub.io/operator: "true"
   artifacthub.io/prerelease: "false"
