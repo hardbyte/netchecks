@@ -60,3 +60,27 @@ Create the name of the service account to use for the operator
 {{- default "default" .Values.operator.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Whether CRDs should be installed by this chart.
+
+Honours the legacy `installCRDs` value as an alias for `crds.install`. That value was
+documented but had no effect while the CRDs lived in the chart's `crds/` directory,
+which Helm never templates.
+*/}}
+{{- define "netchecks.crds.install" -}}
+{{- $install := .Values.crds.install -}}
+{{- if hasKey .Values "installCRDs" -}}
+{{- $install = and $install .Values.installCRDs -}}
+{{- end -}}
+{{- if $install -}}true{{- end -}}
+{{- end }}
+
+{{/*
+Extra annotations applied to the CRDs managed by this chart.
+*/}}
+{{- define "netchecks.crds.annotations" -}}
+{{- if .Values.crds.keep -}}
+helm.sh/resource-policy: keep
+{{- end -}}
+{{- end }}
