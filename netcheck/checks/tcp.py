@@ -1,7 +1,6 @@
 import datetime
 import logging
 import socket
-from typing import Optional
 
 logger = logging.getLogger("netcheck.tcp")
 DEFAULT_TCP_VALIDATION_RULE = """
@@ -10,7 +9,7 @@ data.connected == true
 
 
 def tcp_check(
-    host: str, port: int, timeout: float = 5, source_ip: Optional[str] = None
+    host: str, port: int, timeout: float = 5, source_ip: str | None = None
 ) -> dict:
     test_spec = {
         "type": "tcp",
@@ -35,7 +34,7 @@ def tcp_check(
         ):
             result_data["connected"] = True
             result_data["error"] = None
-    except socket.timeout:
+    except TimeoutError:
         logger.debug(f"TCP connection to {host}:{port} timed out")
         result_data["connected"] = False
         result_data["error"] = f"Connection timed out after {timeout}s"

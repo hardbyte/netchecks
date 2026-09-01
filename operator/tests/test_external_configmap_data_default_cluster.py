@@ -1,6 +1,6 @@
 import json
-import time
 import subprocess
+import time
 
 
 def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
@@ -29,6 +29,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
         f"kubectl wait Job/{assertion_name} -n {k8s_namespace} --for condition=complete --timeout=120s",
         shell=True,
         capture_output=True,
+        check=False,
     )
     if wait_result.returncode != 0:
         # Get pod logs to help debug the failure
@@ -40,6 +41,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
             f"kubectl get pods -n {k8s_namespace} -l job-name={assertion_name} -o name",
             shell=True,
             capture_output=True,
+            check=False,
         )
         pod_names = pods_result.stdout.decode().strip().split('\n')
 
@@ -51,6 +53,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
                     f"kubectl logs {pod_name} -n {k8s_namespace}",
                     shell=True,
                     capture_output=True,
+                    check=False,
                 )
                 print(logs_result.stdout.decode())
                 if logs_result.stderr:
@@ -62,6 +65,7 @@ def test_use_external_config_map_data(netchecks, k8s_namespace, test_file_path):
                     f"kubectl describe pod {pod_name} -n {k8s_namespace}",
                     shell=True,
                     capture_output=True,
+                    check=False,
                 )
                 print(describe_result.stdout.decode())
 

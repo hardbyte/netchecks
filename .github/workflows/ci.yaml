@@ -509,8 +509,10 @@ jobs:
           helm upgrade --install netchecks-operator operator/charts/netchecks -n netchecks --create-namespace --set crds.keep=false
 
       - name: Uninstall Netchecks Operator
+        # --wait: CRD deletion is asynchronous (finalizers run first); without
+        # it the integration tests' install races the still-terminating CRDs.
         run: |
-          helm uninstall netchecks-operator -n netchecks
+          helm uninstall netchecks-operator -n netchecks --wait
 
       - name: Run Integration Tests (no Cilium)
         run: |

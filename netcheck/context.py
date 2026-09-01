@@ -1,7 +1,6 @@
+import logging
 import os
 import re
-from typing import Dict
-import logging
 
 from netcheck.validation import evaluate_cel_with_context
 
@@ -11,7 +10,7 @@ logger = logging.getLogger("netcheck.context")
 TEMPLATE_REGEX = re.compile(r"\{\{(.*?)\}\}")
 
 
-def evaluate_template(template: str, context: Dict) -> str:
+def evaluate_template(template: str, context: dict) -> str:
     """
     Evaluate a template string e.g. `contextname.key` and return the result of evaluating
     with CEL.
@@ -26,7 +25,7 @@ def evaluate_template(template: str, context: Dict) -> str:
     return str(evaluate_cel_with_context(context, template))
 
 
-def replace_template_in_string(s: str, evaluation_context: Dict) -> str:
+def replace_template_in_string(s: str, evaluation_context: dict) -> str:
     """
     Replace all templates in a given string using the provided evaluation context.
 
@@ -42,7 +41,7 @@ def replace_template_in_string(s: str, evaluation_context: Dict) -> str:
     return TEMPLATE_REGEX.sub(lambda m: evaluate_template(m.group(1).strip(), evaluation_context), s)
 
 
-def replace_template(original: Dict, evaluation_context: Dict):
+def replace_template(original: dict, evaluation_context: dict):
     """
     Recursively replace all templates in the keys and values of a dictionary
     using the provided evaluation context.

@@ -1,8 +1,82 @@
 //! Shared operator context — configuration, Kubernetes client, and observability.
 
 use k8s_openapi::api::core::v1::ResourceRequirements;
+use kube::discovery::ApiResource;
+use tokio::sync::OnceCell;
 
 use crate::observability::OperatorObservability;
+
+/// API group of the PolicyReport CRDs the operator writes its results to.
+pub const POLICY_REPORT_GROUP: &str = "wgpolicyk8s.io";
+/// Kind of the report resource written per NetworkAssertion.
+pub const POLICY_REPORT_KIND: &str = "PolicyReport";
+/// Versions the operator can write, most preferred first.
+///
+/// `convert_results_for_policy_report` emits the v1alpha2/v1beta1 result schema
+/// (`result`, `properties`, `source`, `timestamp`); v1alpha1 uses `status`/`data`
+/// instead and is deliberately not supported, since the API server would prune
+/// those fields and leave each result without its outcome.
+const POLICY_REPORT_SUPPORTED_VERSIONS: [&str; 2] = ["v1beta1", "v1alpha2"];
+
+/// Errors resolving the PolicyReport API on the cluster.
+#[derive(Debug, thiserror::Error)]
+pub enum DiscoveryError {
+    #[error(
+        "the {POLICY_REPORT_GROUP} API group is not served by this cluster; install the \
+         PolicyReport CRDs or enable `crds.groups.wgpolicyk8s` in the Helm chart"
+    )]
+    GroupMissing,
+
+    #[error(
+        "the {POLICY_REPORT_GROUP} API group is served (versions: {0}) but none of the versions \
+         this operator supports (v1beta1, v1alpha2) provides the {POLICY_REPORT_KIND} kind"
+    )]
+    UnsupportedVersions(String),
+
+    #[error("failed to discover the {POLICY_REPORT_GROUP} API group: {0}")]
+    Kube(#[from] kube::Error),
+}
+
+/// Pick the PolicyReport version to write, given the versions the cluster serves.
+///
+/// Returns the most preferred supported version that is served, or `None` when
+/// the cluster serves only versions with an incompatible result schema.
+pub fn select_policy_report_version<'a>(served: &[&'a str]) -> Option<&'a str> {
+    POLICY_REPORT_SUPPORTED_VERSIONS
+        .iter()
+        .find_map(|wanted| served.iter().find(|v| *v == wanted).copied())
+}
+
+/// Resolve the `PolicyReport` API resource from cluster discovery.
+///
+/// `wgpolicyk8s.io` is a shared API group whose CRDs are distributed by several
+/// projects (netchecks, Kyverno, Trivy, Kubescape, ...) that serve different
+/// version sets, so the version must not be hardcoded.
+pub async fn discover_policy_report_resource(
+    client: &kube::Client,
+) -> Result<ApiResource, DiscoveryError> {
+    let group = match kube::discovery::group(client, POLICY_REPORT_GROUP).await {
+        Ok(group) => group,
+        Err(kube::Error::Api(err)) if err.code == 404 => return Err(DiscoveryError::GroupMissing),
+        Err(err) => return Err(DiscoveryError::Kube(err)),
+    };
+
+    let served: Vec<&str> = group.versions().collect();
+    let has_kind = |version: &str| {
+        group
+            .versioned_resources(version)
+            .into_iter()
+            .find(|(ar, _)| ar.kind == POLICY_REPORT_KIND)
+            .map(|(ar, _)| ar)
+    };
+
+    // Most preferred supported version that is served *and* has the kind.
+    POLICY_REPORT_SUPPORTED_VERSIONS
+        .iter()
+        .filter(|wanted| served.contains(wanted))
+        .find_map(|version| has_kind(version))
+        .ok_or_else(|| DiscoveryError::UnsupportedVersions(served.join(", ")))
+}
 
 /// Operator configuration loaded from environment variables.
 #[derive(Clone, Debug)]
@@ -68,6 +142,8 @@ pub struct OperatorContext {
     pub config: OperatorConfig,
     /// Health and metrics state.
     pub observability: OperatorObservability,
+    /// PolicyReport API resource, discovered from the cluster on first use.
+    policy_report_resource: OnceCell<ApiResource>,
 }
 
 impl OperatorContext {
@@ -80,7 +156,25 @@ impl OperatorContext {
             kube_client,
             config,
             observability,
+            policy_report_resource: OnceCell::new(),
         }
+    }
+
+    /// The PolicyReport API resource served by this cluster.
+    ///
+    /// Discovered once and cached; a failed discovery is not cached so that a
+    /// CRD installed after the operator started is picked up on the next call.
+    pub async fn policy_report_resource(&self) -> Result<&ApiResource, DiscoveryError> {
+        self.policy_report_resource
+            .get_or_try_init(|| async {
+                let resource = discover_policy_report_resource(&self.kube_client).await?;
+                tracing::info!(
+                    api_version = %resource.api_version,
+                    "resolved PolicyReport API version from cluster discovery"
+                );
+                Ok(resource)
+            })
+            .await
     }
 }
 
@@ -91,6 +185,33 @@ mod tests {
     use super::*;
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn policy_report_version_prefers_v1beta1() {
+        let served = ["v1alpha1", "v1alpha2", "v1beta1"];
+        assert_eq!(select_policy_report_version(&served), Some("v1beta1"));
+    }
+
+    #[test]
+    fn policy_report_version_falls_back_to_kyverno_v1alpha2() {
+        // Kyverno's CRDs serve only v1alpha2.
+        assert_eq!(
+            select_policy_report_version(&["v1alpha2"]),
+            Some("v1alpha2")
+        );
+        assert_eq!(
+            select_policy_report_version(&["v1alpha1", "v1alpha2"]),
+            Some("v1alpha2")
+        );
+    }
+
+    #[test]
+    fn policy_report_version_rejects_incompatible_schemas() {
+        // v1alpha1 results use `status`/`data`, which the operator does not emit.
+        assert_eq!(select_policy_report_version(&["v1alpha1"]), None);
+        assert_eq!(select_policy_report_version(&["v2", "v3"]), None);
+        assert_eq!(select_policy_report_version(&[]), None);
+    }
 
     #[test]
     fn config_defaults_are_reasonable() {

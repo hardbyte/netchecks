@@ -22,7 +22,7 @@ use kube::runtime::controller::Action;
 use kube::{Client, Resource, ResourceExt};
 use tracing::info;
 
-use crate::context::{OperatorConfig, OperatorContext};
+use crate::context::{DiscoveryError, OperatorConfig, OperatorContext};
 use crate::crd::{common_labels, ContextSpec, NetworkAssertion, Rule, StatusCondition};
 
 /// Errors that can occur during reconciliation.
@@ -42,6 +42,9 @@ pub enum ReconcileError {
 
     #[error("missing namespace on NetworkAssertion")]
     MissingNamespace,
+
+    #[error("cannot write PolicyReport: {0}")]
+    PolicyReportDiscovery(#[from] DiscoveryError),
 }
 
 /// Main reconcile entry point, called by the kube-rs controller.
@@ -115,14 +118,7 @@ async fn reconcile_inner(
     }
 
     // Step 3: Process completed probe pods
-    let summary = process_completed_jobs(
-        &ctx.kube_client,
-        &resource,
-        &namespace,
-        &ctx.config,
-        &ctx.observability,
-    )
-    .await?;
+    let summary = process_completed_jobs(&ctx, &resource, &namespace).await?;
 
     guard.record_result("success", "Reconciled");
 
@@ -157,6 +153,8 @@ pub fn error_policy(
     match error {
         ReconcileError::InvalidSpec(_) => Action::requeue(Duration::from_secs(300)),
         ReconcileError::ResultParse(_) => Action::requeue(Duration::from_secs(60)),
+        // Usually a missing/foreign CRD; give an operator time to install it.
+        ReconcileError::PolicyReportDiscovery(_) => Action::requeue(Duration::from_secs(60)),
         _ => Action::requeue(Duration::from_secs(30)),
     }
 }
@@ -253,6 +251,7 @@ async fn update_status_error(
     let reason = match error {
         ReconcileError::InvalidSpec(_) => "InvalidSpec",
         ReconcileError::ResultParse(_) => "ResultParseError",
+        ReconcileError::PolicyReportDiscovery(_) => "PolicyReportApiUnavailable",
         _ => "ReconcileError",
     };
 
@@ -529,14 +528,14 @@ fn build_cron_job(
             owner_references: Some(vec![owner_ref]),
             ..Default::default()
         },
-        spec: Some(CronJobSpec {
+        spec: CronJobSpec {
             schedule: schedule.to_string(),
             job_template: JobTemplateSpec {
                 metadata: None,
                 spec: Some(build_job_spec(na, config)),
             },
             ..Default::default()
-        }),
+        },
         ..Default::default()
     })
 }
@@ -748,12 +747,12 @@ fn apply_template_overrides(pod_template: &mut PodTemplateSpec, overrides: &serd
 /// Returns `Some(summary)` with pass/fail/etc counts if results were processed,
 /// or `None` if no completed pod was found yet.
 async fn process_completed_jobs(
-    client: &Client,
+    ctx: &OperatorContext,
     na: &NetworkAssertion,
     namespace: &str,
-    config: &OperatorConfig,
-    observability: &crate::observability::OperatorObservability,
 ) -> Result<Option<serde_json::Value>, ReconcileError> {
+    let client = &ctx.kube_client;
+    let observability = &ctx.observability;
     let name = na.name_any();
     let pods_api: Api<Pod> = Api::namespaced(client.clone(), namespace);
 
@@ -800,7 +799,17 @@ async fn process_completed_jobs(
     })?;
 
     let summary = summarize_results(&probe_results);
-    upsert_policy_report(client, &probe_results, na, namespace, config, &summary).await?;
+    let report_resource = ctx.policy_report_resource().await?;
+    upsert_policy_report(
+        client,
+        report_resource,
+        &probe_results,
+        na,
+        namespace,
+        &ctx.config,
+        &summary,
+    )
+    .await?;
 
     // Record probe duration metrics
     record_probe_metrics(&probe_results, &name, observability);
@@ -851,8 +860,14 @@ fn record_probe_metrics(
 // ---------------------------------------------------------------------------
 
 /// Create or update a PolicyReport from probe results.
+///
+/// `api_resource` is the PolicyReport resource discovered from the cluster
+/// (see [`OperatorContext::policy_report_resource`]); the API version is not
+/// hardcoded because the shared `wgpolicyk8s.io` CRDs are distributed by
+/// several projects that serve different version sets.
 async fn upsert_policy_report(
     client: &Client,
+    api_resource: &ApiResource,
     probe_results: &serde_json::Value,
     na: &NetworkAssertion,
     namespace: &str,
@@ -888,16 +903,14 @@ async fn upsert_policy_report(
         ),
     ]);
 
-    let gvk = kube::api::GroupVersionKind::gvk("wgpolicyk8s.io", "v1beta1", "PolicyReport");
-    let api_resource = ApiResource::from_gvk(&gvk);
-    let api: Api<DynamicObject> = Api::namespaced_with(client.clone(), namespace, &api_resource);
+    let api: Api<DynamicObject> = Api::namespaced_with(client.clone(), namespace, api_resource);
 
     let report_data = serde_json::json!({
         "results": report_results,
         "summary": report_summary,
     });
 
-    let mut obj = DynamicObject::new(&assertion_name, &api_resource);
+    let mut obj = DynamicObject::new(&assertion_name, api_resource);
     obj.metadata = ObjectMeta {
         name: Some(assertion_name.clone()),
         namespace: Some(namespace.to_string()),
@@ -918,7 +931,11 @@ async fn upsert_policy_report(
         .await
     {
         Ok(_) => {
-            tracing::info!(assertion = %assertion_name, "upserted PolicyReport");
+            tracing::info!(
+                assertion = %assertion_name,
+                api_version = %api_resource.api_version,
+                "upserted PolicyReport"
+            );
         }
         Err(kube::Error::Api(err)) if err.code == 422 || err.code == 500 => {
             // Server-side apply may fail with 422 (field conflicts) or 500
@@ -1168,7 +1185,7 @@ mod tests {
         let cron = build_cron_job(&na, &config, "*/5 * * * *").expect("should build cronjob");
 
         assert_eq!(cron.metadata.name.as_deref(), Some("scheduled"));
-        let spec = cron.spec.as_ref().unwrap();
+        let spec = &cron.spec;
         assert_eq!(spec.schedule, "*/5 * * * *");
         assert!(spec.job_template.spec.is_some());
     }

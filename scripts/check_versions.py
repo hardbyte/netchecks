@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import sys
 import tomllib
+from pathlib import Path
+
 import yaml
 
 
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     operator_version = operator_toml["package"]["version"]
     operator_chart_version = operator_chart_yaml["appVersion"]
 
-    if len(set((cli_version, operator_version, operator_chart_version))) == 1:
+    if len({cli_version, operator_version, operator_chart_version}) == 1:
         print("Versions match!")
         sys.exit(0)
     else:

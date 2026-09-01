@@ -224,14 +224,13 @@ def test_postgres_grants_check_with_real_postgres():
     import psycopg
 
     dsn = os.environ["NETCHECK_POSTGRES_DSN"]
-    with psycopg.connect(dsn, autocommit=True) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute("drop schema if exists netcheck_grants_probe cascade")
-            cursor.execute("drop role if exists netcheck_grants_probe_role")
-            cursor.execute("create role netcheck_grants_probe_role")
-            cursor.execute("create schema netcheck_grants_probe")
-            cursor.execute("create table netcheck_grants_probe.invoices(id integer)")
-            cursor.execute("grant usage on schema netcheck_grants_probe to netcheck_grants_probe_role")
+    with psycopg.connect(dsn, autocommit=True) as connection, connection.cursor() as cursor:
+        cursor.execute("drop schema if exists netcheck_grants_probe cascade")
+        cursor.execute("drop role if exists netcheck_grants_probe_role")
+        cursor.execute("create role netcheck_grants_probe_role")
+        cursor.execute("create schema netcheck_grants_probe")
+        cursor.execute("create table netcheck_grants_probe.invoices(id integer)")
+        cursor.execute("grant usage on schema netcheck_grants_probe to netcheck_grants_probe_role")
 
     try:
         require_result = postgres_grants_check(
@@ -264,9 +263,8 @@ def test_postgres_grants_check_with_real_postgres():
         assert deny_result["data"]["success"] is True, deny_result
         assert deny_result["data"]["violation-count"] == 0
 
-        with psycopg.connect(dsn, autocommit=True) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("grant truncate on table netcheck_grants_probe.invoices to netcheck_grants_probe_role")
+        with psycopg.connect(dsn, autocommit=True) as connection, connection.cursor() as cursor:
+            cursor.execute("grant truncate on table netcheck_grants_probe.invoices to netcheck_grants_probe_role")
 
         violated_deny_result = postgres_grants_check(
             dsn,
@@ -283,10 +281,9 @@ def test_postgres_grants_check_with_real_postgres():
         assert violated_deny_result["data"]["success"] is True, violated_deny_result
         assert violated_deny_result["data"]["violation-count"] == 1
     finally:
-        with psycopg.connect(dsn, autocommit=True) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("drop schema if exists netcheck_grants_probe cascade")
-                cursor.execute("drop role if exists netcheck_grants_probe_role")
+        with psycopg.connect(dsn, autocommit=True) as connection, connection.cursor() as cursor:
+            cursor.execute("drop schema if exists netcheck_grants_probe cascade")
+            cursor.execute("drop role if exists netcheck_grants_probe_role")
 
 
 def _fake_cursor(responses):

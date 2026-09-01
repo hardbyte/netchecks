@@ -2,18 +2,17 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
+
+import typer
 from rich import print_json
 from rich.console import Console
-import typer
-from typing import List, Optional
 
 from netcheck.checks.dns import DEFAULT_DNS_VALIDATION_RULE
-from netcheck.checks.tcp import DEFAULT_TCP_VALIDATION_RULE
-from netcheck.checks.postgres import DEFAULT_POSTGRES_VALIDATION_RULE
 from netcheck.checks.http import NetcheckHttpMethod
-from netcheck.runner import run_from_config, check_individual_assertion
+from netcheck.checks.postgres import DEFAULT_POSTGRES_VALIDATION_RULE
+from netcheck.checks.tcp import DEFAULT_TCP_VALIDATION_RULE
+from netcheck.runner import check_individual_assertion, run_from_config
 from netcheck.version import NETCHECK_VERSION
-
 
 app = typer.Typer(no_args_is_help=True)
 logger = logging.getLogger("netcheck")
@@ -97,10 +96,10 @@ def http(
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Timeout in seconds"),
     should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
     validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
-    headers: Optional[List[str]] = typer.Option(
+    headers: list[str] | None = typer.Option(
         None, "-h", "--header", help="Headers to send with request. Format: 'key:value'"
     ),
-    source_ip: Optional[str] = typer.Option(
+    source_ip: str | None = typer.Option(
         None,
         "--source-ip",
         help="Local IP address to bind outgoing connections to (must exist on a local interface)",
@@ -160,7 +159,7 @@ def dns(
     should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
     validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
     timeout: float = typer.Option(30.0, "-t", "--timeout", help="Timeout in seconds"),
-    source_ip: Optional[str] = typer.Option(
+    source_ip: str | None = typer.Option(
         None,
         "--source-ip",
         help="Local IP address to send DNS queries from (must exist on a local interface)",
@@ -207,7 +206,7 @@ def tcp(
     timeout: float = typer.Option(5.0, "-t", "--timeout", help="Timeout in seconds"),
     should_fail: bool = typer.Option(False, "--should-fail/--should-pass"),
     validation_rule: str = typer.Option(None, "--validation-rule", help="Validation rule in CEL to apply to result"),
-    source_ip: Optional[str] = typer.Option(
+    source_ip: str | None = typer.Option(
         None,
         "--source-ip",
         help="Local IP address to bind the outgoing connection to (must exist on a local interface)",

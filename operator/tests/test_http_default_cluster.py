@@ -1,6 +1,6 @@
 import json
-import time
 import subprocess
+import time
 
 
 def test_k8s_version_with_installed_operator(netchecks, k8s_namespace, test_file_path):

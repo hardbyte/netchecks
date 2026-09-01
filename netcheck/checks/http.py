@@ -1,9 +1,9 @@
 import datetime
 import logging
 from enum import Enum
-from typing import Dict, Optional
-from pydantic import BaseModel
+
 import urllib3
+from pydantic import BaseModel
 from urllib3.poolmanager import PoolManager
 
 # We disable urllib warning because we expect to be carrying out tests against hosts using self-signed
@@ -11,8 +11,8 @@ from urllib3.poolmanager import PoolManager
 urllib3.disable_warnings()
 
 
-import requests  # noqa: E402
-from requests.adapters import HTTPAdapter  # noqa: E402
+import requests
+from requests.adapters import HTTPAdapter
 
 
 class _SourceAddressAdapter(HTTPAdapter):
@@ -42,7 +42,7 @@ class NetcheckHttpHeaderType(str, Enum):
 class NetcheckHttpHeaders(BaseModel):
     name: str
     value: str
-    type: Optional[NetcheckHttpHeaderType] = None
+    type: NetcheckHttpHeaderType | None = None
 
 
 class NetcheckHttpMethod(str, Enum):
@@ -56,10 +56,10 @@ class NetcheckHttpMethod(str, Enum):
 def http_request_check(
     url,
     method: NetcheckHttpMethod = "get",
-    headers: Dict[str, str] = None,
+    headers: dict[str, str] | None = None,
     timeout=5,
     verify: bool = True,
-    source_ip: Optional[str] = None,
+    source_ip: str | None = None,
 ):
     if headers is None:
         headers = {}
@@ -104,7 +104,7 @@ def http_request_check(
         result_data["body"] = response.text
         response.raise_for_status()
     except Exception as e:
-        logger.debug(f"Caught exception:\n\n{e}")
+        logger.debug("Caught exception", exc_info=e)
         result_data["exception-type"] = e.__class__.__name__
         result_data["exception"] = str(e)
 

@@ -1,16 +1,14 @@
 import base64
 import json
 import logging
-from typing import Dict
+
 import yaml
-
 from cel import cel
-
 
 logger = logging.getLogger("netcheck.validation")
 
 
-def evaluate_cel_with_context(context: Dict, validation_rule: str):
+def evaluate_cel_with_context(context: dict, validation_rule: str):
     """
     Evaluates a Common Expression Language (CEL) validation rule with a given context.
 
@@ -57,9 +55,14 @@ def evaluate_cel_with_context(context: Dict, validation_rule: str):
             # These can happen with valid expressions that fail at runtime
             logger.debug(f"CEL execution failed: {e}")
             return False
-    except RuntimeError as e:
-        # Runtime errors (undefined variables) indicate validation failure
-        # This can happen if the probe failed to return expected values
+    except (RuntimeError, LookupError, TypeError) as e:
+        # Runtime errors indicate validation failure rather than a bad rule:
+        #   - RuntimeError: undefined variable or function
+        #   - KeyError/LookupError: a referenced field is missing (e.g. `data['status-code']`
+        #     after a probe failed before receiving a response) — cel >= 0.8 raises this
+        #     instead of a RuntimeError
+        #   - TypeError: no overload for the operand types (cel >= 0.8), e.g. `value > 100`
+        #     where `value` is a string
         logger.debug(f"CEL evaluation failed: {e}")
         return False
 

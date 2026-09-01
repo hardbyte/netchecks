@@ -6,7 +6,7 @@ icon: https://raw.githubusercontent.com/hardbyte/netchecks/main/.github/logo.png
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.4.1
+version: 0.4.2
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -24,7 +24,7 @@ annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Chart maintainer entry now uses a GitHub username so chart-testing lint passes."
+      description: "The operator discovers the served wgpolicyk8s.io PolicyReport API version at runtime instead of requiring v1beta1, so crds.groups.wgpolicyk8s=false works with Kyverno-owned CRDs."
   artifacthub.io/category: security
   artifacthub.io/operator: "true"
   artifacthub.io/prerelease: "false"

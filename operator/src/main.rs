@@ -63,6 +63,17 @@ async fn main() -> anyhow::Result<()> {
         observability.clone(),
     ));
 
+    // Resolve the PolicyReport API version up front so a missing or foreign
+    // wgpolicyk8s.io CRD is visible in the startup logs. Not fatal: the
+    // lookup is retried on the first reconcile that needs it.
+    match ctx.policy_report_resource().await {
+        Ok(resource) => info!(api_version = %resource.api_version, "PolicyReport API available"),
+        Err(error) => tracing::warn!(
+            %error,
+            "PolicyReport API not available yet; NetworkAssertions cannot report results until it is"
+        ),
+    }
+
     // Watch all NetworkAssertion resources across all namespaces.
     let network_assertions: Api<NetworkAssertion> = Api::all(client.clone());
     let jobs: Api<Job> = Api::all(client.clone());

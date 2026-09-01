@@ -1,6 +1,5 @@
 import datetime
 import logging
-from typing import Optional
 
 import dns.resolver
 from dns.exception import Timeout
@@ -16,7 +15,7 @@ size(data['A']) >= 1 &&
 
 
 def get_A_records_by_dns_lookup(
-    target, nameserver=None, timeout=60, source_ip: Optional[str] = None
+    target, nameserver=None, timeout=60, source_ip: str | None = None
 ):
     # We always reset the default dns resolver
     dns.resolver.reset_default_resolver()
@@ -59,7 +58,7 @@ def get_A_records_by_dns_lookup(
     return result
 
 
-def dns_lookup_check(host, server, timeout=10, source_ip: Optional[str] = None):
+def dns_lookup_check(host, server, timeout=10, source_ip: str | None = None):
     test_spec = {
         "type": "dns",
         "nameserver": server,

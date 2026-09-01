@@ -21,7 +21,7 @@ jobs:
       # official successor.)
       - uses: astral-sh/ruff-action@v3
         with:
-          version: "0.15.12"
+          version: "0.16.5"
 
   check-versions:
     runs-on: ubuntu-latest

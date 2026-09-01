@@ -1,9 +1,8 @@
 import os
-import subprocess
 import random
 import string
+import subprocess
 import time
-from typing import Optional
 
 from pytest import fixture
 
@@ -30,7 +29,7 @@ TEST_DATA_DIR = os.path.join(
 )
 
 
-def random_lower_string(length: Optional[int] = 32) -> str:
+def random_lower_string(length: int | None = 32) -> str:
     return "".join(random.choices(string.ascii_lowercase, k=length))
 
 
@@ -88,6 +87,7 @@ def netchecks(k8s_namespace):
             f"kubectl logs Deployment/netchecks-operator -n {k8s_namespace}",
             shell=True,
             capture_output=True,
+            check=False,
         )
         print(startup_log_output.stdout.decode())
 
@@ -99,6 +99,7 @@ def netchecks(k8s_namespace):
             f"kubectl logs Deployment/netchecks-operator -n {k8s_namespace}",
             shell=True,
             capture_output=True,
+            check=False,
         )
         print(operator_log_output.stdout.decode())
 
@@ -116,7 +117,8 @@ def netchecks(k8s_namespace):
                 check=True,
             )
             subprocess.run(
-                f"helm uninstall netchecks-operator -n {k8s_namespace}",
+                # --wait so the CRDs are fully deleted before the next session installs again
+                f"helm uninstall netchecks-operator -n {k8s_namespace} --wait",
                 shell=True,
                 check=True,
             )
