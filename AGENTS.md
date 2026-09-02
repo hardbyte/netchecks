@@ -148,14 +148,27 @@ cargo clippy --all-targets --all-features -- -D warnings
 
 ## Release Process
 
-1. Update `version` in `pyproject.toml` (CLI), `operator/Cargo.toml` (operator), and `operator/charts/netchecks/Chart.yaml` (chart `version` + `appVersion`)
-2. Push to main branch
-3. Create GitHub release with a `v*` tag (e.g. `v0.7.0`)
-4. CI automatically:
-   - Publishes package to PyPI
-   - Builds and pushes Docker images to ghcr.io
-   - Runs integration tests with Kind + Cilium
-   - Releases helm chart via chart-releaser (creates a `netchecks-*` release)
+Modeled on `hardbyte/awa`: the tag is the trigger, and publication is gated on the tag
+matching every version manifest and on CI having passed on that exact commit.
+
+1. Open a release PR that bumps the version everywhere it lives, in lockstep:
+   `pyproject.toml` (+ `uv lock`), `operator/Cargo.toml` (+ `Cargo.lock`), and
+   `operator/charts/netchecks/Chart.yaml` (`appVersion`, plus the chart `version`
+   and its `artifacthub.io/changes`). Regenerate `operator/manifests/deploy.yaml`
+   (`operator/create-static-manifests.sh`) and move the `## [Unreleased]` entries in
+   `CHANGELOG.md` under a new `## X.Y.Z` heading. `scripts/check_versions.py` must
+   pass; `ct lint` requires the chart version bump.
+2. Merge it and wait for the push-triggered CI run on `main` to go green — the release
+   workflow refuses to publish a commit without one.
+3. Tag that exact commit `vX.Y.Z` — either `git tag vX.Y.Z && git push origin vX.Y.Z`,
+   or create a GitHub release (draft is fine) for that tag and publish it; publishing
+   creates the tag.
+4. `.github/workflows/release.yaml` then runs: version check → exact-SHA CI check →
+   multi-arch probe and operator images pushed to ghcr.io with `X.Y.Z`, `X.Y` and
+   `latest` tags, keyless-signed with cosign and with build provenance attested →
+   `netcheck` published to PyPI → Helm chart released via chart-releaser
+   (`netchecks-<chart version>`) → GitHub release created from the `CHANGELOG.md`
+   section (if none exists yet) with the sdist/wheel attached, then published.
 
 ## CEL Validation Examples
 

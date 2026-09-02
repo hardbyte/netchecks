@@ -1,0 +1,324 @@
+name: Release
+
+# Publishes a tagged commit: versioned container images, the PyPI package, the
+# Helm chart and the GitHub release.
+#
+# Triggered by pushing a `v*` tag — including the tag GitHub creates when a
+# draft release is published. Nothing is published until two gates pass:
+#   1. version-check: the tag equals the version in pyproject.toml,
+#      operator/Cargo.toml and the chart's appVersion.
+#   2. candidate-ci: a successful push-triggered CI run (unit + kind
+#      integration tests) exists for this exact commit on main.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  actions: read # candidate-ci reads workflow runs
+  contents: write # GitHub release, chart-releaser
+  packages: write # ghcr.io
+  id-token: write # keyless cosign signing and attestations
+  attestations: write
+
+env:
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_REPOSITORY: hardbyte
+  PROBE_IMAGE_NAME: netchecks
+  OPERATOR_IMAGE_NAME: netchecks-operator
+
+jobs:
+  # ─── Version-consistency gate ────────────────────────────────────────
+  version-check:
+    name: Verify version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - name: Tag matches pyproject.toml, Cargo.toml and Chart.yaml appVersion
+        run: uv run --with pyyaml ./scripts/check_versions.py --expect "${GITHUB_REF_NAME}"
+
+  # ─── Exact-candidate gate ────────────────────────────────────────────
+  candidate-ci:
+    name: Verify exact-candidate CI
+    needs: [version-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a successful main-branch CI run on this SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          count=$(gh api -X GET \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yaml/runs" \
+            -f head_sha="${GITHUB_SHA}" \
+            -f event=push \
+            -f status=success \
+            -f per_page=100 \
+            --jq '.total_count')
+          if [ "$count" -lt 1 ]; then
+            echo "::error::No successful push-triggered CI run exists for ${GITHUB_SHA}."
+            echo "Merge the release PR, wait for CI on main to pass, then tag that exact commit."
+            exit 1
+          fi
+          echo "Found ${count} successful CI run(s) for ${GITHUB_SHA}."
+
+  # ─── Probe image (multi-arch via QEMU) ───────────────────────────────
+  probe-image:
+    name: Probe image
+    needs: [version-check, candidate-ci]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }}/${{ env.PROBE_IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=probe
+          cache-to: type=gha,mode=max,scope=probe
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.0.0
+      - name: Sign image with cosign (keyless)
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          mapfile -t tags <<< "$TAGS"
+          images=()
+          for tag in "${tags[@]}"; do images+=("${tag}@${DIGEST}"); done
+          cosign sign --yes "${images[@]}"
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }}/${{ env.PROBE_IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  # ─── Operator image (native per-arch builds, then a manifest list) ───
+  operator-image:
+    name: Operator image (${{ matrix.platform }})
+    needs: [version-check, candidate-ci]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v4
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: operator
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,"name=${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }}/${{ env.OPERATOR_IMAGE_NAME }}",push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=operator-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=operator-${{ matrix.platform }}
+      - name: Export digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-operator-digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  operator-image-merge:
+    name: Operator image (manifest list)
+    needs: [operator-image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: release-operator-digests-*
+          merge-multiple: true
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }}/${{ env.OPERATOR_IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v4
+      - name: Create manifest list and push
+        id: manifest
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }}/${{ env.OPERATOR_IMAGE_NAME }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2046
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "${IMAGE}@sha256:%s " *)
+          digest=$(docker buildx imagetools inspect "${IMAGE}:${VERSION}" --format '{{json .Manifest.Digest}}' | tr -d '"')
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          docker buildx imagetools inspect "${IMAGE}:${VERSION}"
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.0.0
+      - name: Sign image with cosign (keyless)
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.manifest.outputs.digest }}
+        run: |
+          set -euo pipefail
+          mapfile -t tags <<< "$TAGS"
+          images=()
+          for tag in "${tags[@]}"; do images+=("${tag}@${DIGEST}"); done
+          cosign sign --yes "${images[@]}"
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }}/${{ env.OPERATOR_IMAGE_NAME }}
+          subject-digest: ${{ steps.manifest.outputs.digest }}
+          push-to-registry: true
+
+  # ─── Python distribution ─────────────────────────────────────────────
+  python-dist:
+    name: Build Python distribution
+    needs: [version-check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --frozen --no-dev
+      - run: uv build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: ./dist
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [python-dist, candidate-ci]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+      # Uses the PYPI_API_TOKEN secret. To switch to trusted publishing
+      # (OIDC), register this workflow as a publisher on PyPI and drop the
+      # `password` input; the job already has `id-token: write`.
+      - uses: pypa/gh-action-pypi-publish@v1.14.0
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  # ─── Helm chart ──────────────────────────────────────────────────────
+  helm-chart:
+    name: Release Helm chart
+    needs: [version-check, candidate-ci]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+      - name: Run chart-releaser
+        uses: hardbyte/chart-releaser-action@main
+        with:
+          charts_dir: operator/charts
+          mark_as_latest: false
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+  # ─── GitHub release ──────────────────────────────────────────────────
+  github-release:
+    name: GitHub release
+    needs: [probe-image, operator-image-merge, publish-pypi, helm-chart]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+      - name: Create draft release (if the tag has none yet)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          if gh release view "$tag" --json tagName >/dev/null 2>&1; then
+            echo "Release $tag already exists (e.g. published from a draft); keeping its notes."
+            exit 0
+          fi
+          # Notes: the matching CHANGELOG.md section, else GitHub's generated notes.
+          version="${tag#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[?" v "\\]?([[:space:]]|$)" { found = 1; next }
+            /^## / { if (found) exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          args=(--title "$tag" --draft --verify-tag)
+          if [ -s notes.md ]; then args+=(--notes-file notes.md); else args+=(--generate-notes); fi
+          if echo "$tag" | grep -qE 'alpha|beta|rc'; then args+=(--prerelease); fi
+          gh release create "$tag" "${args[@]}"
+      - name: Upload Python distribution as release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${GITHUB_REF_NAME}" --draft=false
