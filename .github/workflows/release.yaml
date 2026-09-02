@@ -3,8 +3,10 @@ name: Release
 # Publishes a tagged commit: versioned container images, the PyPI package, the
 # Helm chart and the GitHub release.
 #
-# Triggered by pushing a `v*` tag — including the tag GitHub creates when a
-# draft release is published. Nothing is published until two gates pass:
+# Triggered by pushing a `v*` tag. Create any hand-written GitHub release as a
+# draft and leave it a draft: this workflow publishes it as its final step, so
+# a failed gate never leaves a public release without artifacts behind it.
+# Nothing is published until two gates pass:
 #   1. version-check: the tag equals the version in pyproject.toml,
 #      operator/Cargo.toml and the chart's appVersion.
 #   2. candidate-ci: a successful push-triggered CI run (unit + kind

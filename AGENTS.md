@@ -160,15 +160,19 @@ matching every version manifest and on CI having passed on that exact commit.
    pass; `ct lint` requires the chart version bump.
 2. Merge it and wait for the push-triggered CI run on `main` to go green — the release
    workflow refuses to publish a commit without one.
-3. Tag that exact commit `vX.Y.Z` — either `git tag vX.Y.Z && git push origin vX.Y.Z`,
-   or create a GitHub release (draft is fine) for that tag and publish it; publishing
-   creates the tag.
+3. Push the tag: `git tag vX.Y.Z <commit> && git push origin vX.Y.Z`. If you want to
+   hand-write the release notes, create the GitHub release for that tag as a **draft**
+   beforehand and leave it a draft — **do not publish it to create the tag**. Publishing
+   makes the release public immediately, before any gate has run, so a failed gate
+   would leave an announced release with no package, images or chart behind it. The
+   workflow publishes the draft itself once everything has succeeded.
 4. `.github/workflows/release.yaml` then runs: version check → exact-SHA CI check →
    multi-arch probe and operator images pushed to ghcr.io with `X.Y.Z`, `X.Y` and
    `latest` tags, keyless-signed with cosign and with build provenance attested →
    `netcheck` published to PyPI → Helm chart released via chart-releaser
-   (`netchecks-<chart version>`) → GitHub release created from the `CHANGELOG.md`
-   section (if none exists yet) with the sdist/wheel attached, then published.
+   (`netchecks-<chart version>`) → the draft GitHub release (or a new one generated
+   from the `CHANGELOG.md` section) gets the sdist/wheel attached and is published as
+   the final step.
 
 ## CEL Validation Examples
 
